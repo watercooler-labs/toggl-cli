@@ -12,7 +12,7 @@ pub struct ApiClient {
 
 impl ApiClient {
     pub fn from_credentials(credentials: credentials::Credentials) -> Result<ApiClient, Box<dyn std::error::Error>> {
-        
+
         let auth_string = credentials.api_token + ":api_token";
         let header_content = "Basic ".to_string() + base64::encode(auth_string).as_str();
         let mut headers = header::HeaderMap::new();
@@ -25,13 +25,19 @@ impl ApiClient {
             base_url: "https://track.toggl.com/api/v9".to_string()
         });
     }
-    
+
     pub async fn get_user(&self) -> Result<User, Box<dyn std::error::Error>> {
         let url = format!("{}/me", self.base_url);
         let result = self.get::<User>(url).await?;
         return Ok(result);
     }
-    
+
+    pub async fn get_running_time_entry(&self) -> Result<Option<TimeEntry>, Box<dyn std::error::Error>> {
+        let url = format!("{}/me/time_entries/current", self.base_url);
+        let result = self.get::<Option<TimeEntry>>(url).await?;
+        return Ok(result);
+    }
+
     pub async fn get_time_entries(&self) -> Result<Vec<TimeEntry>, Box<dyn std::error::Error>> {
         let url = format!("{}/me/time_entries", self.base_url);
         let result = self.get::<Vec<TimeEntry>>(url).await?;
