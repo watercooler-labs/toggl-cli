@@ -1,5 +1,6 @@
 use crate::credentials;
 use crate::models;
+use models::TimeEntry;
 use models::User;
 use reqwest::Client;
 use reqwest::header;
@@ -32,6 +33,12 @@ impl ApiClient {
         return Ok(result);
     }
     
+    pub async fn get_time_entries(&self) -> Result<Vec<TimeEntry>, Box<dyn std::error::Error>> {
+        let url = self.base_url.to_owned() + "me/time_entries";
+        let result = self.get::<Vec<TimeEntry>>(url).await?;
+        return Ok(result);
+    }
+
     async fn get<T: de::DeserializeOwned>(&self, url: String) -> Result<T, Box<dyn std::error::Error>> {
         let result = self.client.get(url).send().await?;
         let deserialized_json = result.json::<T>().await?;

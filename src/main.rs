@@ -11,6 +11,7 @@ use arguments::Command::Running;
 use arguments::Command::Stop;
 use arguments::Command::Start;
 use credentials::Credentials;
+use models::TimeEntry;
 use structopt::StructOpt;
 
 #[tokio::main]
@@ -22,10 +23,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 pub async fn execute_subcommand(command: Option<Command>) -> Result<(), Box<dyn std::error::Error>> {
     
     match command {
-        None => (),
+        None => ensure_authentication(display_running_time_entry).await,
         Some(subcommand) => match subcommand {
-            Current => (),
-            Running => (),
+            Current | Running => ensure_authentication(display_running_time_entry).await,
             Stop => (),
             Start { description: _, project: _ } => (),
             Auth { api_token } => {
@@ -62,5 +62,25 @@ async fn authenticate(api_client: ApiClient) {
                 Ok(_) => println!("Successfully authenticated for user with email {}", user.email)
             }
         }
+    }
+}
+
+async fn display_running_time_entry(api_client: ApiClient) {
+    let time_entries = api_client.get_time_entries().await;
+    match time_entries {
+        Err(error) => println!("{:?}", error),
+        Ok(time_entries) => {
+            match get_running_time_entry(time_entries) {
+                None => println!("No time entry is running at the moment"),
+                Some(running_time_entry) => println!("{}", running_time_entry.description)
+            }
+        }
+    }
+}
+
+fn get_running_time_entry(time_entries: Vec<TimeEntry>) -> Option<TimeEntry> {
+    return match time_entries.iter().find(|te| te.stop.is_none()) {
+        None => None,
+        Some(te) => Some(te.clone())
     }
 }
