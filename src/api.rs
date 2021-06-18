@@ -1,7 +1,9 @@
 use crate::credentials;
 use crate::models;
+use models::User;
 use reqwest::Client;
 use reqwest::header;
+use serde::de;
 
 pub struct ApiClient {
     client: Client,
@@ -24,3 +26,15 @@ impl ApiClient {
         });
     }
     
+    pub async fn get_user(&self) -> Result<User, Box<dyn std::error::Error>> {
+        let url = self.base_url.to_owned() + "me";
+        let result = self.get::<User>(url).await?;
+        return Ok(result);
+    }
+    
+    async fn get<T: de::DeserializeOwned>(&self, url: String) -> Result<T, Box<dyn std::error::Error>> {
+        let result = self.client.get(url).send().await?;
+        let deserialized_json = result.json::<T>().await?;
+        return Ok(deserialized_json);
+    }
+}

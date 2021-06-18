@@ -1,5 +1,8 @@
+mod api;
 mod arguments;
 mod credentials;
+mod models;
+use api::ApiClient;
 use arguments::CommandLineArguments;
 use arguments::Command;
 use arguments::Command::Auth;
@@ -10,17 +13,14 @@ use arguments::Command::Start;
 use credentials::Credentials;
 use structopt::StructOpt;
 
-fn main() {
-    match Credentials::from_file() {
-        Invalid => ask_for_auth(),
-        Valid(credentials) => {
-            let parsed_args = CommandLineArguments::from_args();
-            execute_subcommand(credentials, parsed_args.cmd);
-        }
-    }
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let parsed_args = CommandLineArguments::from_args();
+    return execute_subcommand(parsed_args.cmd).await;
 }
 
-pub fn execute_subcommand(_credentials: ValidCredentials, command: Option<Command>) {
+pub async fn execute_subcommand(command: Option<Command>) -> Result<(), Box<dyn std::error::Error>> {
+    
     match command {
         None => (),
         Some(subcommand) => match subcommand {
@@ -28,12 +28,39 @@ pub fn execute_subcommand(_credentials: ValidCredentials, command: Option<Comman
             Running => (),
             Stop => (),
             Start { description: _, project: _ } => (),
-            Auth { api_token: _ } => ()
+            Auth { api_token } => {
+                let credentials = Credentials { api_token: api_token };
+                let api_client = ApiClient::from_credentials(credentials)?;
+                authenticate(api_client).await
+            }
         }
-    };
+    }
+
+    Ok(())
 }
 
-fn ask_for_auth() {
-    println!("Please set your API token first by calling toggl auth <API_TOKEN>.");
-    println!("You can find your API token at https://track.toggl.com/profile.");
+async fn ensure_authentication<F: std::future::Future<Output = ()>>(callback: fn(ApiClient) -> F) {
+    match Credentials::read() {
+        Some(credentials) => {
+            match ApiClient::from_credentials(credentials) {
+                Err(err) => println!("{}", err),
+                Ok(api_client) => callback(api_client).await
+            }
+        } None => {
+            println!("Please set your API token first by calling toggl auth <API_TOKEN>.");
+            println!("You can find your API token at https://track.toggl.com/profile.");
+        }
+    }
+}
+
+async fn authenticate(api_client: ApiClient) {
+    match api_client.get_user().await {
+        Err(api_error) => println!("{}", api_error),
+        Ok(user) => {
+            match Credentials::persist(user.api_token) {
+                Err(credential_error) => println!("{}", credential_error),
+                Ok(_) => println!("Successfully authenticated for user with email {}", user.email)
+            }
+        }
+    }
 }
