@@ -26,7 +26,7 @@ pub async fn execute_subcommand(command: Option<Command>) -> Result<(), Box<dyn 
         None => ensure_authentication(display_running_time_entry).await,
         Some(subcommand) => match subcommand {
             Current | Running => ensure_authentication(display_running_time_entry).await,
-            Stop => (),
+            Stop => ensure_authentication(stop_running_time_entry).await,
             Start { description: _, project: _ } => (),
             Auth { api_token } => {
                 let credentials = Credentials { api_token: api_token };
@@ -73,6 +73,24 @@ async fn display_running_time_entry(api_client: ApiClient) {
             match get_running_time_entry(time_entries) {
                 None => println!("No time entry is running at the moment"),
                 Some(running_time_entry) => println!("{}", running_time_entry.description)
+            }
+        }
+    }
+}
+
+async fn stop_running_time_entry(api_client: ApiClient) {
+    let time_entries = api_client.get_time_entries().await;
+    match time_entries {
+        Err(error) => println!("{:?}", error),
+        Ok(time_entries) => {
+            match get_running_time_entry(time_entries) {
+                None => println!("No time entry is running at the moment"),
+                Some(running_time_entry) => {
+                    match api_client.stop_time_entry(running_time_entry).await {
+                        Err(stop_error) => println!("{:?}", stop_error),
+                        Ok(_) => println!("Time entry stopped successfully")
+                    }
+                }
             }
         }
     }
