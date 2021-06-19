@@ -49,13 +49,15 @@ impl TimeEntry {
             duration.num_seconds() % 60
         );
     }
+}
 
-    pub fn get_summary(&self) -> String {
+impl std::fmt::Display for TimeEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let summary = format!(
             "[{}] - {}",
             self.get_duration_hmmss(),
             self.get_description()
         );
-        return summary;
+        write!(f, "{}", summary)
     }
 }

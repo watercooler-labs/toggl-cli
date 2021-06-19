@@ -67,7 +67,7 @@ async fn display_running_time_entry() -> ResultWithDefaultError<()> {
     let api_client = ensure_authentication()?;
     match api_client.get_running_time_entry().await? {
         None => println!("No time entry is running at the moment"),
-        Some(running_time_entry) => println!("{}", running_time_entry.get_summary()),
+        Some(running_time_entry) => println!("{}", running_time_entry),
     }
 
     return Ok(());
