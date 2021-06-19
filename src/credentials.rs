@@ -2,17 +2,18 @@ use crate::models;
 use keyring::Keyring;
 use models::ResultWithDefaultError;
 
-pub struct Credentials { pub api_token: String }
+pub struct Credentials {
+    pub api_token: String,
+}
 
 impl Credentials {
-
     fn get_keyring() -> Keyring<'static> {
-        return Keyring::new("togglcli", "default")
+        return Keyring::new("togglcli", "default");
     }
 
     pub fn read() -> ResultWithDefaultError<Credentials> {
         let api_token = Credentials::get_keyring().get_password()?;
-        return Ok(Credentials { api_token: api_token });
+        return Ok(Credentials { api_token });
     }
 
     pub fn persist(api_token: String) -> ResultWithDefaultError<()> {

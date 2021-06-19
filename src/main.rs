@@ -49,9 +49,7 @@ fn ensure_authentication() -> ResultWithDefaultError<ApiClient> {
 }
 
 async fn authenticate(api_token: String) -> ResultWithDefaultError<()> {
-    let credentials = Credentials {
-        api_token: api_token,
-    };
+    let credentials = Credentials { api_token };
     let api_client = ApiClient::from_credentials(credentials)?;
     let user = api_client.get_user().await?;
     let _credentials = Credentials::persist(user.api_token)?;
