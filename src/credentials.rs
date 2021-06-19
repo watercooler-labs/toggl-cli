@@ -1,4 +1,6 @@
+use crate::models;
 use keyring::Keyring;
+use models::ResultWithDefaultError;
 
 pub struct Credentials { pub api_token: String }
 
@@ -8,14 +10,12 @@ impl Credentials {
         return Keyring::new("togglcli", "default")
     }
 
-    pub fn read() -> Option<Credentials> {
-        return match Credentials::get_keyring().get_password() {
-            Ok(api_token) => Some(Credentials { api_token: api_token }),
-            Err(_) => None,
-        }
+    pub fn read() -> ResultWithDefaultError<Credentials> {
+        let api_token = Credentials::get_keyring().get_password()?;
+        return Ok(Credentials { api_token: api_token });
     }
 
-    pub fn persist(api_token: String) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn persist(api_token: String) -> ResultWithDefaultError<()> {
         Credentials::get_keyring().set_password(api_token.as_str())?;
         return Ok(());
     }

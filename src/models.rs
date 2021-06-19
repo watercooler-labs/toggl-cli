@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 
+pub type ResultWithDefaultError<T> = Result<T, Box<dyn std::error::Error>>;
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct User {
     pub api_token: String,

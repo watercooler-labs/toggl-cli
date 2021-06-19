@@ -11,86 +11,69 @@ use arguments::Command::Running;
 use arguments::Command::Stop;
 use arguments::Command::Start;
 use credentials::Credentials;
+use models::ResultWithDefaultError;
 use structopt::StructOpt;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> ResultWithDefaultError<()> {
     let parsed_args = CommandLineArguments::from_args();
     return execute_subcommand(parsed_args.cmd).await;
 }
 
-pub async fn execute_subcommand(command: Option<Command>) -> Result<(), Box<dyn std::error::Error>> {
-
+pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultError<()> {
     match command {
-        None => ensure_authentication(display_running_time_entry).await,
+        None => display_running_time_entry().await?,
         Some(subcommand) => match subcommand {
-            Current | Running => ensure_authentication(display_running_time_entry).await,
-            Stop => ensure_authentication(stop_running_time_entry).await,
+            Current | Running => display_running_time_entry().await?,
+            Stop => stop_running_time_entry().await?,
             Start { description: _, project: _ } => (),
-            Auth { api_token } => {
-                let credentials = Credentials { api_token: api_token };
-                let api_client = ApiClient::from_credentials(credentials)?;
-                authenticate(api_client).await
-            }
+            Auth { api_token } => authenticate(api_token).await?
         }
     }
 
     Ok(())
 }
 
-async fn ensure_authentication<F: std::future::Future<Output = ()>>(callback: fn(ApiClient) -> F) {
-    match Credentials::read() {
-        Some(credentials) => {
-            match ApiClient::from_credentials(credentials) {
-                Err(err) => println!("{}", err),
-                Ok(api_client) => callback(api_client).await
-            }
-        } None => {
+fn ensure_authentication() -> ResultWithDefaultError<ApiClient> {
+    return match Credentials::read() {
+        Ok(credentials) => ApiClient::from_credentials(credentials),
+        Err(err) => {
             println!("Please set your API token first by calling toggl auth <API_TOKEN>.");
             println!("You can find your API token at https://track.toggl.com/profile.");
+            return Err(err)
         }
     }
 }
 
-async fn authenticate(api_client: ApiClient) {
-    match api_client.get_user().await {
-        Err(api_error) => println!("{}", api_error),
-        Ok(user) => {
-            match Credentials::persist(user.api_token) {
-                Err(credential_error) => println!("{}", credential_error),
-                Ok(_) => println!("Successfully authenticated for user with email {}", user.email)
-            }
-        }
-    }
+async fn authenticate(api_token: String) -> ResultWithDefaultError<()> {
+    let credentials = Credentials { api_token: api_token };
+    let api_client = ApiClient::from_credentials(credentials)?;
+    let user = api_client.get_user().await?;
+    let _credentials = Credentials::persist(user.api_token)?;
+    println!("Successfully authenticated for user with email {}", user.email);
+
+    return Ok(());
 }
 
-async fn display_running_time_entry(api_client: ApiClient) {
-    let running_time_entry = api_client.get_running_time_entry().await;
-    match running_time_entry {
-        Err(error) => println!("{:?}", error),
-        Ok(running_time_entry) => {
-            match running_time_entry {
-                None => println!("No time entry is running at the moment"),
-                Some(running_time_entry) => println!("{}", running_time_entry.description)
-            }
-        }
+async fn display_running_time_entry() -> ResultWithDefaultError<()> {
+    let api_client = ensure_authentication()?;
+    match api_client.get_running_time_entry().await? {
+        None => println!("No time entry is running at the moment"),
+        Some(running_time_entry) => println!("{}", running_time_entry.description)
     }
+
+    return Ok(());
 }
 
-async fn stop_running_time_entry(api_client: ApiClient) {
-    let running_time_entry = api_client.get_running_time_entry().await;
-    match running_time_entry {
-        Err(error) => println!("{:?}", error),
-        Ok(running_time_entry) => {
-            match running_time_entry {
-                None => println!("No time entry is running at the moment"),
-                Some(time_entry) => {
-                    match api_client.stop_time_entry(time_entry).await {
-                        Err(stop_error) => println!("{:?}", stop_error),
-                        Ok(_) => println!("Time entry stopped successfully")
-                    }
-                }
-            }
+async fn stop_running_time_entry() -> ResultWithDefaultError<()> {
+    let api_client = ensure_authentication()?;
+    match api_client.get_running_time_entry().await? {
+        None => println!("No time entry is running at the moment"),
+        Some(running_time_entry) => {
+            let _stopped_time_entry = api_client.stop_time_entry(running_time_entry).await?;
+            println!("Time entry stopped successfully");
         }
     }
+
+    return Ok(());
 }
