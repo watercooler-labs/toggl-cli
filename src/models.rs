@@ -1,5 +1,5 @@
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
-use chrono::{DateTime, Utc};
 
 pub type ResultWithDefaultError<T> = Result<T, Box<dyn std::error::Error>>;
 
@@ -9,11 +9,11 @@ pub struct User {
     pub email: String,
     pub fullname: Option<String>,
     pub timezone: String,
-    pub default_workspace_id: i64
+    pub default_workspace_id: i64,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct TimeEntry {    
+pub struct TimeEntry {
     pub id: i64,
     pub description: String,
     pub start: DateTime<Utc>,
@@ -23,4 +23,39 @@ pub struct TimeEntry {
     pub workspace_id: i64,
     pub project_id: Option<i64>,
     pub task_id: Option<i64>,
+}
+
+impl TimeEntry {
+    pub fn get_description(&self) -> String {
+        match self.description.as_ref() {
+            "" => "(no description)".to_string(),
+            _ => self.description.to_string(),
+        }
+    }
+
+    pub fn get_duration(&self) -> Duration {
+        match self.stop {
+            Some(_) => Duration::seconds(self.duration),
+            None => Utc::now().signed_duration_since(self.start),
+        }
+    }
+
+    pub fn get_duration_hmmss(&self) -> String {
+        let duration = self.get_duration();
+        return format!(
+            "{}:{:02}:{:02}",
+            duration.num_hours(),
+            duration.num_minutes() % 60,
+            duration.num_seconds() % 60
+        );
+    }
+
+    pub fn get_summary(&self) -> String {
+        let summary = format!(
+            "[{}] - {}",
+            self.get_duration_hmmss(),
+            self.get_description()
+        );
+        return summary;
+    }
 }
