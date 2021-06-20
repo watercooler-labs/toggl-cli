@@ -1,4 +1,5 @@
 use chrono::{DateTime, Duration, Utc};
+use colored::*;
 use serde::{Deserialize, Serialize};
 
 pub type ResultWithDefaultError<T> = Result<T, Box<dyn std::error::Error>>;
@@ -49,13 +50,18 @@ impl TimeEntry {
             duration.num_seconds() % 60
         );
     }
+
+    pub fn is_running(&self) -> bool {
+        return self.duration.is_negative();
+    }
 }
 
 impl std::fmt::Display for TimeEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let summary = format!(
-            "[{}] - {}",
-            self.get_duration_hmmss(),
+            "[{}]{} – {}",
+            self.get_duration_hmmss().green(),
+            if self.is_running() { "*" } else { "" },
             self.get_description()
         );
         write!(f, "{}", summary)

@@ -4,7 +4,7 @@ use structopt::StructOpt;
 #[structopt(name = "toggl", about = "Toggl command line app.")]
 pub struct CommandLineArguments {
     #[structopt(subcommand)]
-    pub cmd: Option<Command>
+    pub cmd: Option<Command>,
 }
 
 #[derive(Debug, StructOpt)]
@@ -13,11 +13,13 @@ pub enum Command {
     Running,
     Stop,
     #[structopt()]
-    Auth { api_token: String },
+    Auth {
+        api_token: String,
+    },
     Start {
         #[structopt(short, long)]
         description: String,
         #[structopt(short, long)]
-        project: String
-    }
+        project: String,
+    },
 }
