@@ -6,11 +6,12 @@ use api::ApiClient;
 use arguments::Command;
 use arguments::Command::Auth;
 use arguments::Command::Current;
+use arguments::Command::List;
 use arguments::Command::Running;
 use arguments::Command::Start;
 use arguments::Command::Stop;
 use arguments::CommandLineArguments;
-use colored::*;
+use colored::Colorize;
 use credentials::Credentials;
 use models::ResultWithDefaultError;
 use structopt::StructOpt;
@@ -32,6 +33,7 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
                 project: _,
             } => (),
             Auth { api_token } => authenticate(api_token).await?,
+            List => display_time_entries().await?,
         },
     }
 
@@ -85,6 +87,22 @@ async fn stop_running_time_entry() -> ResultWithDefaultError<()> {
             let _stopped_time_entry = api_client.stop_time_entry(running_time_entry).await?;
             println!("{}", "Time entry stopped successfully".green());
         }
+    }
+
+    return Ok(());
+}
+
+async fn display_time_entries() -> ResultWithDefaultError<()> {
+    let api_client = ensure_authentication()?;
+    match api_client.get_time_entries().await {
+        Err(error) => println!(
+            "{}\n{}",
+            "Couldn't fetch time entries the from API".red(),
+            error
+        ),
+        Ok(time_entries) => time_entries
+            .iter()
+            .for_each(|time_entry| println!("{}", time_entry)),
     }
 
     return Ok(());
