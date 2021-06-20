@@ -18,6 +18,8 @@ use credentials::Credentials;
 use models::{ResultWithDefaultError, TimeEntry};
 use structopt::StructOpt;
 
+const CLIENT_NAME: &str = "github.com/heytherewill/toggl-cli";
+
 #[tokio::main]
 async fn main() -> ResultWithDefaultError<()> {
     let parsed_args = CommandLineArguments::from_args();
@@ -88,15 +90,7 @@ async fn continue_time_entry() -> ResultWithDefaultError<()> {
     match time_entries.first() {
         None => println!("{}", "No time entries in last 90 days".red()),
         Some(time_entry) => {
-            let start = Utc::now();
-            let continued_entry = api_client
-                .start_time_entry(TimeEntry {
-                    start,
-                    stop: None,
-                    duration: -start.timestamp(),
-                    ..time_entry.clone()
-                })
-                .await?;
+            let continued_entry = start_time_entry(time_entry.clone()).await?;
             println!(
                 "{}\n{}",
                 "Time entry continued successfully".green(),
@@ -112,7 +106,7 @@ async fn stop_running_time_entry() -> ResultWithDefaultError<()> {
     match api_client.get_running_time_entry().await? {
         None => println!("{}", "No time entry is running at the moment".yellow()),
         Some(running_time_entry) => {
-            let _stopped_time_entry = api_client.stop_time_entry(running_time_entry).await?;
+            let _stopped_time_entry = stop_time_entry(running_time_entry).await?;
             println!("{}", "Time entry stopped successfully".green());
         }
     }
@@ -135,4 +129,28 @@ async fn display_time_entries(count: Option<usize>) -> ResultWithDefaultError<()
     }
 
     Ok(())
+}
+
+async fn start_time_entry(time_entry: TimeEntry) -> ResultWithDefaultError<TimeEntry> {
+    let api_client = ensure_authentication()?;
+    let start = Utc::now();
+    let time_entry_to_create = TimeEntry {
+        start,
+        stop: None,
+        duration: -start.timestamp(),
+        created_with: Some(CLIENT_NAME.to_string()),
+        ..time_entry
+    };
+    return api_client.create_time_entry(time_entry_to_create).await;
+}
+
+async fn stop_time_entry(time_entry: TimeEntry) -> ResultWithDefaultError<TimeEntry> {
+    let api_client = ensure_authentication()?;
+    let stop_time = Utc::now();
+    let stopped_time_entry = TimeEntry {
+        stop: Some(stop_time),
+        duration: (stop_time - time_entry.start).num_seconds(),
+        ..time_entry
+    };
+    return api_client.update_time_entry(stopped_time_entry).await;
 }

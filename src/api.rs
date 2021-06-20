@@ -1,20 +1,17 @@
 use crate::credentials;
 use crate::models;
 use async_trait::async_trait;
-use chrono::Utc;
 use models::{ResultWithDefaultError, TimeEntry, User};
 use reqwest::{header, Client};
 use serde::{de, Serialize};
-
-const CLIENT_NAME: &str = "github.com/heytherewill/toggl-cli";
 
 #[async_trait]
 pub trait ApiClient {
     async fn get_user(&self) -> ResultWithDefaultError<User>;
     async fn get_running_time_entry(&self) -> ResultWithDefaultError<Option<TimeEntry>>;
     async fn get_time_entries(&self) -> ResultWithDefaultError<Vec<TimeEntry>>;
-    async fn start_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<TimeEntry>;
-    async fn stop_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<TimeEntry>;
+    async fn create_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<TimeEntry>;
+    async fn update_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<TimeEntry>;
 }
 
 pub struct V9ApiClient {
@@ -39,29 +36,14 @@ impl ApiClient for V9ApiClient {
         return self.get::<Vec<TimeEntry>>(url).await;
     }
 
-    async fn start_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<TimeEntry> {
+    async fn create_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<TimeEntry> {
         let url = format!("{}/time_entries", self.base_url);
-        let time_entry_to_create = TimeEntry {
-            created_with: Some(CLIENT_NAME.to_string()),
-            ..time_entry
-        };
-        return self
-            .post::<TimeEntry, TimeEntry>(url, &time_entry_to_create)
-            .await;
+        return self.post::<TimeEntry, TimeEntry>(url, &time_entry).await;
     }
 
-    async fn stop_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<TimeEntry> {
-        let stop_time = Utc::now();
-        let stopped_time_entry = TimeEntry {
-            stop: Some(stop_time),
-            duration: (stop_time - time_entry.start).num_seconds(),
-            ..time_entry
-        };
-
+    async fn update_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<TimeEntry> {
         let url = format!("{}/time_entries/{}", self.base_url, time_entry.id);
-        return self
-            .put::<TimeEntry, TimeEntry>(url, &stopped_time_entry)
-            .await;
+        return self.put::<TimeEntry, TimeEntry>(url, &time_entry).await;
     }
 }
 
