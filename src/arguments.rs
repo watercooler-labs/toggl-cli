@@ -23,4 +23,5 @@ pub enum Command {
         #[structopt(short, long)]
         project: String,
     },
+    Continue,
 }

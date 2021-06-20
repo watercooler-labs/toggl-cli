@@ -24,6 +24,7 @@ pub struct TimeEntry {
     pub workspace_id: i64,
     pub project_id: Option<i64>,
     pub task_id: Option<i64>,
+    pub created_with: Option<String>,
 }
 
 impl TimeEntry {

@@ -5,15 +5,17 @@ mod models;
 use api::ApiClient;
 use arguments::Command;
 use arguments::Command::Auth;
+use arguments::Command::Continue;
 use arguments::Command::Current;
 use arguments::Command::List;
 use arguments::Command::Running;
 use arguments::Command::Start;
 use arguments::Command::Stop;
 use arguments::CommandLineArguments;
+use chrono::Utc;
 use colored::Colorize;
 use credentials::Credentials;
-use models::ResultWithDefaultError;
+use models::{ResultWithDefaultError, TimeEntry};
 use structopt::StructOpt;
 
 #[tokio::main]
@@ -32,6 +34,7 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
                 description: _,
                 project: _,
             } => (),
+            Continue => continue_time_entry().await?,
             Auth { api_token } => authenticate(api_token).await?,
             List => display_time_entries().await?,
         },
@@ -76,6 +79,31 @@ async fn display_running_time_entry() -> ResultWithDefaultError<()> {
         Some(running_time_entry) => println!("{}", running_time_entry),
     }
 
+    return Ok(());
+}
+
+async fn continue_time_entry() -> ResultWithDefaultError<()> {
+    let api_client = ensure_authentication()?;
+    let time_entries = api_client.get_time_entries().await?;
+    match time_entries.first() {
+        None => println!("{}", "No time entries in last 90 days".red()),
+        Some(time_entry) => {
+            let start = Utc::now();
+            let continued_entry = api_client
+                .start_time_entry(TimeEntry {
+                    start,
+                    stop: None,
+                    duration: -start.timestamp(),
+                    ..time_entry.clone()
+                })
+                .await?;
+            println!(
+                "{}\n{}",
+                "Time entry continued successfully".green(),
+                continued_entry
+            )
+        }
+    }
     return Ok(());
 }
 
