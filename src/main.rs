@@ -2,7 +2,7 @@ mod api;
 mod arguments;
 mod credentials;
 mod models;
-use api::ApiClient;
+use api::{ApiClient, V9ApiClient};
 use arguments::Command;
 use arguments::Command::Auth;
 use arguments::Command::Continue;
@@ -43,9 +43,9 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
     Ok(())
 }
 
-fn ensure_authentication() -> ResultWithDefaultError<ApiClient> {
+fn ensure_authentication() -> ResultWithDefaultError<impl ApiClient> {
     return match Credentials::read() {
-        Ok(credentials) => ApiClient::from_credentials(credentials),
+        Ok(credentials) => V9ApiClient::from_credentials(credentials),
         Err(err) => {
             println!(
                 "{}\n{} {}",
@@ -60,7 +60,7 @@ fn ensure_authentication() -> ResultWithDefaultError<ApiClient> {
 
 async fn authenticate(api_token: String) -> ResultWithDefaultError<()> {
     let credentials = Credentials { api_token };
-    let api_client = ApiClient::from_credentials(credentials)?;
+    let api_client = V9ApiClient::from_credentials(credentials)?;
     let user = api_client.get_user().await?;
     let _credentials = Credentials::persist(user.api_token)?;
     println!(
