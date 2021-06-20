@@ -8,16 +8,16 @@ pub struct Credentials {
 
 impl Credentials {
     fn get_keyring() -> Keyring<'static> {
-        return Keyring::new("togglcli", "default");
+        Keyring::new("togglcli", "default")
     }
 
     pub fn read() -> ResultWithDefaultError<Credentials> {
         let api_token = Credentials::get_keyring().get_password()?;
-        return Ok(Credentials { api_token });
+        Ok(Credentials { api_token })
     }
 
     pub fn persist(api_token: String) -> ResultWithDefaultError<()> {
         Credentials::get_keyring().set_password(api_token.as_str())?;
-        return Ok(());
+        Ok(())
     }
 }

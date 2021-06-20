@@ -53,7 +53,7 @@ impl TimeEntry {
     }
 
     pub fn is_running(&self) -> bool {
-        return self.duration.is_negative();
+        self.duration.is_negative()
     }
 }
 
