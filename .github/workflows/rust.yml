@@ -43,9 +43,11 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Install build tools
+        run: sudo apt install -y libdbus-1-dev
+
       - name: Run cargo test
         uses: actions-rs/cargo@v1
-        continue-on-error: true  # WARNING: only for this example, remove it!
         with:
           command: test
 
