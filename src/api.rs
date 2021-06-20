@@ -10,6 +10,8 @@ pub struct ApiClient {
     base_url: String,
 }
 
+const CLIENT_NAME: &'static str = "github.com/heytherewill/toggl-cli";
+
 impl ApiClient {
     pub fn from_credentials(
         credentials: credentials::Credentials,
@@ -43,15 +45,30 @@ impl ApiClient {
         return self.get::<Vec<TimeEntry>>(url).await;
     }
 
+    pub async fn start_time_entry(
+        &self,
+        time_entry: TimeEntry,
+    ) -> ResultWithDefaultError<TimeEntry> {
+        let url = format!("{}/time_entries", self.base_url);
+        let time_entry_to_create = TimeEntry {
+            created_with: Some(CLIENT_NAME.to_string()),
+            ..time_entry
+        };
+        return self
+            .post::<TimeEntry, TimeEntry>(url, &time_entry_to_create)
+            .await;
+    }
+
     pub async fn stop_time_entry(
         &self,
         time_entry: TimeEntry,
     ) -> ResultWithDefaultError<TimeEntry> {
-        let mut stopped_time_entry = time_entry.clone();
         let stop_time = Utc::now();
-        let duration = stop_time - stopped_time_entry.start;
-        stopped_time_entry.stop = Some(stop_time);
-        stopped_time_entry.duration = duration.num_seconds();
+        let stopped_time_entry = TimeEntry {
+            stop: Some(stop_time),
+            duration: (stop_time - time_entry.start).num_seconds(),
+            ..time_entry
+        };
 
         let url = format!("{}/time_entries/{}", self.base_url, time_entry.id);
         return self
@@ -71,6 +88,16 @@ impl ApiClient {
         body: &Body,
     ) -> ResultWithDefaultError<T> {
         let result = self.http_client.put(url).json(body).send().await?;
+        let deserialized_json = result.json::<T>().await?;
+        return Ok(deserialized_json);
+    }
+
+    async fn post<T: de::DeserializeOwned, Body: Serialize>(
+        &self,
+        url: String,
+        body: &Body,
+    ) -> ResultWithDefaultError<T> {
+        let result = self.http_client.post(url).json(body).send().await?;
         let deserialized_json = result.json::<T>().await?;
         return Ok(deserialized_json);
     }

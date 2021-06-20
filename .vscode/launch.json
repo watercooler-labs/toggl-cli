@@ -1,0 +1,80 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Default / Current",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=toggl-cli",
+          "--package=toggl-cli"
+        ],
+        "filter": {
+          "name": "toggl-cli",
+          "kind": "bin"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Stop",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=toggl-cli",
+          "--package=toggl-cli"
+        ],
+        "filter": {
+          "name": "toggl-cli",
+          "kind": "bin"
+        }
+      },
+      "args": ["stop"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Continue",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=toggl-cli",
+          "--package=toggl-cli"
+        ],
+        "filter": {
+          "name": "toggl-cli",
+          "kind": "bin"
+        }
+      },
+      "args": ["continue"],
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "List",
+      "cargo": {
+        "args": [
+          "build",
+          "--bin=toggl-cli",
+          "--package=toggl-cli"
+        ],
+        "filter": {
+          "name": "toggl-cli",
+          "kind": "bin"
+        }
+      },
+      "args": ["list"],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
