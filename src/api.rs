@@ -6,7 +6,7 @@ use models::{ResultWithDefaultError, TimeEntry, User};
 use reqwest::{header, Client};
 use serde::{de, Serialize};
 
-const CLIENT_NAME: &'static str = "github.com/heytherewill/toggl-cli";
+const CLIENT_NAME: &str = "github.com/heytherewill/toggl-cli";
 
 #[async_trait]
 pub trait ApiClient {
