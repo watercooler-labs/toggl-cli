@@ -6,7 +6,7 @@ use models::{ResultWithDefaultError, TimeEntry, User};
 use reqwest::{header, Client};
 use serde::{de, Serialize};
 
-const CLIENT_NAME: &'static str = "github.com/heytherewill/toggl-cli";
+const CLIENT_NAME: &str = "github.com/heytherewill/toggl-cli";
 
 #[async_trait]
 pub trait ApiClient {
@@ -80,13 +80,13 @@ impl V9ApiClient {
             http_client,
             base_url: "https://track.toggl.com/api/v9".to_string(),
         };
-        return Ok(api_client);
+        Ok(api_client)
     }
 
     async fn get<T: de::DeserializeOwned>(&self, url: String) -> ResultWithDefaultError<T> {
         let result = self.http_client.get(url).send().await?;
         let deserialized_json = result.json::<T>().await?;
-        return Ok(deserialized_json);
+        Ok(deserialized_json)
     }
 
     async fn put<T: de::DeserializeOwned, Body: Serialize>(
@@ -96,7 +96,7 @@ impl V9ApiClient {
     ) -> ResultWithDefaultError<T> {
         let result = self.http_client.put(url).json(body).send().await?;
         let deserialized_json = result.json::<T>().await?;
-        return Ok(deserialized_json);
+        Ok(deserialized_json)
     }
 
     async fn post<T: de::DeserializeOwned, Body: Serialize>(
@@ -106,6 +106,6 @@ impl V9ApiClient {
     ) -> ResultWithDefaultError<T> {
         let result = self.http_client.post(url).json(body).send().await?;
         let deserialized_json = result.json::<T>().await?;
-        return Ok(deserialized_json);
+        Ok(deserialized_json)
     }
 }

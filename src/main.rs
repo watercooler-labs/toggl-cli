@@ -69,7 +69,7 @@ async fn authenticate(api_token: String) -> ResultWithDefaultError<()> {
         user.email.green().bold(),
     );
 
-    return Ok(());
+    Ok(())
 }
 
 async fn display_running_time_entry() -> ResultWithDefaultError<()> {
@@ -79,7 +79,7 @@ async fn display_running_time_entry() -> ResultWithDefaultError<()> {
         Some(running_time_entry) => println!("{}", running_time_entry),
     }
 
-    return Ok(());
+    Ok(())
 }
 
 async fn continue_time_entry() -> ResultWithDefaultError<()> {
@@ -104,7 +104,7 @@ async fn continue_time_entry() -> ResultWithDefaultError<()> {
             )
         }
     }
-    return Ok(());
+    Ok(())
 }
 
 async fn stop_running_time_entry() -> ResultWithDefaultError<()> {
@@ -117,7 +117,7 @@ async fn stop_running_time_entry() -> ResultWithDefaultError<()> {
         }
     }
 
-    return Ok(());
+    Ok(())
 }
 
 async fn display_time_entries() -> ResultWithDefaultError<()> {
@@ -133,5 +133,5 @@ async fn display_time_entries() -> ResultWithDefaultError<()> {
             .for_each(|time_entry| println!("{}", time_entry)),
     }
 
-    return Ok(());
+    Ok(())
 }
