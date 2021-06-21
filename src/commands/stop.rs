@@ -3,7 +3,7 @@ use crate::models;
 use api::ApiClient;
 use chrono::Utc;
 use colored::Colorize;
-use models::{ResultWithDefaultError, TimeEntry};
+use models::ResultWithDefaultError;
 
 pub struct StopCommand;
 
@@ -13,11 +13,7 @@ impl StopCommand {
             None => println!("{}", "No time entry is running at the moment".yellow()),
             Some(running_time_entry) => {
                 let stop_time = Utc::now();
-                let stopped_time_entry = TimeEntry {
-                    stop: Some(stop_time),
-                    duration: (stop_time - running_time_entry.start).num_seconds(),
-                    ..running_time_entry
-                };
+                let stopped_time_entry = running_time_entry.as_stopped_time_entry(stop_time);
                 let _ = api_client.update_time_entry(stopped_time_entry).await?;
                 println!("{}", "Time entry stopped successfully".green());
             }

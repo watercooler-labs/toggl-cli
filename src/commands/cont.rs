@@ -1,10 +1,9 @@
 use crate::api;
-use crate::constants;
 use crate::models;
 use api::ApiClient;
 use chrono::Utc;
 use colored::Colorize;
-use models::{ResultWithDefaultError, TimeEntry};
+use models::ResultWithDefaultError;
 
 pub struct ContinueCommand;
 
@@ -14,14 +13,8 @@ impl ContinueCommand {
         match time_entries.first() {
             None => println!("{}", "No time entries in last 90 days".red()),
             Some(time_entry) => {
-                let start = Utc::now();
-                let time_entry_to_create = TimeEntry {
-                    start,
-                    stop: None,
-                    duration: -start.timestamp(),
-                    created_with: Some(constants::CLIENT_NAME.to_string()),
-                    ..time_entry.clone()
-                };
+                let start_time = Utc::now();
+                let time_entry_to_create = time_entry.as_running_time_entry(start_time);
                 let continued_entry = api_client.create_time_entry(time_entry_to_create).await?;
                 println!(
                     "{}\n{}",
