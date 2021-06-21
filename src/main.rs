@@ -24,6 +24,7 @@ use commands::stop::StopCommand;
 use credentials::{Credentials, CredentialsStorage, KeyringStorage};
 use keyring::Keyring;
 use models::ResultWithDefaultError;
+use std::io;
 use structopt::StructOpt;
 
 #[tokio::main]
@@ -47,7 +48,7 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
             Auth { api_token } => {
                 let credentials = Credentials { api_token };
                 let api_client = V9ApiClient::from_credentials(credentials)?;
-                AuthenticationCommand::execute(api_client, get_storage()).await?
+                AuthenticationCommand::execute(io::stdout(), api_client, get_storage()).await?
             }
         },
     }
