@@ -12,29 +12,29 @@ pub enum ApiError {
 impl Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let summary = match self {
-            ApiError::Network =>  format!("{}", constants::NETWORK_ERROR_MESSAGE.red()),
+            ApiError::Network => format!("{}", constants::NETWORK_ERROR_MESSAGE.red()),
             ApiError::Deserialization => format!(
-                "{}\n{} {}", 
+                "{}\n{} {}",
                 constants::DESERIALIZATION_ERROR_MESSAGE.red(),
                 constants::OUTDATED_APP_ERROR_MESSAGE.blue().bold(),
                 constants::ISSUE_LINK.blue().bold().underline()
-            )
+            ),
         };
         write!(f, "{}", summary)
     }
 }
 
-impl Error for ApiError { }
+impl Error for ApiError {}
 
 #[derive(Debug)]
 pub enum StorageError {
-    Write
+    Write,
 }
 
 impl Display for StorageError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let summary = format!(
-            "{}\n{} {}", 
+            "{}\n{} {}",
             constants::CREDENTIALS_ACCESS_ERROR.red(),
             constants::OUTDATED_APP_ERROR_MESSAGE.blue().bold(),
             constants::ISSUE_LINK.blue().bold().underline()
@@ -43,4 +43,4 @@ impl Display for StorageError {
     }
 }
 
-impl Error for StorageError { }
+impl Error for StorageError {}

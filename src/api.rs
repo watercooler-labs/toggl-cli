@@ -3,11 +3,11 @@ use crate::error;
 use crate::models;
 use async_trait::async_trait;
 use error::ApiError;
+#[cfg(test)]
+use mockall::automock;
 use models::{ResultWithDefaultError, TimeEntry, User};
 use reqwest::{header, Client, RequestBuilder, Response};
 use serde::{de, Serialize};
-#[cfg(test)]
-use mockall::automock;
 
 #[cfg_attr(test, automock)]
 #[async_trait]
@@ -99,14 +99,16 @@ impl V9ApiClient {
     async fn safe_send(request: RequestBuilder) -> ResultWithDefaultError<Response> {
         match request.send().await {
             Err(_) => Err(Box::new(ApiError::Network)),
-            Ok(response) => Ok(response)
+            Ok(response) => Ok(response),
         }
     }
 
-    async fn safe_deserialize<T: de::DeserializeOwned>(response: Response) -> ResultWithDefaultError<T> {
+    async fn safe_deserialize<T: de::DeserializeOwned>(
+        response: Response,
+    ) -> ResultWithDefaultError<T> {
         match response.json::<T>().await {
             Err(_) => Err(Box::new(ApiError::Deserialization)),
-            Ok(response) => Ok(response)
+            Ok(response) => Ok(response),
         }
     }
 }
