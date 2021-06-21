@@ -36,19 +36,19 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
     match command {
         None => RunningTimeEntryCommand::execute(ensure_authentication()?).await?,
         Some(subcommand) => match subcommand {
-            Current | Running => RunningTimeEntryCommand::execute(ensure_authentication()?).await?,
             Stop => StopCommand::execute(ensure_authentication()?).await?,
+            Continue => ContinueCommand::execute(ensure_authentication()?).await?,
+            List { number } => ListCommand::execute(ensure_authentication()?, number).await?,
+            Current | Running => RunningTimeEntryCommand::execute(ensure_authentication()?).await?,
             Start {
                 description: _,
                 project: _,
             } => (),
-            Continue => ContinueCommand::execute(ensure_authentication()?).await?,
             Auth { api_token } => {
                 let credentials = Credentials { api_token };
                 let api_client = V9ApiClient::from_credentials(credentials)?;
                 AuthenticationCommand::execute(api_client, credentials_storage).await?
             },
-            List { number } => ListCommand::execute(ensure_authentication()?, number).await?,
         },
     }
 
