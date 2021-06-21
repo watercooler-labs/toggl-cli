@@ -10,7 +10,11 @@ pub struct CommandLineArguments {
 #[derive(Debug, StructOpt)]
 pub enum Command {
     Current,
-    List,
+    #[structopt()]
+    List {
+        #[structopt(short, long)]
+        number: Option<usize>,
+    },
     Running,
     Stop,
     #[structopt()]
