@@ -1,9 +1,9 @@
 mod api;
 mod arguments;
-mod credentials;
-mod models;
 mod commands;
 mod constants;
+mod credentials;
+mod models;
 use api::{ApiClient, V9ApiClient};
 use arguments::Command;
 use arguments::Command::Auth;
@@ -14,12 +14,12 @@ use arguments::Command::Running;
 use arguments::Command::Start;
 use arguments::Command::Stop;
 use arguments::CommandLineArguments;
+use colored::Colorize;
 use commands::auth::AuthenticationCommand;
 use commands::cont::ContinueCommand;
 use commands::list::ListCommand;
-use commands::stop::StopCommand;
 use commands::running::RunningTimeEntryCommand;
-use colored::Colorize;
+use commands::stop::StopCommand;
 use credentials::{Credentials, CredentialsStorage, KeyringStorage};
 use keyring::Keyring;
 use models::ResultWithDefaultError;
@@ -47,7 +47,7 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
                 let credentials = Credentials { api_token };
                 let api_client = V9ApiClient::from_credentials(credentials)?;
                 AuthenticationCommand::execute(api_client, get_storage()).await?
-            },
+            }
         },
     }
 

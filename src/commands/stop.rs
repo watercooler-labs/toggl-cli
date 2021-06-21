@@ -1,9 +1,9 @@
-use crate::models;
 use crate::api;
+use crate::models;
 use api::ApiClient;
+use chrono::Utc;
 use colored::Colorize;
 use models::{ResultWithDefaultError, TimeEntry};
-use chrono::Utc;
 
 pub struct StopCommand;
 
@@ -22,7 +22,7 @@ impl StopCommand {
                 println!("{}", "Time entry stopped successfully".green());
             }
         }
-    
+
         Ok(())
     }
 }

@@ -1,5 +1,5 @@
-use crate::models;
 use crate::api;
+use crate::models;
 use api::ApiClient;
 use colored::Colorize;
 use models::ResultWithDefaultError;
@@ -7,7 +7,10 @@ use models::ResultWithDefaultError;
 pub struct ListCommand;
 
 impl ListCommand {
-    pub async fn execute(api_client: impl ApiClient, count: Option<usize>) -> ResultWithDefaultError<()> {
+    pub async fn execute(
+        api_client: impl ApiClient,
+        count: Option<usize>,
+    ) -> ResultWithDefaultError<()> {
         match api_client.get_time_entries().await {
             Err(error) => println!(
                 "{}\n{}",

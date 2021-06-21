@@ -14,7 +14,7 @@ pub trait CredentialsStorage {
 }
 
 pub struct KeyringStorage {
-    keyring: Keyring<'static>
+    keyring: Keyring<'static>,
 }
 
 impl KeyringStorage {
