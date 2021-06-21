@@ -3,6 +3,7 @@ mod arguments;
 mod commands;
 mod constants;
 mod credentials;
+mod error;
 mod models;
 use api::{ApiClient, V9ApiClient};
 use arguments::Command;
