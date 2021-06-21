@@ -3,6 +3,7 @@ mod arguments;
 mod credentials;
 mod models;
 mod commands;
+mod constants;
 use api::{ApiClient, V9ApiClient};
 use arguments::Command;
 use arguments::Command::Auth;
@@ -14,17 +15,15 @@ use arguments::Command::Start;
 use arguments::Command::Stop;
 use arguments::CommandLineArguments;
 use commands::auth::AuthenticationCommand;
+use commands::cont::ContinueCommand;
 use commands::list::ListCommand;
 use commands::stop::StopCommand;
 use commands::running::RunningTimeEntryCommand;
-use chrono::Utc;
 use colored::Colorize;
 use credentials::{Credentials, CredentialsStorage, KeyringStorage};
 use keyring::Keyring;
-use models::{ResultWithDefaultError, TimeEntry};
+use models::ResultWithDefaultError;
 use structopt::StructOpt;
-
-const CLIENT_NAME: &str = "github.com/heytherewill/toggl-cli";
 
 #[tokio::main]
 async fn main() -> ResultWithDefaultError<()> {
@@ -43,7 +42,7 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
                 description: _,
                 project: _,
             } => (),
-            Continue => continue_time_entry().await?,
+            Continue => ContinueCommand::execute(ensure_authentication()?).await?,
             Auth { api_token } => {
                 let credentials = Credentials { api_token };
                 let api_client = V9ApiClient::from_credentials(credentials)?;
@@ -70,36 +69,6 @@ fn ensure_authentication() -> ResultWithDefaultError<impl ApiClient> {
             return Err(err);
         }
     };
-}
-
-async fn continue_time_entry() -> ResultWithDefaultError<()> {
-    let api_client = ensure_authentication()?;
-    let time_entries = api_client.get_time_entries().await?;
-    match time_entries.first() {
-        None => println!("{}", "No time entries in last 90 days".red()),
-        Some(time_entry) => {
-            let continued_entry = start_time_entry(time_entry.clone()).await?;
-            println!(
-                "{}\n{}",
-                "Time entry continued successfully".green(),
-                continued_entry
-            )
-        }
-    }
-    Ok(())
-}
-
-async fn start_time_entry(time_entry: TimeEntry) -> ResultWithDefaultError<TimeEntry> {
-    let api_client = ensure_authentication()?;
-    let start = Utc::now();
-    let time_entry_to_create = TimeEntry {
-        start,
-        stop: None,
-        duration: -start.timestamp(),
-        created_with: Some(CLIENT_NAME.to_string()),
-        ..time_entry
-    };
-    return api_client.create_time_entry(time_entry_to_create).await;
 }
 
 fn get_storage() -> impl CredentialsStorage {
