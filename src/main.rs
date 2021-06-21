@@ -32,14 +32,13 @@ async fn main() -> ResultWithDefaultError<()> {
 }
 
 pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultError<()> {
-    let credentials_storage = get_storage();
     match command {
-        None => RunningTimeEntryCommand::execute(ensure_authentication()?).await?,
+        None => RunningTimeEntryCommand::execute(get_api_client()?).await?,
         Some(subcommand) => match subcommand {
-            Stop => StopCommand::execute(ensure_authentication()?).await?,
-            Continue => ContinueCommand::execute(ensure_authentication()?).await?,
-            List { number } => ListCommand::execute(ensure_authentication()?, number).await?,
-            Current | Running => RunningTimeEntryCommand::execute(ensure_authentication()?).await?,
+            Stop => StopCommand::execute(get_api_client()?).await?,
+            Continue => ContinueCommand::execute(get_api_client()?).await?,
+            List { number } => ListCommand::execute(get_api_client()?, number).await?,
+            Current | Running => RunningTimeEntryCommand::execute(get_api_client()?).await?,
             Start {
                 description: _,
                 project: _,
@@ -47,7 +46,7 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
             Auth { api_token } => {
                 let credentials = Credentials { api_token };
                 let api_client = V9ApiClient::from_credentials(credentials)?;
-                AuthenticationCommand::execute(api_client, credentials_storage).await?
+                AuthenticationCommand::execute(api_client, get_storage()).await?
             },
         },
     }
@@ -55,7 +54,7 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
     Ok(())
 }
 
-fn ensure_authentication() -> ResultWithDefaultError<impl ApiClient> {
+fn get_api_client() -> ResultWithDefaultError<impl ApiClient> {
     let credentials_storage = get_storage();
     return match credentials_storage.read() {
         Ok(credentials) => V9ApiClient::from_credentials(credentials),
