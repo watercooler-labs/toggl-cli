@@ -14,6 +14,7 @@ use arguments::Command::Start;
 use arguments::Command::Stop;
 use arguments::CommandLineArguments;
 use commands::auth::AuthenticationCommand;
+use commands::list::ListCommand;
 use commands::running::RunningTimeEntryCommand;
 use chrono::Utc;
 use colored::Colorize;
@@ -47,7 +48,7 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
                 let api_client = V9ApiClient::from_credentials(credentials)?;
                 AuthenticationCommand::execute(api_client, credentials_storage).await?
             },
-            List { number } => display_time_entries(number).await?,
+            List { number } => ListCommand::execute(ensure_authentication()?, number).await?,
         },
     }
 
@@ -95,23 +96,6 @@ async fn stop_running_time_entry() -> ResultWithDefaultError<()> {
             let _stopped_time_entry = stop_time_entry(running_time_entry).await?;
             println!("{}", "Time entry stopped successfully".green());
         }
-    }
-
-    Ok(())
-}
-
-async fn display_time_entries(count: Option<usize>) -> ResultWithDefaultError<()> {
-    let api_client = ensure_authentication()?;
-    match api_client.get_time_entries().await {
-        Err(error) => println!(
-            "{}\n{}",
-            "Couldn't fetch time entries the from API".red(),
-            error
-        ),
-        Ok(time_entries) => time_entries
-            .iter()
-            .take(count.unwrap_or(usize::max_value()))
-            .for_each(|time_entry| println!("{}", time_entry)),
     }
 
     Ok(())
