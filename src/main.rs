@@ -120,7 +120,7 @@ async fn stop_running_time_entry() -> ResultWithDefaultError<()> {
     Ok(())
 }
 
-async fn display_time_entries(count: i32) -> ResultWithDefaultError<()> {
+async fn display_time_entries(count: Option<usize>) -> ResultWithDefaultError<()> {
     let api_client = ensure_authentication()?;
     match api_client.get_time_entries().await {
         Err(error) => println!(
@@ -130,11 +130,7 @@ async fn display_time_entries(count: i32) -> ResultWithDefaultError<()> {
         ),
         Ok(time_entries) => time_entries
             .iter()
-            .take(if count.is_positive() {
-                count as usize
-            } else {
-                time_entries.len()
-            })
+            .take(count.unwrap_or(usize::max_value()))
             .for_each(|time_entry| println!("{}", time_entry)),
     }
 

@@ -12,8 +12,8 @@ pub enum Command {
     Current,
     #[structopt()]
     List {
-        #[structopt(short, long, default_value = "0")]
-        number: i32,
+        #[structopt(short, long)]
+        number: Option<usize>,
     },
     Running,
     Stop,
