@@ -14,6 +14,7 @@ use arguments::Command::Start;
 use arguments::Command::Stop;
 use arguments::CommandLineArguments;
 use commands::auth::AuthenticationCommand;
+use commands::running::RunningTimeEntryCommand;
 use chrono::Utc;
 use colored::Colorize;
 use credentials::{Credentials, CredentialsStorage, KeyringStorage};
@@ -32,9 +33,9 @@ async fn main() -> ResultWithDefaultError<()> {
 pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultError<()> {
     let credentials_storage = get_storage();
     match command {
-        None => display_running_time_entry().await?,
+        None => RunningTimeEntryCommand::execute(ensure_authentication()?).await?,
         Some(subcommand) => match subcommand {
-            Current | Running => display_running_time_entry().await?,
+            Current | Running => RunningTimeEntryCommand::execute(ensure_authentication()?).await?,
             Stop => stop_running_time_entry().await?,
             Start {
                 description: _,
@@ -67,16 +68,6 @@ fn ensure_authentication() -> ResultWithDefaultError<impl ApiClient> {
             return Err(err);
         }
     };
-}
-
-async fn display_running_time_entry() -> ResultWithDefaultError<()> {
-    let api_client = ensure_authentication()?;
-    match api_client.get_running_time_entry().await? {
-        None => println!("{}", "No time entry is running at the moment".yellow()),
-        Some(running_time_entry) => println!("{}", running_time_entry),
-    }
-
-    Ok(())
 }
 
 async fn continue_time_entry() -> ResultWithDefaultError<()> {
