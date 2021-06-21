@@ -15,6 +15,7 @@ use arguments::Command::Stop;
 use arguments::CommandLineArguments;
 use commands::auth::AuthenticationCommand;
 use commands::list::ListCommand;
+use commands::stop::StopCommand;
 use commands::running::RunningTimeEntryCommand;
 use chrono::Utc;
 use colored::Colorize;
@@ -37,7 +38,7 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
         None => RunningTimeEntryCommand::execute(ensure_authentication()?).await?,
         Some(subcommand) => match subcommand {
             Current | Running => RunningTimeEntryCommand::execute(ensure_authentication()?).await?,
-            Stop => stop_running_time_entry().await?,
+            Stop => StopCommand::execute(ensure_authentication()?).await?,
             Start {
                 description: _,
                 project: _,
@@ -88,19 +89,6 @@ async fn continue_time_entry() -> ResultWithDefaultError<()> {
     Ok(())
 }
 
-async fn stop_running_time_entry() -> ResultWithDefaultError<()> {
-    let api_client = ensure_authentication()?;
-    match api_client.get_running_time_entry().await? {
-        None => println!("{}", "No time entry is running at the moment".yellow()),
-        Some(running_time_entry) => {
-            let _stopped_time_entry = stop_time_entry(running_time_entry).await?;
-            println!("{}", "Time entry stopped successfully".green());
-        }
-    }
-
-    Ok(())
-}
-
 async fn start_time_entry(time_entry: TimeEntry) -> ResultWithDefaultError<TimeEntry> {
     let api_client = ensure_authentication()?;
     let start = Utc::now();
@@ -112,17 +100,6 @@ async fn start_time_entry(time_entry: TimeEntry) -> ResultWithDefaultError<TimeE
         ..time_entry
     };
     return api_client.create_time_entry(time_entry_to_create).await;
-}
-
-async fn stop_time_entry(time_entry: TimeEntry) -> ResultWithDefaultError<TimeEntry> {
-    let api_client = ensure_authentication()?;
-    let stop_time = Utc::now();
-    let stopped_time_entry = TimeEntry {
-        stop: Some(stop_time),
-        duration: (stop_time - time_entry.start).num_seconds(),
-        ..time_entry
-    };
-    return api_client.update_time_entry(stopped_time_entry).await;
 }
 
 fn get_storage() -> impl CredentialsStorage {
