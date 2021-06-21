@@ -1,3 +1,4 @@
+use crate::constants;
 use chrono::{DateTime, Duration, Utc};
 use colored::Colorize;
 use serde::{Deserialize, Serialize};
@@ -54,6 +55,24 @@ impl TimeEntry {
 
     pub fn is_running(&self) -> bool {
         self.duration.is_negative()
+    }
+
+    pub fn as_running_time_entry(&self, start: DateTime<Utc>) -> TimeEntry {
+        TimeEntry {
+            start,
+            stop: None,
+            duration: -start.timestamp(),
+            created_with: Some(constants::CLIENT_NAME.to_string()),
+            ..self.clone()
+        }
+    }
+
+    pub fn as_stopped_time_entry(&self, stop: DateTime<Utc>) -> TimeEntry {
+        TimeEntry {
+            stop: Some(stop),
+            duration: (stop - self.start).num_seconds(),
+            ..self.clone()
+        }
     }
 }
 
