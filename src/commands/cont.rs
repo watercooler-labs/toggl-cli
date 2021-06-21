@@ -22,12 +22,13 @@ impl ContinueCommand {
             }
             Ok(value) => {
                 if let Some(time_entry) = value {
-                    if let Err(stop_error) = api_client
+                    let stopped_time_entry = api_client
                         .update_time_entry(
                             time_entry.as_stopped_time_entry(running_entry_stop_time),
                         )
-                        .await
-                    {
+                        .await;
+
+                    if let Err(stop_error) = stopped_time_entry {
                         println!(
                             "{} {:?}",
                             "Couldn't stop running time entry.".red(),
@@ -35,17 +36,20 @@ impl ContinueCommand {
                         );
                         return Ok(());
                     }
-                    println!("Running time entry stopped")
+                    println!(
+                        "{}\n{}",
+                        "Running time entry stopped".yellow(),
+                        stopped_time_entry.unwrap()
+                    );
                 }
             }
         }
 
         let time_entries = api_client.get_time_entries().await?;
         // Don't continue a running entry that was just stopped.
-        let continue_entry_index = if let Ok(None) = running_time_entry {
-            0
-        } else {
-            1
+        let continue_entry_index = match running_time_entry {
+            Ok(None) => 0,
+            _ => 1,
         };
 
         match time_entries.get(continue_entry_index) {
