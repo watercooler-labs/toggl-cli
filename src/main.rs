@@ -65,7 +65,7 @@ fn get_api_client() -> ResultWithDefaultError<impl ApiClient> {
                 "You can find your API token at".blue().bold(),
                 "https://track.toggl.com/profile".blue().bold().underline()
             );
-            return Err(err);
+            Err(err)
         }
     };
 }

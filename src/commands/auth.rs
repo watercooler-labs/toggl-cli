@@ -21,6 +21,6 @@ impl AuthenticationCommand {
             user.email.green().bold(),
         );
 
-        return Ok(());
+        Ok(())
     }
 }

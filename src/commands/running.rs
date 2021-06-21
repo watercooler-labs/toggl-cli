@@ -13,6 +13,6 @@ impl RunningTimeEntryCommand {
             Some(running_time_entry) => println!("{}", running_time_entry),
         }
 
-        return Ok(());
+        Ok(())
     }
 }
