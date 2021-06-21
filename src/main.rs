@@ -2,6 +2,7 @@ mod api;
 mod arguments;
 mod credentials;
 mod models;
+mod commands;
 use api::{ApiClient, V9ApiClient};
 use arguments::Command;
 use arguments::Command::Auth;
@@ -12,9 +13,11 @@ use arguments::Command::Running;
 use arguments::Command::Start;
 use arguments::Command::Stop;
 use arguments::CommandLineArguments;
+use commands::auth::AuthenticationCommand;
 use chrono::Utc;
 use colored::Colorize;
-use credentials::Credentials;
+use credentials::{Credentials, CredentialsStorage, KeyringStorage};
+use keyring::Keyring;
 use models::{ResultWithDefaultError, TimeEntry};
 use structopt::StructOpt;
 
@@ -27,6 +30,7 @@ async fn main() -> ResultWithDefaultError<()> {
 }
 
 pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultError<()> {
+    let credentials_storage = get_storage();
     match command {
         None => display_running_time_entry().await?,
         Some(subcommand) => match subcommand {
@@ -37,7 +41,11 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
                 project: _,
             } => (),
             Continue => continue_time_entry().await?,
-            Auth { api_token } => authenticate(api_token).await?,
+            Auth { api_token } => {
+                let credentials = Credentials { api_token };
+                let api_client = V9ApiClient::from_credentials(credentials)?;
+                AuthenticationCommand::execute(api_client, credentials_storage).await?
+            },
             List { number } => display_time_entries(number).await?,
         },
     }
@@ -46,7 +54,8 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
 }
 
 fn ensure_authentication() -> ResultWithDefaultError<impl ApiClient> {
-    return match Credentials::read() {
+    let credentials_storage = get_storage();
+    return match credentials_storage.read() {
         Ok(credentials) => V9ApiClient::from_credentials(credentials),
         Err(err) => {
             println!(
@@ -58,20 +67,6 @@ fn ensure_authentication() -> ResultWithDefaultError<impl ApiClient> {
             return Err(err);
         }
     };
-}
-
-async fn authenticate(api_token: String) -> ResultWithDefaultError<()> {
-    let credentials = Credentials { api_token };
-    let api_client = V9ApiClient::from_credentials(credentials)?;
-    let user = api_client.get_user().await?;
-    let _credentials = Credentials::persist(user.api_token)?;
-    println!(
-        "{} {}",
-        "Successfully authenticated for user with email:".green(),
-        user.email.green().bold(),
-    );
-
-    Ok(())
 }
 
 async fn display_running_time_entry() -> ResultWithDefaultError<()> {
@@ -153,4 +148,9 @@ async fn stop_time_entry(time_entry: TimeEntry) -> ResultWithDefaultError<TimeEn
         ..time_entry
     };
     return api_client.update_time_entry(stopped_time_entry).await;
+}
+
+fn get_storage() -> impl CredentialsStorage {
+    let keyring = Keyring::new("togglcli", "default");
+    KeyringStorage::new(keyring)
 }
