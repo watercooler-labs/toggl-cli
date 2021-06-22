@@ -8,7 +8,10 @@ edition = "2018"
 # Argument parsing
 clap = "2.27.1"
 structopt = { version = "0.3" }
+
+# Terminal utilities
 colored = "2.0.0"
+skim = "0.9.4"
 
 # Storage
 keyring = "0.10.1"
