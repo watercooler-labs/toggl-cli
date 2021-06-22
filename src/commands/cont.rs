@@ -3,12 +3,12 @@ use crate::models;
 use api::ApiClient;
 use chrono::Utc;
 use colored::Colorize;
-use models::ResultWithDefaultError;
+use models::{ResultWithDefaultError,TimeEntry};
 
 pub struct ContinueCommand;
 
 impl ContinueCommand {
-    pub async fn execute(api_client: impl ApiClient) -> ResultWithDefaultError<()> {
+    pub async fn execute(api_client: impl ApiClient, interactive: bool) -> ResultWithDefaultError<()> {
         let running_entry_stop_time = Utc::now();
         let running_time_entry = api_client.get_running_time_entry().await?;
         if let Some(time_entry) = &running_time_entry {
@@ -24,13 +24,7 @@ impl ContinueCommand {
         }
 
         let time_entries = api_client.get_time_entries().await?;
-        // Don't continue a running entry that was just stopped.
-        let continue_entry_index = match running_time_entry {
-            None => 0,
-            _ => 1,
-        };
-
-        match time_entries.get(continue_entry_index) {
+        match get_time_to_continue(time_entries, running_time_entry, interactive) {
             None => println!("{}", "No time entries in last 90 days".red()),
             Some(time_entry) => {
                 let start_time = Utc::now();
@@ -46,4 +40,13 @@ impl ContinueCommand {
 
         Ok(())
     }
+}
+
+fn get_time_to_continue(time_entries: Vec<TimeEntry>, running_time_entry: Option<TimeEntry>, interactive: bool) -> Option<TimeEntry> {
+    // Don't continue a running entry that was just stopped.
+    let continue_entry_index = match running_time_entry {
+        None => 0,
+        _ => 1,
+    };
+    return time_entries.get(continue_entry_index).map(|time_entry| time_entry.clone());
 }
