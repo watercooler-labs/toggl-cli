@@ -76,6 +76,24 @@ impl TimeEntry {
     }
 }
 
+impl Default for TimeEntry {
+    fn default() -> Self {
+        let start = Utc::now();
+        Self {
+            id: -1,
+            created_with: Some(constants::CLIENT_NAME.to_string()),
+            billable: false,
+            description: "".to_string(),
+            duration: -start.timestamp(),
+            project_id: None,
+            start,
+            stop: None,
+            task_id: None,
+            workspace_id: -1,
+        }
+    }
+}
+
 impl std::fmt::Display for TimeEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let summary = format!(

@@ -25,7 +25,9 @@ pub enum Command {
         #[structopt(short, long)]
         description: String,
         #[structopt(short, long)]
-        project: String,
+        project: Option<String>,
+        #[structopt(short, long)]
+        billable: bool,
     },
     Continue,
 }

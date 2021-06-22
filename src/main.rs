@@ -19,6 +19,7 @@ use commands::auth::AuthenticationCommand;
 use commands::cont::ContinueCommand;
 use commands::list::ListCommand;
 use commands::running::RunningTimeEntryCommand;
+use commands::start::StartCommand;
 use commands::stop::StopCommand;
 use credentials::{Credentials, CredentialsStorage, KeyringStorage};
 use keyring::Keyring;
@@ -40,9 +41,10 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
             List { number } => ListCommand::execute(get_api_client()?, number).await?,
             Current | Running => RunningTimeEntryCommand::execute(get_api_client()?).await?,
             Start {
-                description: _,
+                billable,
+                description,
                 project: _,
-            } => (),
+            } => StartCommand::execute(get_api_client()?, billable, description).await?,
             Auth { api_token } => {
                 let credentials = Credentials { api_token };
                 let api_client = V9ApiClient::from_credentials(credentials)?;
