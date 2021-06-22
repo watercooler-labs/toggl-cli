@@ -45,8 +45,12 @@ impl ContinueCommand {
         }
 
         let time_entries = api_client.get_time_entries().await?;
+        if time_entries.is_empty() {
+            println!("{}", "No time entries in last 90 days".red())
+        }
+
         match get_time_to_continue(time_entries, running_time_entry, interactive) {
-            None => println!("{}", "No time entries in last 90 days".red()),
+            None => println!("{}", "No time entry to continue".red()),
             Some(time_entry) => {
                 let start_time = Utc::now();
                 let time_entry_to_create = time_entry.as_running_time_entry(start_time);
@@ -103,7 +107,10 @@ fn get_time_entry_from_user(time_entries: Vec<TimeEntry>) -> Option<TimeEntry> {
 
     Skim::run_with(&options, Some(source))
         .map(|output| match output.is_abort {
-            true => Vec::new(),
+            true => {
+                println!("{}", "Operation cancelled".red());
+                Vec::new()
+            },
             false => output.selected_items,
         })
         .map(|selected_items| {
