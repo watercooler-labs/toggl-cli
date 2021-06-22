@@ -10,45 +10,23 @@ pub struct ContinueCommand;
 impl ContinueCommand {
     pub async fn execute(api_client: impl ApiClient) -> ResultWithDefaultError<()> {
         let running_entry_stop_time = Utc::now();
-        let running_time_entry = api_client.get_running_time_entry().await;
-        match &running_time_entry {
-            Err(error) => {
-                println!(
-                    "{} {:?}",
-                    "Couldn't retrieve running time entry.".red(),
-                    error
-                );
-                return Ok(());
-            }
-            Ok(value) => {
-                if let Some(time_entry) = value {
-                    let stopped_time_entry = api_client
-                        .update_time_entry(
-                            time_entry.as_stopped_time_entry(running_entry_stop_time),
-                        )
-                        .await;
+        let running_time_entry = api_client.get_running_time_entry().await?;
+        if let Some(time_entry) = &running_time_entry {
+            let stopped_time_entry = api_client
+                .update_time_entry(time_entry.as_stopped_time_entry(running_entry_stop_time))
+                .await?;
 
-                    if let Err(stop_error) = stopped_time_entry {
-                        println!(
-                            "{} {:?}",
-                            "Couldn't stop running time entry.".red(),
-                            stop_error
-                        );
-                        return Ok(());
-                    }
-                    println!(
-                        "{}\n{}",
-                        "Running time entry stopped".yellow(),
-                        stopped_time_entry.unwrap()
-                    );
-                }
-            }
+            println!(
+                "{}\n{}",
+                "Running time entry stopped".yellow(),
+                stopped_time_entry
+            );
         }
 
         let time_entries = api_client.get_time_entries().await?;
         // Don't continue a running entry that was just stopped.
         let continue_entry_index = match running_time_entry {
-            Ok(None) => 0,
+            None => 0,
             _ => 1,
         };
 
