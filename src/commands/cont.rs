@@ -87,9 +87,7 @@ fn get_first_stopped_time_entry(
         None => 0,
         _ => 1,
     };
-    return time_entries
-        .get(continue_entry_index)
-        .map(|time_entry| time_entry.clone());
+    return time_entries.get(continue_entry_index).cloned();
 }
 
 fn get_time_entry_from_user(time_entries: Vec<TimeEntry>) -> Option<TimeEntry> {
@@ -122,7 +120,7 @@ fn get_time_entry_from_user(time_entries: Vec<TimeEntry>) -> Option<TimeEntry> {
             Some(time_entry_id) => time_entries
                 .iter()
                 .find(|time_entry| time_entry.id == time_entry_id)
-                .map(|time_entry| time_entry.clone()),
+                .cloned(),
             _ => None,
         })
 }
