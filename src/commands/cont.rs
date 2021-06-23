@@ -110,7 +110,7 @@ fn get_time_entry_from_user(time_entries: Vec<TimeEntry>) -> Option<TimeEntry> {
             true => {
                 println!("{}", "Operation cancelled".red());
                 Vec::new()
-            },
+            }
             false => output.selected_items,
         })
         .map(|selected_items| {
