@@ -19,7 +19,7 @@ impl AuthenticationCommand {
     ) -> ResultWithDefaultError<()> {
         let user = api_client.get_user().await?;
         credentials_storage.persist(user.api_token)?;
-        write!(
+        writeln!(
             writer,
             "{} {}",
             AUTH_SUCCEEDED_MESSAGE.green(),
