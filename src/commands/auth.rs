@@ -112,7 +112,7 @@ mod tests {
 
         // Assert
         let expected_output = format!(
-            "{} {}",
+            "{} {}\n",
             AUTH_SUCCEEDED_MESSAGE.green(),
             MOCK_EMAIL.green().bold()
         );
