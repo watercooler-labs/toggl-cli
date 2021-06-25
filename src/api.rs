@@ -1,10 +1,15 @@
 use crate::credentials;
+use crate::error;
 use crate::models;
 use async_trait::async_trait;
+use error::ApiError;
+#[cfg(test)]
+use mockall::automock;
 use models::{ResultWithDefaultError, TimeEntry, User};
-use reqwest::{header, Client};
+use reqwest::{header, Client, RequestBuilder, Response};
 use serde::{de, Serialize};
 
+#[cfg_attr(test, automock)]
 #[async_trait]
 pub trait ApiClient {
     async fn get_user(&self) -> ResultWithDefaultError<User>;
@@ -66,8 +71,8 @@ impl V9ApiClient {
     }
 
     async fn get<T: de::DeserializeOwned>(&self, url: String) -> ResultWithDefaultError<T> {
-        let result = self.http_client.get(url).send().await?;
-        let deserialized_json = result.json::<T>().await?;
+        let response = V9ApiClient::safe_send(self.http_client.get(url)).await?;
+        let deserialized_json = V9ApiClient::safe_deserialize::<T>(response).await?;
         Ok(deserialized_json)
     }
 
@@ -76,8 +81,8 @@ impl V9ApiClient {
         url: String,
         body: &Body,
     ) -> ResultWithDefaultError<T> {
-        let result = self.http_client.put(url).json(body).send().await?;
-        let deserialized_json = result.json::<T>().await?;
+        let response = V9ApiClient::safe_send(self.http_client.put(url).json(body)).await?;
+        let deserialized_json = V9ApiClient::safe_deserialize::<T>(response).await?;
         Ok(deserialized_json)
     }
 
@@ -86,8 +91,24 @@ impl V9ApiClient {
         url: String,
         body: &Body,
     ) -> ResultWithDefaultError<T> {
-        let result = self.http_client.post(url).json(body).send().await?;
-        let deserialized_json = result.json::<T>().await?;
+        let response = V9ApiClient::safe_send(self.http_client.post(url).json(body)).await?;
+        let deserialized_json = V9ApiClient::safe_deserialize::<T>(response).await?;
         Ok(deserialized_json)
+    }
+
+    async fn safe_send(request: RequestBuilder) -> ResultWithDefaultError<Response> {
+        match request.send().await {
+            Err(_) => Err(Box::new(ApiError::Network)),
+            Ok(response) => Ok(response),
+        }
+    }
+
+    async fn safe_deserialize<T: de::DeserializeOwned>(
+        response: Response,
+    ) -> ResultWithDefaultError<T> {
+        match response.json::<T>().await {
+            Err(_) => Err(Box::new(ApiError::Deserialization)),
+            Ok(response) => Ok(response),
+        }
     }
 }
