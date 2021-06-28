@@ -46,10 +46,11 @@ impl ContinueCommand {
 
         let time_entries = api_client.get_time_entries().await?;
         if time_entries.is_empty() {
-            println!("{}", "No time entries in last 90 days".red())
+            println!("{}", "No time entries in last 90 days".red());
+            return Ok(());
         }
 
-        match get_time_to_continue(time_entries, running_time_entry, interactive) {
+        match get_time_entry_to_continue(time_entries, running_time_entry, interactive) {
             None => println!("{}", "No time entry to continue".red()),
             Some(time_entry) => {
                 let start_time = Utc::now();
@@ -67,14 +68,15 @@ impl ContinueCommand {
     }
 }
 
-fn get_time_to_continue(
+fn get_time_entry_to_continue(
     time_entries: Vec<TimeEntry>,
     running_time_entry: Option<TimeEntry>,
     interactive: bool,
 ) -> Option<TimeEntry> {
-    match interactive {
-        true => get_time_entry_from_user(time_entries),
-        false => get_first_stopped_time_entry(time_entries, running_time_entry),
+    if interactive {
+        get_time_entry_from_user(time_entries)
+    } else {
+        get_first_stopped_time_entry(time_entries, running_time_entry)
     }
 }
 
@@ -91,25 +93,15 @@ fn get_first_stopped_time_entry(
 }
 
 fn get_time_entry_from_user(time_entries: Vec<TimeEntry>) -> Option<TimeEntry> {
-    let options = SkimOptionsBuilder::default()
-        .height(Some("100%"))
-        .multi(false)
-        .build()
-        .unwrap();
-
-    let (sender, source): (SkimItemSender, SkimItemReceiver) = unbounded();
-    time_entries.iter().for_each(|time_entry| {
-        let _ = sender.send(Arc::new(time_entry.clone()));
-    });
-    drop(sender);
-
+    let (options, source) = get_skim_configuration(time_entries.clone());
     Skim::run_with(&options, Some(source))
-        .map(|output| match output.is_abort {
-            true => {
+        .map(|output| {
+            if output.is_abort {
                 println!("{}", "Operation cancelled".red());
                 Vec::new()
+            } else {
+                output.selected_items
             }
-            false => output.selected_items,
         })
         .map(|selected_items| {
             selected_items
@@ -123,4 +115,25 @@ fn get_time_entry_from_user(time_entries: Vec<TimeEntry>) -> Option<TimeEntry> {
                 .cloned(),
             _ => None,
         })
+}
+
+fn get_skim_configuration(
+    time_entries: Vec<TimeEntry>,
+) -> (SkimOptions<'static>, SkimItemReceiver) {
+    let options = SkimOptionsBuilder::default()
+        // Set viewport to take entire screen
+        .height(Some("100%"))
+        // Disable multiselect
+        .multi(false)
+        .build()
+        .unwrap();
+
+    let (sender, source): (SkimItemSender, SkimItemReceiver) = unbounded();
+    for time_entry in time_entries {
+        // Send time-entries to Skim receiver
+        let _ = sender.send(Arc::new(time_entry.clone()));
+    }
+    // Complete sender transaction to signal no new items will be added after this
+    drop(sender);
+    (options, source)
 }
