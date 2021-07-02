@@ -59,7 +59,7 @@ mod tests {
             .expect_get_user()
             .returning(move || Ok(user.clone()));
 
-        return api_client;
+        api_client
     }
 
     fn create_failing_api_client() -> MockApiClient {
@@ -68,13 +68,13 @@ mod tests {
             .expect_get_user()
             .returning(|| Err(Box::new(ApiError::Network)));
 
-        return api_client;
+        api_client
     }
 
     fn create_working_credentials_storage() -> MockCredentialsStorage {
         let mut credentials_storage = MockCredentialsStorage::new();
         credentials_storage.expect_persist().returning(|_| Ok(()));
-        return credentials_storage;
+        credentials_storage
     }
 
     fn create_failing_credentials_storage() -> MockCredentialsStorage {
@@ -82,7 +82,7 @@ mod tests {
         credentials_storage
             .expect_persist()
             .returning(|_| Err(Box::new(StorageError::Write)));
-        return credentials_storage;
+        credentials_storage
     }
 
     #[tokio::test]
@@ -117,7 +117,7 @@ mod tests {
             MOCK_EMAIL.green().bold()
         );
         let actual_output = String::from_utf8(output)
-            .expect(format!("empty output when {} was expected", expected_output).as_str());
+            .unwrap_or_else(|_| panic!("empty output when {} was expected", expected_output));
 
         assert_eq!(expected_output, actual_output);
     }

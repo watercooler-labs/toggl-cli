@@ -8,6 +8,8 @@ edition = "2018"
 # Argument parsing
 clap = "2.27.1"
 structopt = { version = "0.3" }
+
+# Terminal utilities
 colored = "2.0.0"
 
 # Storage
@@ -28,3 +30,6 @@ chrono = { version = "0.4.19", features = ["serde"] }
 # Testing
 mockall = "0.9.1"
 tokio-test = "0.4.2"
+
+[target.'cfg(unix)'.dependencies]
+skim = "0.9.4"
