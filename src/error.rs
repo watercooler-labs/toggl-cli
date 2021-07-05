@@ -44,3 +44,27 @@ impl Display for StorageError {
 }
 
 impl Error for StorageError {}
+
+#[derive(Debug)]
+pub enum PickerError {
+    Cancelled,
+    FzfNotInstalled,
+    Generic,
+}
+
+impl Display for PickerError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let summary = format!(
+            "{}",
+            match self {
+                PickerError::Cancelled => constants::OPERATION_CANCELLED,
+                PickerError::FzfNotInstalled => constants::FZF_NOT_INSTALLED_ERROR,
+                PickerError::Generic => constants::GENERIC_ERROR
+            }.red(),
+        );
+        write!(f, "{}", summary)
+    }
+
+}
+
+impl Error for PickerError {}
