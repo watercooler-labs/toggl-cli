@@ -32,5 +32,8 @@ pub enum Command {
     Continue {
         #[structopt(short, long)]
         interactive: bool,
+
+        #[structopt(long)]
+        fzf: bool
     },
 }

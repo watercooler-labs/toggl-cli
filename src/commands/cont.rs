@@ -1,7 +1,9 @@
 use crate::api;
 use crate::models;
+use crate::picker;
 use api::ApiClient;
 use chrono::Utc;
+use picker::ItemPicker;
 use colored::Colorize;
 use models::{ResultWithDefaultError, TimeEntry};
 
@@ -10,7 +12,7 @@ pub struct ContinueCommand;
 impl ContinueCommand {
     pub async fn execute(
         api_client: impl ApiClient,
-        interactive: bool,
+        picker: Option<impl ItemPicker>
     ) -> ResultWithDefaultError<()> {
         let running_entry_stop_time = Utc::now();
         let running_time_entry = api_client.get_running_time_entry().await?;
@@ -32,7 +34,12 @@ impl ContinueCommand {
             return Ok(());
         }
 
-        match get_time_entry_to_continue(time_entries, running_time_entry, interactive) {
+        let time_entry_to_continue = match picker {
+            Some(time_entry_picker) => Some(time_entry_picker.pick(time_entries)?),
+            None => get_first_stopped_time_entry(time_entries, running_time_entry)
+        };
+
+        match time_entry_to_continue {
             None => println!("{}", "No time entry to continue".red()),
             Some(time_entry) => {
                 let start_time = Utc::now();
@@ -47,18 +54,6 @@ impl ContinueCommand {
         }
 
         Ok(())
-    }
-}
-
-fn get_time_entry_to_continue(
-    time_entries: Vec<TimeEntry>,
-    running_time_entry: Option<TimeEntry>,
-    interactive: bool,
-) -> Option<TimeEntry> {
-    if interactive {
-        autocomplete::get_time_entry_from_user(time_entries)
-    } else {
-        get_first_stopped_time_entry(time_entries, running_time_entry)
     }
 }
 

@@ -40,8 +40,9 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
         None => RunningTimeEntryCommand::execute(get_api_client()?).await?,
         Some(subcommand) => match subcommand {
             Stop => StopCommand::execute(get_api_client()?).await?,
-            Continue { interactive } => {
-                ContinueCommand::execute(get_api_client()?, interactive).await?
+            Continue { interactive, fzf } => {
+                let picker = if interactive { Some(picker::get_picker(fzf)) } else { None };
+                ContinueCommand::execute(get_api_client()?, picker).await?
             }
             List { number } => ListCommand::execute(get_api_client()?, number).await?,
             Current | Running => RunningTimeEntryCommand::execute(get_api_client()?).await?,

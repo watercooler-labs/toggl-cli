@@ -34,3 +34,17 @@ pub trait ItemPicker {
     fn pick<T: PickableItem>(&self, items: Vec<T>) -> ResultWithDefaultError<T>;
 }
 
+#[cfg(unix)]
+pub fn get_picker(force_fzf: bool) -> impl ItemPicker {
+    if force_fzf {
+        fzf::FzfPicker
+    } else {
+        skim::SkimPicker
+    }
+}
+
+
+#[cfg(not(unix))]
+pub fn get_picker(_force_fzf: bool) -> impl ItemPicker {
+    fzf::FzfPicker
+}
