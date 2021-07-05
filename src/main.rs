@@ -5,6 +5,7 @@ mod constants;
 mod credentials;
 mod error;
 mod models;
+mod picker;
 use api::{ApiClient, V9ApiClient};
 use arguments::Command;
 use arguments::Command::Auth;
