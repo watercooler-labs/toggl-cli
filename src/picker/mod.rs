@@ -1,3 +1,4 @@
+mod fzf;
 #[cfg(unix)]
 mod skim;
 use crate::models;
