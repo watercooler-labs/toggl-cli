@@ -59,12 +59,12 @@ impl Display for PickerError {
             match self {
                 PickerError::Cancelled => constants::OPERATION_CANCELLED,
                 PickerError::FzfNotInstalled => constants::FZF_NOT_INSTALLED_ERROR,
-                PickerError::Generic => constants::GENERIC_ERROR
-            }.red(),
+                PickerError::Generic => constants::GENERIC_ERROR,
+            }
+            .red(),
         );
         write!(f, "{}", summary)
     }
-
 }
 
 impl Error for PickerError {}

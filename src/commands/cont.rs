@@ -3,16 +3,16 @@ use crate::models;
 use crate::picker;
 use api::ApiClient;
 use chrono::Utc;
-use picker::ItemPicker;
 use colored::Colorize;
 use models::{ResultWithDefaultError, TimeEntry};
+use picker::ItemPicker;
 
 pub struct ContinueCommand;
 
 impl ContinueCommand {
     pub async fn execute(
         api_client: impl ApiClient,
-        picker: Option<impl ItemPicker>
+        picker: Option<impl ItemPicker>,
     ) -> ResultWithDefaultError<()> {
         let running_entry_stop_time = Utc::now();
         let running_time_entry = api_client.get_running_time_entry().await?;
@@ -36,7 +36,7 @@ impl ContinueCommand {
 
         let time_entry_to_continue = match picker {
             Some(time_entry_picker) => Some(time_entry_picker.pick(time_entries)?),
-            None => get_first_stopped_time_entry(time_entries, running_time_entry)
+            None => get_first_stopped_time_entry(time_entries, running_time_entry),
         };
 
         match time_entry_to_continue {

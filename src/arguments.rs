@@ -34,6 +34,6 @@ pub enum Command {
         interactive: bool,
 
         #[structopt(long)]
-        fzf: bool
+        fzf: bool,
     },
 }
