@@ -14,8 +14,12 @@ impl StopCommand {
             Some(running_time_entry) => {
                 let stop_time = Utc::now();
                 let stopped_time_entry = running_time_entry.as_stopped_time_entry(stop_time);
-                let _ = api_client.update_time_entry(stopped_time_entry).await?;
-                println!("{}", "Time entry stopped successfully".green());
+                let updated_time_entry = api_client.update_time_entry(stopped_time_entry).await?;
+                println!(
+                    "{}\n{}",
+                    "Time entry stopped successfully".green(),
+                    updated_time_entry
+                );
             }
         }
 
