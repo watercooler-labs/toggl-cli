@@ -24,6 +24,7 @@ pub struct TimeEntry {
     pub billable: bool,
     pub workspace_id: i64,
     pub project_id: Option<i64>,
+    pub tags: Option<Vec<String>>,
     pub task_id: Option<i64>,
     pub created_with: Option<String>,
 }
@@ -88,6 +89,7 @@ impl Default for TimeEntry {
             project_id: None,
             start,
             stop: None,
+            tags: None,
             task_id: None,
             workspace_id: -1,
         }
