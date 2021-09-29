@@ -15,9 +15,9 @@ Installing the binary.
 ```shell
 cargo install --path .
 ```
-> This places the release optimized binary at `~/.cargo/bin/toggl-cli`. Make sure to add `~/.cargo/bin` to your `$PATH` so that you can run the binary from any directory.
+> This places the release optimized binary at `~/.cargo/bin/toggl`. Make sure to add `~/.cargo/bin` to your `$PATH` so that you can run the binary from any directory.
 
-You can invoke the binary using the `toggl-cli` command  now. Alternativly you can also run the command directly using `cargo run`
+You can invoke the binary using the `toggl` command  now. Alternativly you can also run the command directly using `cargo run`
 
 ```shell
 cargo run [command]
@@ -30,7 +30,7 @@ cargo run list -n 3
 The first command you need to run is `auth` to set up your [Toggl API token](https://support.toggl.com/en/articles/3116844-where-is-my-api-token-located).
 
 ```shell
-cargo run auth [API_TOKEN] # or toggl-cli auth [API_TOKEN]
+cargo run auth [API_TOKEN] # or toggl auth [API_TOKEN]
 ```
 
 The API token is stored securely in your Operating System's keychain using the [keyring](https://crates.io/crates/keyring) crate.
@@ -40,12 +40,12 @@ The API token is stored securely in your Operating System's keychain using the [
 Run the `help` command to see a list of available commands.
 
 ```shell
-$ toggl-cli help
+$ toggl help
 toggl 0.1.0
 Toggl command line app.
 
 USAGE:
-    toggl-cli [SUBCOMMAND]
+    toggl [SUBCOMMAND]
 
 FLAGS:
     -h, --help       Prints help information
@@ -65,11 +65,11 @@ SUBCOMMANDS:
 You can also run the `help` command on a specific subcommand.
 
 ```shell
-$ toggl-cli help start
-toggl-cli-start 0.1.0
+$ toggl help start
+toggl-start 0.1.0
 
 USAGE:
-    toggl-cli start [FLAGS] [OPTIONS] --description <description>
+    toggl start [FLAGS] [OPTIONS] --description <description>
 
 FLAGS:
     -b, --billable
