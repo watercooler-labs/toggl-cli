@@ -39,4 +39,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: Binary
-          path: target/release/toggl.exe
+          path: target/release/toggl*
