@@ -2,7 +2,6 @@ use crate::error;
 use crate::models;
 use crate::picker;
 use error::PickerError;
-use itertools::Itertools;
 use models::ResultWithDefaultError;
 use picker::{ItemPicker, PickableItem};
 use std::collections::HashMap;
@@ -22,7 +21,6 @@ fn format_as_fzf_input(items: &[PickableItem]) -> String {
     items
         .iter()
         .map(|item| item.formatted.clone())
-        .unique()
         .fold("".to_string(), |acc, item| acc + item.as_str() + "\n")
 }
 
@@ -54,14 +52,13 @@ impl ItemPicker for FzfPicker {
                     Ok(output) => match output.status.code() {
                         Some(0) => {
                             let user_selected_string = String::from_utf8(output.stdout)?;
-                            println!("{}", user_selected_string);
                             let selected_item_index = remove_trailing_newline(user_selected_string);
-                            println!("{}", selected_item_index);
-                            let selected_item =
+                            let _selected_item =
                                 possible_elements.get(&selected_item_index).unwrap();
-                            Ok(*selected_item)
+                            Err(Box::new(PickerError::Generic))
                         }
-
+                        // This is copied from zoxide's fzf handler.
+                        // https://github.com/rohankumardubey/zoxide/blob/main/src/util.rs
                         Some(128..=254) | None => Err(Box::new(PickerError::Cancelled)),
                         _ => Err(Box::new(PickerError::Generic)),
                     },

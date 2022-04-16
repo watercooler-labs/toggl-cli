@@ -32,7 +32,16 @@ use structopt::StructOpt;
 #[tokio::main]
 async fn main() -> ResultWithDefaultError<()> {
     let parsed_args = CommandLineArguments::from_args();
-    return execute_subcommand(parsed_args.cmd).await;
+    match execute_subcommand(parsed_args.cmd).await {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            // We are catching the error and pretty printing it instead of letting the
+            // program error. Since we are not meant to be used other programs, I think
+            // it's fine to always return a 0 error code, but we might wanna revisit this.
+            print!("{}", format!("{}", error));
+            Ok(())
+        }
+    }
 }
 
 pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultError<()> {
