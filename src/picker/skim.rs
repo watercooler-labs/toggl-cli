@@ -8,55 +8,58 @@ use skim::prelude::*;
 
 pub struct SkimPicker;
 
-impl SkimItem for PickerItem {
+fn get_skim_configuration(items: Vec<PickableItem>) -> (SkimOptions<'static>, SkimItemReceiver) {
+    let options = SkimOptionsBuilder::default()
+        // Set viewport to take entire screen
+        .height(Some("100%"))
+        // Disable multiselect
+        .multi(false)
+        .build()
+        .unwrap();
+
+    let (sender, source): (SkimItemSender, SkimItemReceiver) = unbounded();
+    for item in items {
+        // Send items to Skim receiver
+        let _ = sender.send(Arc::new(item));
+    }
+    // Complete sender transaction to signal no new items will be added after this
+    drop(sender);
+    (options, source)
+}
+
+impl SkimItem for PickableItem {
     fn text(&self) -> Cow<str> {
-        Cow::from(self.formatted());
+        Cow::from(self.formatted.as_str())
     }
 
     fn output(&self) -> Cow<str> {
-        Cow::from(self.id().to_string())
+        Cow::from(self.id.to_string())
     }
 }
 
 impl ItemPicker for SkimPicker {
-    fn pick<T: PickableItem>(&self, items: Vec<T>) -> ResultWithDefaultError<T> {
-        let (options, source) = get_skim_configuration(time_entries.clone());
+    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<i64> {
+        let (options, source) = get_skim_configuration(items);
         let output = Skim::run_with(&options, Some(source));
-        if output.is_abort {
-            return Err(Box::new(PickerError::Cancelled));
+
+        match output {
+            None => Err(Box::new(PickerError::Cancelled)),
+            Some(item) => {
+                if item.is_abort {
+                    Err(Box::new(PickerError::Cancelled))
+                } else {
+                    let selectable_items = item
+                        .selected_items
+                        .iter()
+                        .map(|selected_items| selected_items.output().parse::<i64>().unwrap())
+                        .collect::<Vec<i64>>();
+
+                    match selectable_items.first() {
+                        None => Err(Box::new(PickerError::Generic)),
+                        Some(id) => Ok(*id),
+                    }
+                }
+            }
         }
-
-        return output
-            .selected_items
-            .map(|selected_items| {
-                selected_items
-                    .first()
-                    .map(|item| item.output().parse::<i64>().unwrap())
-            })
-            .and_then(|selected_id| match selected_id {
-                Some(id) => Ok(items.iter().find(|item| item.id() == id).cloned()),
-                _ => Err(Box::new(PickerError::Generic)),
-            });
-    }
-
-    fn get_skim_configuration<T: SkimItem>(
-        items: Vec<T>,
-    ) -> (SkimOptions<'static>, SkimItemReceiver) {
-        let options = SkimOptionsBuilder::default()
-            // Set viewport to take entire screen
-            .height(Some("100%"))
-            // Disable multiselect
-            .multi(false)
-            .build()
-            .unwrap();
-
-        let (sender, source): (SkimItemSender, SkimItemReceiver) = unbounded();
-        for item in items {
-            // Send time-entries to Skim receiver
-            let _ = sender.send(Arc::new(item.clone()));
-        }
-        // Complete sender transaction to signal no new items will be added after this
-        drop(sender);
-        (options, source)
     }
 }

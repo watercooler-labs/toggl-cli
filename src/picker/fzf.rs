@@ -18,23 +18,23 @@ fn remove_trailing_newline(value: String) -> String {
     chars.as_str().to_string()
 }
 
-fn format_as_fzf_input<T: PickableItem>(items: &[T]) -> String {
+fn format_as_fzf_input(items: &[PickableItem]) -> String {
     items
         .iter()
-        .map(|item| item.formatted())
+        .map(|item| item.formatted.clone())
         .unique()
         .fold("".to_string(), |acc, item| acc + item.as_str() + "\n")
 }
 
-fn create_element_hash_map<T: PickableItem>(items: &[T]) -> HashMap<String, T> {
+fn create_element_hash_map(items: &[PickableItem]) -> HashMap<String, i64> {
     items
         .iter()
-        .map(|item| (item.formatted(), item.clone()))
-        .collect::<HashMap<String, T>>()
+        .map(|item| (item.formatted.clone(), item.id))
+        .collect::<HashMap<String, i64>>()
 }
 
 impl ItemPicker for FzfPicker {
-    fn pick<T: PickableItem>(&self, items: Vec<T>) -> ResultWithDefaultError<T> {
+    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<i64> {
         let mut command = Command::new("fzf");
         command
             .arg("-n2..")
@@ -59,7 +59,7 @@ impl ItemPicker for FzfPicker {
                             println!("{}", selected_item_index);
                             let selected_item =
                                 possible_elements.get(&selected_item_index).unwrap();
-                            Ok(selected_item.clone())
+                            Ok(*selected_item)
                         }
 
                         Some(128..=254) | None => Err(Box::new(PickerError::Cancelled)),

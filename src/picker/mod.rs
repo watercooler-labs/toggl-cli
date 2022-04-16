@@ -4,45 +4,46 @@ mod skim;
 use crate::models;
 use models::{ResultWithDefaultError, TimeEntry};
 
-pub trait PickableItem: Clone {
-    fn id(&self) -> i64;
-    fn formatted(&self) -> String;
+pub struct PickableItem {
+    id: i64,
+    formatted: String,
 }
 
-impl PickableItem for TimeEntry {
-    fn id(&self) -> i64 {
-        self.id
-    }
-
-    fn formatted(&self) -> String {
-        format!(
+impl PickableItem {
+    pub fn from_time_entry(time_entry: TimeEntry) -> PickableItem {
+        let formatted_time_entry = format!(
             "{} {} - {}",
-            if self.billable { "$" } else { " " },
-            self.description,
-            match self.project_id {
+            if time_entry.billable { "$" } else { " " },
+            time_entry.description,
+            match time_entry.project_id {
                 // TODO: Print the actual project name here.
                 Some(_) => "With project",
                 None => "No project",
             },
             // TODO: Display tags
-        )
+        );
+
+        PickableItem {
+            id: time_entry.id,
+            formatted: formatted_time_entry,
+        }
     }
 }
 
 pub trait ItemPicker {
-    fn pick<T: PickableItem>(&self, items: Vec<T>) -> ResultWithDefaultError<T>;
+    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<i64>;
 }
 
 #[cfg(unix)]
-pub fn get_picker(force_fzf: bool) -> impl ItemPicker {
+pub fn get_picker(force_fzf: bool) -> Box<dyn ItemPicker> {
     if force_fzf {
-        fzf::FzfPicker
+        Box::new(fzf::FzfPicker)
     } else {
-        skim::SkimPicker
+        Box::new(skim::SkimPicker)
     }
 }
 
 #[cfg(not(unix))]
-pub fn get_picker(_force_fzf: bool) -> impl ItemPicker {
-    fzf::FzfPicker
+pub fn get_picker(_force_fzf: bool) -> Box<dyn ItemPicker> {
+    Box::new(fzf::FzfPicker)
 }

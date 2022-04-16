@@ -5,14 +5,14 @@ use api::ApiClient;
 use chrono::Utc;
 use colored::Colorize;
 use models::{ResultWithDefaultError, TimeEntry};
-use picker::ItemPicker;
+use picker::{ItemPicker, PickableItem};
 
 pub struct ContinueCommand;
 
 impl ContinueCommand {
     pub async fn execute(
         api_client: impl ApiClient,
-        picker: Option<impl ItemPicker>,
+        picker: Option<Box<dyn ItemPicker>>,
     ) -> ResultWithDefaultError<()> {
         let running_entry_stop_time = Utc::now();
         let running_time_entry = api_client.get_running_time_entry().await?;
@@ -35,8 +35,16 @@ impl ContinueCommand {
         }
 
         let time_entry_to_continue = match picker {
-            Some(time_entry_picker) => Some(time_entry_picker.pick(time_entries)?),
             None => get_first_stopped_time_entry(time_entries, running_time_entry),
+            Some(time_entry_picker) => {
+                let pickable_items = time_entries
+                    .iter()
+                    .map(|te| PickableItem::from_time_entry(te.clone()))
+                    .collect();
+                let picked_id = time_entry_picker.pick(pickable_items)?;
+                let picked_time_entry = time_entries.iter().find(|te| te.id == picked_id).unwrap();
+                Some(picked_time_entry.clone())
+            }
         };
 
         match time_entry_to_continue {
