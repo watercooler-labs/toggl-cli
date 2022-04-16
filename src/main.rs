@@ -5,6 +5,7 @@ mod constants;
 mod credentials;
 mod error;
 mod models;
+mod picker;
 use api::{ApiClient, V9ApiClient};
 use arguments::Command;
 use arguments::Command::Auth;
@@ -31,7 +32,16 @@ use structopt::StructOpt;
 #[tokio::main]
 async fn main() -> ResultWithDefaultError<()> {
     let parsed_args = CommandLineArguments::from_args();
-    return execute_subcommand(parsed_args.cmd).await;
+    match execute_subcommand(parsed_args.cmd).await {
+        Ok(()) => Ok(()),
+        Err(error) => {
+            // We are catching the error and pretty printing it instead of letting the
+            // program error. Since we are not meant to be used other programs, I think
+            // it's fine to always return a 0 error code, but we might wanna revisit this.
+            print!("{}", error);
+            Ok(())
+        }
+    }
 }
 
 pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultError<()> {
@@ -39,8 +49,13 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
         None => RunningTimeEntryCommand::execute(get_api_client()?).await?,
         Some(subcommand) => match subcommand {
             Stop => StopCommand::execute(get_api_client()?).await?,
-            Continue { interactive } => {
-                ContinueCommand::execute(get_api_client()?, interactive).await?
+            Continue { interactive, fzf } => {
+                let picker = if interactive {
+                    Some(picker::get_picker(fzf))
+                } else {
+                    None
+                };
+                ContinueCommand::execute(get_api_client()?, picker).await?
             }
             List { number } => ListCommand::execute(get_api_client()?, number).await?,
             Current | Running => RunningTimeEntryCommand::execute(get_api_client()?).await?,
