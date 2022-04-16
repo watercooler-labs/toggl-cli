@@ -53,9 +53,9 @@ impl ItemPicker for FzfPicker {
                         Some(0) => {
                             let user_selected_string = String::from_utf8(output.stdout)?;
                             let selected_item_index = remove_trailing_newline(user_selected_string);
-                            let _selected_item =
+                            let selected_item =
                                 possible_elements.get(&selected_item_index).unwrap();
-                            Err(Box::new(PickerError::Generic))
+                            Ok(*selected_item)
                         }
                         // This is copied from zoxide's fzf handler.
                         // https://github.com/rohankumardubey/zoxide/blob/main/src/util.rs
