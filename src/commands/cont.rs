@@ -1,9 +1,11 @@
 use crate::api;
+use crate::commands;
 use crate::models;
 use crate::picker;
 use api::ApiClient;
 use chrono::Utc;
 use colored::Colorize;
+use commands::stop::{StopCommand, StopCommandOrigin};
 use models::{ResultWithDefaultError, TimeEntry};
 use picker::{ItemPicker, PickableItem};
 
@@ -14,19 +16,8 @@ impl ContinueCommand {
         api_client: impl ApiClient,
         picker: Option<Box<dyn ItemPicker>>,
     ) -> ResultWithDefaultError<()> {
-        let running_entry_stop_time = Utc::now();
-        let running_time_entry = api_client.get_running_time_entry().await?;
-        if let Some(time_entry) = &running_time_entry {
-            let stopped_time_entry = api_client
-                .update_time_entry(time_entry.as_stopped_time_entry(running_entry_stop_time))
-                .await?;
-
-            println!(
-                "{}\n{}",
-                "Running time entry stopped".yellow(),
-                stopped_time_entry
-            );
-        }
+        let running_time_entry =
+            StopCommand::execute(&api_client, StopCommandOrigin::ContinueCommand).await?;
 
         let time_entries = api_client.get_time_entries().await?;
         if time_entries.is_empty() {

@@ -1,8 +1,9 @@
 use crate::api;
+use crate::commands;
 use crate::models;
 use api::ApiClient;
-use chrono::Utc;
 use colored::Colorize;
+use commands::stop::{StopCommand, StopCommandOrigin};
 use models::ResultWithDefaultError;
 use models::TimeEntry;
 
@@ -14,40 +15,7 @@ impl StartCommand {
         billable: bool,
         description: String,
     ) -> ResultWithDefaultError<()> {
-        let running_entry_stop_time = Utc::now();
-        match api_client.get_running_time_entry().await {
-            Err(error) => {
-                println!(
-                    "{} {:?}",
-                    "Couldn't retrieve running time entry.".red(),
-                    error
-                );
-                return Ok(());
-            }
-            Ok(value) => {
-                if let Some(time_entry) = value {
-                    let stopped_time_entry = api_client
-                        .update_time_entry(
-                            time_entry.as_stopped_time_entry(running_entry_stop_time),
-                        )
-                        .await;
-
-                    if let Err(stop_error) = stopped_time_entry {
-                        println!(
-                            "{} {:?}",
-                            "Couldn't stop running time entry.".red(),
-                            stop_error
-                        );
-                        return Ok(());
-                    }
-                    println!(
-                        "{}\n{}",
-                        "Running time entry stopped".yellow(),
-                        stopped_time_entry.unwrap()
-                    );
-                }
-            }
-        }
+        StopCommand::execute(&api_client, StopCommandOrigin::StartCommand).await?;
 
         let started_entry = api_client
             .create_time_entry(TimeEntry {
