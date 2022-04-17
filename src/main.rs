@@ -22,7 +22,7 @@ use commands::cont::ContinueCommand;
 use commands::list::ListCommand;
 use commands::running::RunningTimeEntryCommand;
 use commands::start::StartCommand;
-use commands::stop::StopCommand;
+use commands::stop::{StopCommand, StopCommandOrigin};
 use credentials::{Credentials, CredentialsStorage, KeyringStorage};
 use keyring::Keyring;
 use models::ResultWithDefaultError;
@@ -48,7 +48,9 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
     match command {
         None => RunningTimeEntryCommand::execute(get_api_client()?).await?,
         Some(subcommand) => match subcommand {
-            Stop => StopCommand::execute(get_api_client()?).await?,
+            Stop => {
+                StopCommand::execute(&get_api_client()?, StopCommandOrigin::CommandLine).await?;
+            }
             Continue { interactive, fzf } => {
                 let picker = if interactive {
                     Some(picker::get_picker(fzf))
