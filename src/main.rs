@@ -6,6 +6,7 @@ mod credentials;
 mod error;
 mod models;
 mod picker;
+mod utilities;
 use api::{ApiClient, V9ApiClient};
 use arguments::Command;
 use arguments::Command::Auth;
@@ -65,7 +66,7 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
                 billable,
                 description,
                 project: _,
-            } => StartCommand::execute(get_api_client()?, billable, description).await?,
+            } => StartCommand::execute(get_api_client()?, description, billable).await?,
             Auth { api_token } => {
                 let credentials = Credentials { api_token };
                 let api_client = V9ApiClient::from_credentials(credentials)?;
