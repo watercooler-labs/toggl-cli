@@ -23,7 +23,7 @@ pub enum Command {
     },
     Start {
         #[structopt(short, long)]
-        description: String,
+        description: Option<String>,
         #[structopt(short, long)]
         project: Option<String>,
         #[structopt(short, long)]
