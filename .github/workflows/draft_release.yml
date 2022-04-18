@@ -1,0 +1,107 @@
+name: Draft Release
+
+on:
+  push:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  meta:
+    name: Prepare draft release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Export version
+        id: version
+        shell: bash
+        run: |
+          VERSION="$(cat Cargo.toml | grep -Pom1 '\d.\d.\d')"
+          echo "Drafting release for v$VERSION"
+          echo "::set-output name=version::$VERSION"
+
+      # Remove old release drafts by using the curl request for the available releases with draft flag
+      - name: Remove Old Release Drafts
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          curl -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPOSITORY/releases \
+            | tr '\r\n' ' ' \
+            | jq '.[] | select(.draft == true) | .id' \
+            | xargs -I '{}' \
+          curl -X DELETE -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPOSITORY/releases/{}
+      - name: Create a draft release
+        uses: actions/create-release@v1
+        id: createDraftRelease
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.version }}-next
+          release_name: v${{ steps.version.outputs.version }}-next
+          body: |
+            ## Changelog
+            - [ ]
+          draft: true
+          prerelease: false
+      - name: Save upload url of this draft release.
+        run: |
+          echo '${{ steps.createDraftRelease.outputs.upload_url }}' > release_upload_url.txt
+      - name: Upload `release_upload_url.txt`
+        uses: actions/upload-artifact@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          name: draft-release
+          path: release_upload_url.txt
+
+  build:
+    name: Build binary
+    needs: [meta]
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: x86_64-pc-windows-gnu
+            os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          target: ${{ matrix.target }}
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - name: Build release version
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
+          command: build
+          args: --release --target ${{ matrix.target }}
+      - name: Get upload URL
+        uses: actions/download-artifact@v3
+        with:
+          name: draft-release
+      - name: Expose upload URL
+        id: upload-url
+        run: |
+          echo "::set-output name=url::$(cat release_upload_url.txt)"
+      - name: Package binary
+        run: zip -j toggl.zip target/${{ matrix.target }}/release/*
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          upload_url: ${{ steps.upload-url.outputs.url }}
+          asset_path: ./toggl.zip
+          asset_name: toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip
+          asset_content_type: application/zip
