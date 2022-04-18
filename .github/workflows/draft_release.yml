@@ -34,28 +34,13 @@ jobs:
             | xargs -I '{}' \
           curl -X DELETE -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/repos/$GITHUB_REPOSITORY/releases/{}
       - name: Create a draft release
-        uses: actions/create-release@v1
         id: createDraftRelease
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        with:
-          tag_name: v${{ steps.version.outputs.version }}-next
-          release_name: v${{ steps.version.outputs.version }}-next
-          body: |
-            ## Changelog
-            - [ ]
-          draft: true
-          prerelease: false
-      - name: Save upload url of this draft release.
         run: |
-          echo '${{ steps.createDraftRelease.outputs.upload_url }}' > release_upload_url.txt
-      - name: Upload `release_upload_url.txt`
-        uses: actions/upload-artifact@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        with:
-          name: draft-release
-          path: release_upload_url.txt
+          gh release create v${{ steps.version.outputs.version }}-next \
+          --draft --generate-notes \
+          --title v${{ steps.version.outputs.version }}-next
 
   build:
     name: Build binary
@@ -91,21 +76,11 @@ jobs:
           use-cross: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
           command: build
           args: --release --target ${{ matrix.target }}
-      - name: Get upload URL
-        uses: actions/download-artifact@v3
-        with:
-          name: draft-release
-      - name: Expose upload URL
-        id: upload-url
-        run: |
-          echo "::set-output name=url::$(cat release_upload_url.txt)"
       - name: Package binary
-        run: zip -j toggl.zip target/${{ matrix.target }}/release/*
-      - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        with:
-          upload_url: ${{ steps.upload-url.outputs.url }}
-          asset_path: ./toggl.zip
-          asset_name: toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip
-          asset_content_type: application/zip
+        run: |
+          rm target/${{ matrix.target }}/release/toggl.d || true;
+          zip -j toggl.zip target/${{ matrix.target }}/release/*;
+          gh release upload --clobber v${{ needs.meta.outputs.version }}-next \
+          './toggl.zip#toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip';
