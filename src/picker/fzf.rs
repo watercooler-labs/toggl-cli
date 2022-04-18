@@ -1,6 +1,7 @@
 use crate::error;
 use crate::models;
 use crate::picker;
+use crate::utilities;
 use error::PickerError;
 use models::ResultWithDefaultError;
 use picker::{ItemPicker, PickableItem};
@@ -10,12 +11,6 @@ use std::io::Write;
 use std::process::{Command, Stdio};
 
 pub struct FzfPicker;
-
-fn remove_trailing_newline(value: String) -> String {
-    let mut chars = value.chars();
-    chars.next_back();
-    chars.as_str().to_string()
-}
 
 fn format_as_fzf_input(items: &[PickableItem]) -> String {
     items
@@ -52,7 +47,8 @@ impl ItemPicker for FzfPicker {
                     Ok(output) => match output.status.code() {
                         Some(0) => {
                             let user_selected_string = String::from_utf8(output.stdout)?;
-                            let selected_item_index = remove_trailing_newline(user_selected_string);
+                            let selected_item_index =
+                                utilities::remove_trailing_newline(user_selected_string);
                             let selected_item =
                                 possible_elements.get(&selected_item_index).unwrap();
                             Ok(*selected_item)
