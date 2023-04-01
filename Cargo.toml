@@ -30,5 +30,5 @@ skim = "0.9.4"
 
 [dev-dependencies]
 # Testing
-mockall = "0.9.1"
+mockall = "0.11.4"
 tokio-test = "0.4.2"
