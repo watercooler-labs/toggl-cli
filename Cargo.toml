@@ -13,7 +13,7 @@ structopt = { version = "0.3" }
 colored = "2.0.0"
 
 # Storage
-keyring = "0.10.4"
+keyring = "2"
 
 # API
 serde = { version = "1.0.159", features = ["derive"] }

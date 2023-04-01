@@ -24,7 +24,7 @@ use commands::running::RunningTimeEntryCommand;
 use commands::start::StartCommand;
 use commands::stop::{StopCommand, StopCommandOrigin};
 use credentials::{Credentials, CredentialsStorage, KeyringStorage};
-use keyring::Keyring;
+use keyring::Entry;
 use models::ResultWithDefaultError;
 use std::io;
 use structopt::StructOpt;
@@ -94,6 +94,7 @@ fn get_api_client() -> ResultWithDefaultError<impl ApiClient> {
 }
 
 fn get_storage() -> impl CredentialsStorage {
-    let keyring = Keyring::new("togglcli", "default");
+    let keyring = Entry::new("togglcli", "default")
+        .unwrap_or_else(|err| panic!("Couldn't create credentials_storage: {err}"));
     KeyringStorage::new(keyring)
 }
