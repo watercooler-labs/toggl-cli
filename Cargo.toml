@@ -6,6 +6,7 @@ authors = [
   "Tyler <tylerchc92@gmail.com>",
   "William Barbosa <heytherewill@gmail.com>"
 ]
+description = "Unofficial command-line interface for Toggl Track using the v9 API."
 homepage = "https://toggl.com/track"
 keywords = ["cli", "time", "time-tracking", "toggl", "track"]
 license = "MIT"
