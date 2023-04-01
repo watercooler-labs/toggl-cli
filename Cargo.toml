@@ -1,7 +1,15 @@
 [package]
 name = "toggl"
 version = "0.1.0"
-authors = ["William Barbosa <heytherewill@gmail.com>"]
+authors = [
+  "Shantanu Raj <s@sraj.me>",
+  "Tyler <tylerchc92@gmail.com>",
+  "William Barbosa <heytherewill@gmail.com>"
+]
+homepage = "https://toggl.com/track"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/watercooler-labs/toggl-cli"
 edition = "2021"
 
 [dependencies]
