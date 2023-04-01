@@ -7,7 +7,7 @@ use error::ApiError;
 #[cfg(test)]
 use mockall::automock;
 use models::{ResultWithDefaultError, TimeEntry, User};
-use reqwest::{header, Client, RequestBuilder, Response};
+use reqwest::{header, Client, RequestBuilder};
 use serde::{de, Serialize};
 
 #[cfg_attr(test, automock)]
@@ -73,9 +73,7 @@ impl V9ApiClient {
     }
 
     async fn get<T: de::DeserializeOwned>(&self, url: String) -> ResultWithDefaultError<T> {
-        let response = V9ApiClient::safe_send(self.http_client.get(url)).await?;
-        let deserialized_json = V9ApiClient::safe_deserialize::<T>(response).await?;
-        Ok(deserialized_json)
+        V9ApiClient::send::<T>(self.http_client.get(url)).await
     }
 
     async fn put<T: de::DeserializeOwned, Body: Serialize>(
@@ -83,9 +81,7 @@ impl V9ApiClient {
         url: String,
         body: &Body,
     ) -> ResultWithDefaultError<T> {
-        let response = V9ApiClient::safe_send(self.http_client.put(url).json(body)).await?;
-        let deserialized_json = V9ApiClient::safe_deserialize::<T>(response).await?;
-        Ok(deserialized_json)
+        V9ApiClient::send::<T>(self.http_client.put(url).json(body)).await
     }
 
     async fn post<T: de::DeserializeOwned, Body: Serialize>(
@@ -93,24 +89,16 @@ impl V9ApiClient {
         url: String,
         body: &Body,
     ) -> ResultWithDefaultError<T> {
-        let response = V9ApiClient::safe_send(self.http_client.post(url).json(body)).await?;
-        let deserialized_json = V9ApiClient::safe_deserialize::<T>(response).await?;
-        Ok(deserialized_json)
+        V9ApiClient::send::<T>(self.http_client.post(url).json(body)).await
     }
 
-    async fn safe_send(request: RequestBuilder) -> ResultWithDefaultError<Response> {
+    async fn send<T: de::DeserializeOwned>(request: RequestBuilder) -> ResultWithDefaultError<T> {
         match request.send().await {
             Err(_) => Err(Box::new(ApiError::Network)),
-            Ok(response) => Ok(response),
-        }
-    }
-
-    async fn safe_deserialize<T: de::DeserializeOwned>(
-        response: Response,
-    ) -> ResultWithDefaultError<T> {
-        match response.json::<T>().await {
-            Err(_) => Err(Box::new(ApiError::Deserialization)),
-            Ok(response) => Ok(response),
+            Ok(response) => match response.json::<T>().await {
+                Err(_) => Err(Box::new(ApiError::Deserialization)),
+                Ok(parsed_response) => Ok(parsed_response),
+            },
         }
     }
 }
