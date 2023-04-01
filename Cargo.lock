@@ -2391,7 +2391,6 @@ dependencies = [
  "async-trait",
  "base64 0.13.1",
  "chrono",
- "clap",
  "colored",
  "itertools",
  "keyring",

@@ -6,7 +6,6 @@ edition = "2021"
 
 [dependencies]
 # Argument parsing
-clap = "2.34.0"
 structopt = { version = "0.3" }
 
 # Terminal utilities
