@@ -2,7 +2,7 @@ use crate::error;
 use crate::models;
 use async_trait::async_trait;
 use error::StorageError;
-use keyring::Keyring;
+use keyring::Entry;
 #[cfg(test)]
 use mockall::automock;
 use models::ResultWithDefaultError;
@@ -19,11 +19,11 @@ pub trait CredentialsStorage {
 }
 
 pub struct KeyringStorage {
-    keyring: Keyring<'static>,
+    keyring: Entry,
 }
 
 impl KeyringStorage {
-    pub fn new(keyring: Keyring<'static>) -> KeyringStorage {
+    pub fn new(keyring: Entry) -> KeyringStorage {
         Self { keyring }
     }
 }

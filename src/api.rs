@@ -2,6 +2,7 @@ use crate::credentials;
 use crate::error;
 use crate::models;
 use async_trait::async_trait;
+use base64::{engine::general_purpose, Engine as _};
 use error::ApiError;
 #[cfg(test)]
 use mockall::automock;
@@ -57,7 +58,8 @@ impl V9ApiClient {
         credentials: credentials::Credentials,
     ) -> ResultWithDefaultError<V9ApiClient> {
         let auth_string = credentials.api_token + ":api_token";
-        let header_content = "Basic ".to_string() + base64::encode(auth_string).as_str();
+        let header_content =
+            "Basic ".to_string() + general_purpose::STANDARD.encode(auth_string).as_str();
         let mut headers = header::HeaderMap::new();
         let auth_header = header::HeaderValue::from_str(header_content.as_str())?;
         headers.insert(header::AUTHORIZATION, auth_header);

@@ -2,35 +2,33 @@
 name = "toggl"
 version = "0.1.0"
 authors = ["William Barbosa <heytherewill@gmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 # Argument parsing
-clap = "2.27.1"
 structopt = { version = "0.3" }
 
 # Terminal utilities
 colored = "2.0.0"
 
 # Storage
-keyring = "0.10.1"
+keyring = "2"
 
 # API
-serde = { version = "1.0.104", features = ["derive"] }
-serde_json = "1.0.48"
+serde = { version = "1.0.159", features = ["derive"] }
+serde_json = "1.0.95"
 reqwest = { version = "0.11", features = ["json"] }
 tokio = { version = "1", features = ["full"] }
-base64 = "0.13.0"
-async-trait = "0.1.50"
+base64 = "0.21.0"
+async-trait = "0.1.68"
 
 # Models
-chrono = { version = "0.4.19", features = ["serde"] }
-itertools = "0.10.1"
+chrono = { version = "0.4.24", features = ["serde"] }
 
 [target.'cfg(unix)'.dependencies]
-skim = "0.9.4"
+skim = "0.10.4"
 
 [dev-dependencies]
 # Testing
-mockall = "0.9.1"
+mockall = "0.11.4"
 tokio-test = "0.4.2"

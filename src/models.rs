@@ -46,12 +46,12 @@ impl TimeEntry {
 
     pub fn get_duration_hmmss(&self) -> String {
         let duration = self.get_duration();
-        return format!(
+        format!(
             "{}:{:02}:{:02}",
             duration.num_hours(),
             duration.num_minutes() % 60,
             duration.num_seconds() % 60
-        );
+        )
     }
 
     pub fn is_running(&self) -> bool {
