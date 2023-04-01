@@ -6,6 +6,11 @@ authors = [
   "Tyler <tylerchc92@gmail.com>",
   "William Barbosa <heytherewill@gmail.com>"
 ]
+categories = [
+  "api-bindings",
+  "command-line-utilities",
+  "date-and-time",
+]
 description = "Unofficial command-line interface for Toggl Track using the v9 API."
 homepage = "https://toggl.com/track"
 keywords = ["cli", "time", "time-tracking", "toggl", "track"]
@@ -28,7 +33,7 @@ keyring = "2"
 serde = { version = "1.0.159", features = ["derive"] }
 serde_json = "1.0.95"
 reqwest = { version = "0.11", features = ["json"] }
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.27.0", features = ["full"] }
 base64 = "0.21.0"
 async-trait = "0.1.68"
 
