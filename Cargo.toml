@@ -1,12 +1,13 @@
 [package]
 name = "toggl"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
   "Shantanu Raj <s@sraj.me>",
   "Tyler <tylerchc92@gmail.com>",
   "William Barbosa <heytherewill@gmail.com>"
 ]
 homepage = "https://toggl.com/track"
+keywords = ["cli", "time", "time-tracking", "toggl", "track"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/watercooler-labs/toggl-cli"
