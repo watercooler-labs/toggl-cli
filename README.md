@@ -67,9 +67,10 @@ You can also run the `help` command on a specific subcommand.
 ```shell
 $ toggl help start
 toggl-start 0.1.0
+Start a new time entry. Call with no arguments to start in interactive mode.
 
 USAGE:
-    toggl start [FLAGS] [OPTIONS] --description <description>
+    toggl start [FLAGS] [OPTIONS] [description]
 
 FLAGS:
     -b, --billable
@@ -77,8 +78,10 @@ FLAGS:
     -V, --version     Prints version information
 
 OPTIONS:
-    -d, --description <description>
     -p, --project <project>
+
+ARGS:
+    <description>
 ```
 
 ## Testing
