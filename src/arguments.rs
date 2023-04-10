@@ -41,4 +41,6 @@ pub enum Command {
         #[structopt(long)]
         fzf: bool,
     },
+    #[structopt(about = "Get a configuration value.")]
+    Config,
 }

@@ -1,6 +1,7 @@
 mod api;
 mod arguments;
 mod commands;
+mod config;
 mod constants;
 mod credentials;
 mod error;
@@ -10,6 +11,7 @@ mod utilities;
 use api::{ApiClient, V9ApiClient};
 use arguments::Command;
 use arguments::Command::Auth;
+use arguments::Command::Config;
 use arguments::Command::Continue;
 use arguments::Command::Current;
 use arguments::Command::List;
@@ -71,6 +73,10 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
                 let credentials = Credentials { api_token };
                 let api_client = V9ApiClient::from_credentials(credentials)?;
                 AuthenticationCommand::execute(io::stdout(), api_client, get_storage()).await?
+            }
+
+            Config => {
+                config::get::ConfigGetCommand::execute().await?;
             }
         },
     }
