@@ -19,6 +19,7 @@ use arguments::Command::Running;
 use arguments::Command::Start;
 use arguments::Command::Stop;
 use arguments::CommandLineArguments;
+use arguments::ConfigSubCommand;
 use colored::Colorize;
 use commands::auth::AuthenticationCommand;
 use commands::cont::ContinueCommand;
@@ -75,9 +76,19 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
                 AuthenticationCommand::execute(io::stdout(), api_client, get_storage()).await?
             }
 
-            Config => {
-                config::get::ConfigGetCommand::execute().await?;
-            }
+            Config {
+                delete,
+                cmd,
+                edit,
+                path,
+            } => match cmd {
+                Some(config_command) => match config_command {
+                    ConfigSubCommand::Init => {
+                        config::init::ConfigInitCommand::execute(edit).await?;
+                    }
+                },
+                None => config::get::ConfigGetCommand::execute(delete, edit, path).await?,
+            },
         },
     }
 

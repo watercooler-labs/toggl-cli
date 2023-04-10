@@ -3,6 +3,11 @@ use std::path::{Path, PathBuf};
 use sha2::{Digest, Sha256};
 
 pub fn locate_config() -> Result<super::TrackConfig, Box<dyn std::error::Error>> {
+    let config_filename = locate_config_path()?;
+    super::parser::get_config_from_file(config_filename)
+}
+
+pub fn locate_config_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let mut hasher = Sha256::new();
     let config_root = get_config_root();
     let mut config_path = std::env::current_dir()?;
@@ -19,8 +24,14 @@ pub fn locate_config() -> Result<super::TrackConfig, Box<dyn std::error::Error>>
         }
         config_filename = get_hashed_config_path(&mut hasher, &config_root, &config_path);
     }
+    Ok(config_filename)
+}
 
-    super::parser::get_config_from_file(config_filename)
+pub fn get_config_path_for_current_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let mut hasher = Sha256::new();
+    let config_root = get_config_root();
+    let path = std::env::current_dir()?;
+    Ok(get_hashed_config_path(&mut hasher, &config_root, &path))
 }
 
 fn get_config_root() -> PathBuf {

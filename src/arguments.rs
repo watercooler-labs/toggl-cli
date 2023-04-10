@@ -41,6 +41,28 @@ pub enum Command {
         #[structopt(long)]
         fzf: bool,
     },
-    #[structopt(about = "Get a configuration value.")]
-    Config,
+    #[structopt(about = "Manage auto-tracking configuration")]
+    Config {
+        #[structopt(
+            short,
+            long,
+            help = "Edit the configuration file in $EDITOR, defaults to vim"
+        )]
+        edit: bool,
+
+        #[structopt(short, long, help = "Delete the configuration file")]
+        delete: bool,
+
+        #[structopt(short, long, help = "Print the path of the configuration file")]
+        path: bool,
+
+        #[structopt(subcommand)]
+        cmd: Option<ConfigSubCommand>,
+    },
+}
+
+#[derive(Debug, StructOpt)]
+pub enum ConfigSubCommand {
+    #[structopt(about = "Initialize a configuration file.")]
+    Init,
 }
