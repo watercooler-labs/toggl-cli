@@ -1,22 +1,6 @@
-use serde::{Deserialize, Serialize};
+use crate::config::{BranchConfig, TrackConfig};
 use std::{collections::HashMap, path::Path};
 use toml;
-
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub struct BranchConfig {
-    pub workspace: Option<String>,
-    pub description: Option<String>,
-    pub project: Option<String>,
-    pub task: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub billable: Option<bool>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct TrackConfig {
-    pub default: BranchConfig,
-    pub branches: HashMap<String, BranchConfig>,
-}
 
 const DEFAULT_BRANCH: &str = "*";
 
