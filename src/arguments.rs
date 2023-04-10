@@ -26,7 +26,7 @@ pub enum Command {
     )]
     Start {
         #[structopt(
-            about = "Description of the time entry. If not specified, the user will be prompted to enter it."
+            help = "Description of the time entry. If not specified, the user will be prompted to enter it."
         )]
         description: Option<String>,
         #[structopt(short, long)]
@@ -41,4 +41,28 @@ pub enum Command {
         #[structopt(long)]
         fzf: bool,
     },
+    #[structopt(about = "Manage auto-tracking configuration")]
+    Config {
+        #[structopt(
+            short,
+            long,
+            help = "Edit the configuration file in $EDITOR, defaults to vim"
+        )]
+        edit: bool,
+
+        #[structopt(short, long, help = "Delete the configuration file")]
+        delete: bool,
+
+        #[structopt(short, long, help = "Print the path of the configuration file")]
+        path: bool,
+
+        #[structopt(subcommand)]
+        cmd: Option<ConfigSubCommand>,
+    },
+}
+
+#[derive(Debug, StructOpt)]
+pub enum ConfigSubCommand {
+    #[structopt(about = "Initialize a configuration file.")]
+    Init,
 }

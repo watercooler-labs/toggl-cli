@@ -7,40 +7,8 @@ use colored::Colorize;
 use commands::stop::{StopCommand, StopCommandOrigin};
 use models::ResultWithDefaultError;
 use models::TimeEntry;
-use std::io::{self, Write};
 
 pub struct StartCommand;
-
-fn print_without_buffer(text: &str) {
-    print!("{}", text);
-    io::stdout().flush().unwrap();
-}
-
-fn read_from_stdin(text: &str) -> String {
-    print_without_buffer(text);
-    let mut result = String::new();
-    io::stdin()
-        .read_line(&mut result)
-        .expect("Failed to read line");
-    utilities::remove_trailing_newline(result)
-}
-
-fn read_from_stdin_with_constraints(text: &str, valid_values: &[String]) -> String {
-    loop {
-        let result = read_from_stdin(text);
-        if valid_values.contains(&result) {
-            return result;
-        } else {
-            let error_message = format!(
-                "Invalid value \"{}\". Valid values are: {}\n",
-                result,
-                valid_values.join(", ")
-            )
-            .red();
-            print_without_buffer(&error_message);
-        }
-    }
-}
 
 fn interactively_create_time_entry(workspace_id: i64) -> TimeEntry {
     let yes_or_no = [
@@ -49,9 +17,11 @@ fn interactively_create_time_entry(workspace_id: i64) -> TimeEntry {
         "N".to_string(),
         "".to_string(),
     ];
-    let description = read_from_stdin("Description: ");
-    let billable =
-        read_from_stdin_with_constraints("Is your time entry billable? (y/N): ", &yes_or_no) == "y";
+    let description = utilities::read_from_stdin("Description: ");
+    let billable = utilities::read_from_stdin_with_constraints(
+        "Is your time entry billable? (y/N): ",
+        &yes_or_no,
+    ) == "y";
 
     TimeEntry {
         billable,

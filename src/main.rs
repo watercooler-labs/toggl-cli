@@ -1,6 +1,7 @@
 mod api;
 mod arguments;
 mod commands;
+mod config;
 mod constants;
 mod credentials;
 mod error;
@@ -10,6 +11,7 @@ mod utilities;
 use api::{ApiClient, V9ApiClient};
 use arguments::Command;
 use arguments::Command::Auth;
+use arguments::Command::Config;
 use arguments::Command::Continue;
 use arguments::Command::Current;
 use arguments::Command::List;
@@ -17,6 +19,7 @@ use arguments::Command::Running;
 use arguments::Command::Start;
 use arguments::Command::Stop;
 use arguments::CommandLineArguments;
+use arguments::ConfigSubCommand;
 use colored::Colorize;
 use commands::auth::AuthenticationCommand;
 use commands::cont::ContinueCommand;
@@ -72,6 +75,20 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
                 let api_client = V9ApiClient::from_credentials(credentials)?;
                 AuthenticationCommand::execute(io::stdout(), api_client, get_storage()).await?
             }
+
+            Config {
+                delete,
+                cmd,
+                edit,
+                path,
+            } => match cmd {
+                Some(config_command) => match config_command {
+                    ConfigSubCommand::Init => {
+                        config::init::ConfigInitCommand::execute(edit).await?;
+                    }
+                },
+                None => config::manage::ConfigManageCommand::execute(delete, edit, path).await?,
+            },
         },
     }
 
