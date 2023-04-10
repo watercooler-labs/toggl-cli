@@ -36,7 +36,7 @@ impl ConfigManageCommand {
                     }
                     Err(_) => {
                         println!("{}", "No config file found".red().bold());
-                        println!("{} {} {}", "Run", "toggl config init".blue().bold(), "to create one");
+                        println!("Run {} to create one", "toggl config init".blue().bold());
                     }
                 }
                 Ok(())
