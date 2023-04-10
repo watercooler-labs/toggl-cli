@@ -35,7 +35,10 @@ pub fn read_from_stdin_with_constraints(text: &str, valid_values: &[String]) -> 
     }
 }
 
-pub fn open_path_in_editor(path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+pub fn open_path_in_editor<P>(path: P) -> Result<(), Box<dyn std::error::Error>>
+where
+    P: AsRef<Path> + std::convert::AsRef<std::ffi::OsStr>,
+{
     let editor = std::env::var("EDITOR").unwrap_or_else(|_| "vim".to_string());
     let mut child = std::process::Command::new(editor)
         .arg(path)

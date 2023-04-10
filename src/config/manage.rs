@@ -22,7 +22,7 @@ impl ConfigManageCommand {
             }
             (_, true, _) => {
                 let path = super::locate::locate_config_path()?;
-                utilities::open_path_in_editor(&path)
+                utilities::open_path_in_editor(path)
             }
             (_, _, true) => {
                 let path = super::locate::locate_config_path()?;

@@ -10,7 +10,7 @@ impl ConfigInitCommand {
         match config_path {
             Ok(path) => {
                 if edit {
-                    utilities::open_path_in_editor(&path)?
+                    utilities::open_path_in_editor(path)?
                 } else {
                     println!(
                         "{} {}",
