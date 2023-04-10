@@ -26,7 +26,7 @@ pub enum Command {
     )]
     Start {
         #[structopt(
-            about = "Description of the time entry. If not specified, the user will be prompted to enter it."
+            help = "Description of the time entry. If not specified, the user will be prompted to enter it."
         )]
         description: Option<String>,
         #[structopt(short, long)]
