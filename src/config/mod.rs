@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-pub mod get;
 pub mod init;
 pub mod locate;
+pub mod manage;
 pub mod parser;
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]

@@ -87,7 +87,7 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
                         config::init::ConfigInitCommand::execute(edit).await?;
                     }
                 },
-                None => config::get::ConfigManageCommand::execute(delete, edit, path).await?,
+                None => config::manage::ConfigManageCommand::execute(delete, edit, path).await?,
             },
         },
     }
