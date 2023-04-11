@@ -23,11 +23,13 @@ impl ConfigInitCommand {
             Err(_) => {
                 let default_config = include_bytes!("./fixtures/default.toml");
                 let config_path = super::locate::get_config_path_for_current_dir()?;
+                let config_dir = config_path.parent().unwrap();
                 let msg = format!(
                     "{} {}",
                     "Created config at".green().bold(),
                     config_path.display()
                 );
+                std::fs::create_dir_all(config_dir)?;
                 std::fs::write(config_path, default_config)?;
                 println!("{}", msg);
             }
