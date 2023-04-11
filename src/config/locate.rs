@@ -2,7 +2,9 @@ use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
 
-pub fn locate_config() -> Result<super::TrackConfig, Box<dyn std::error::Error>> {
+use super::model::TrackConfig;
+
+pub fn locate_config() -> Result<TrackConfig, Box<dyn std::error::Error>> {
     let config_filename = locate_config_path()?;
     super::parser::get_config_from_file(config_filename)
 }

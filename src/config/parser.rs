@@ -1,6 +1,7 @@
-use crate::config::{BranchConfig, TrackConfig};
 use std::{collections::HashMap, path::Path};
 use toml;
+
+use super::model::{BranchConfig, TrackConfig};
 
 const DEFAULT_BRANCH: &str = "*";
 
