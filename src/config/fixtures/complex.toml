@@ -1,5 +1,5 @@
 ["*"]
-description = "🔨 {{current_branch}} / {{active_dir}}"
+description = "🔨 {{branch}} / {{current_dir}}"
 project = "{{parent_base_dir}}"
 billable = true
 
@@ -12,7 +12,7 @@ billable = false
 # Match all branches that start with a number and a slash
 # e.g. 1234/feature-branch
 ["^\\d+\\/.*"]
-description = "🔨 {{current_branch}}"
+description = "🔨 {{branch}}"
 project = "{{base_dir}}"
 task = """
   {{$if [[ "$PWD" == *"android"* ]]; then echo "Android"; else echo "iOS"; fi}}

@@ -14,7 +14,7 @@
 
 # Description (optional, default="")
 # Accepts any string template with our marcros in them
-description = "🔨 {{current_branch}}"
+description = "🔨 {{branch}}"
 
 # Project (optional, default=No project)
 # Accepts any string template with our marcros in them
@@ -36,7 +36,7 @@ billable = true
 # don't match any other block.
 
 # ["will\\/.*"]
-# description = "Review {{current_branch}}"
+# description = "Review {{branch}}"
 # project = "{{base_dir}}"
 # tags = ["review"]
 # billable = false

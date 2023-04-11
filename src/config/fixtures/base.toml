@@ -9,11 +9,11 @@
 
 # Workspace (optional, default={{default}}
 # {{default}} in this context would resolve to the user's default workspace
-workspace = "{{default}}"
+workspace = "default"
 
 # Description (optional, default=null)
 # Accepts any string template with our marcros in them
-description = "🔨 {{current_branch}}"
+description = "🔨 {{branch}}"
 
 # Project (optional, default=null)
 project = "{{base_dir}}"
