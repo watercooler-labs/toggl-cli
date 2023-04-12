@@ -65,4 +65,6 @@ pub enum Command {
 pub enum ConfigSubCommand {
     #[structopt(about = "Initialize a configuration file.")]
     Init,
+    #[structopt(about = "Report matching configuration block for current directory.")]
+    Active,
 }

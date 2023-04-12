@@ -5,6 +5,8 @@ use colored::Colorize;
 use serde::de::{self, Deserializer, MapAccess, Visitor};
 use serde::{Deserialize, Serialize};
 
+use crate::utilities;
+
 /// BranchConfig optionally determines workspace, description, project, task,
 /// tags, and billable status of a time entry.
 /// The fields are optional, and if not specified, the default values will be
@@ -419,4 +421,22 @@ fn process_config_value(input: String) -> String {
     }
 
     result
+}
+
+impl TrackConfig {
+    fn get_branch_config(&self, branch: Option<&str>) -> &BranchConfig {
+        match branch {
+            Some(branch) => self
+                .branches
+                .iter()
+                .find(|(b, _)| b == branch)
+                .map(|(_, c)| c)
+                .unwrap_or(&self.default),
+            None => &self.default,
+        }
+    }
+    pub fn get_branch_config_for_dir(&self, dir: &PathBuf) -> &BranchConfig {
+        let branch = utilities::get_git_branch_for_dir(dir);
+        self.get_branch_config(branch.as_deref())
+    }
 }

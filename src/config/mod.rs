@@ -1,3 +1,4 @@
+pub mod active;
 pub mod init;
 pub mod locate;
 pub mod manage;

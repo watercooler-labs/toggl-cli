@@ -1,6 +1,6 @@
 use std::{
     io::{self, Write},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use colored::Colorize;
@@ -46,6 +46,20 @@ where
         .expect("Failed to spawn editor");
     child.wait().expect("Failed to wait for editor");
     Ok(())
+}
+
+pub fn get_git_branch_for_dir(dir: &PathBuf) -> Option<String> {
+    let output = std::process::Command::new("git")
+        .arg("branch")
+        .arg("--show-current")
+        .current_dir(dir)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let branch = String::from_utf8(output.stdout).ok()?;
+    Some(branch.trim().to_string())
 }
 
 fn print_without_buffer(text: &str) {
