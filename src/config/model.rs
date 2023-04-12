@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+
 use std::ffi::OsStr;
 use std::os::unix::prelude::OsStrExt;
 use std::path::PathBuf;
@@ -75,7 +75,7 @@ pub struct BranchConfig {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TrackConfig {
     pub default: BranchConfig,
-    pub branches: HashMap<String, BranchConfig>,
+    pub branches: Vec<(String, BranchConfig)>,
 }
 
 impl<'de> Deserialize<'de> for BranchConfig {
