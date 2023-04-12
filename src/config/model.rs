@@ -1,6 +1,3 @@
-
-use std::ffi::OsStr;
-use std::os::unix::prelude::OsStrExt;
 use std::path::PathBuf;
 use std::{env, fmt};
 
@@ -72,7 +69,7 @@ pub struct BranchConfig {
     pub billable: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Clone)]
 pub struct TrackConfig {
     pub default: BranchConfig,
     pub branches: Vec<(String, BranchConfig)>,
@@ -232,6 +229,57 @@ impl std::fmt::Display for TrackConfig {
     }
 }
 
+impl<'de> Deserialize<'de> for TrackConfig {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct TrackConfigVisitor;
+
+        impl<'de> Visitor<'de> for TrackConfigVisitor {
+            type Value = TrackConfig;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct TrackConfig")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut default: Option<BranchConfig> = None;
+                let mut branches: Vec<(String, BranchConfig)> = Vec::new();
+                while let Some(key) = map.next_key::<String>()? {
+                    match key.as_str() {
+                        "*" => {
+                            if default.is_some() {
+                                return Err(de::Error::duplicate_field("* [default]"));
+                            }
+                            default = Some(map.next_value()?);
+                        }
+                        _ => {
+                            if branches.iter().any(|(branch, _)| branch == &key) {
+                                // TODO: Report duplicate key error can't seem to figure out a way to
+                                // return the repeated branch here
+                                return Err(de::Error::duplicate_field("branch"));
+                            }
+                            branches.push((key, map.next_value()?));
+                        }
+                    }
+                }
+                Ok(TrackConfig {
+                    default: default.unwrap_or(BranchConfig::default()),
+                    branches,
+                })
+            }
+        }
+
+        const FIELDS: &[&str] = &["default", "branches"];
+
+        deserializer.deserialize_struct("TrackConfig", FIELDS, TrackConfigVisitor)
+    }
+}
+
 enum Macro {
     Branch,
     BaseDir,
@@ -271,11 +319,8 @@ fn resolve_macro(instruction: Macro) -> Result<String, Box<dyn std::error::Error
             Ok(String::from_utf8(output.stdout)?.trim().to_string())
         }
         Macro::BaseDir => {
-            let base_dir = std::process::Command::new("git")
-                .arg("rev-parse")
-                .arg("--show-toplevel")
-                .output()
-                .map(|o| PathBuf::from(OsStr::from_bytes(&o.stdout)))?;
+            let base_dir = super::locate::locate_tracked_path()?;
+
             Ok(base_dir
                 .file_name()
                 .unwrap()
@@ -286,11 +331,7 @@ fn resolve_macro(instruction: Macro) -> Result<String, Box<dyn std::error::Error
                 .to_string())
         }
         Macro::ParentBaseDir => {
-            let base_dir = std::process::Command::new("git")
-                .arg("rev-parse")
-                .arg("--show-toplevel")
-                .output()
-                .map(|o| PathBuf::from(OsStr::from_bytes(&o.stdout)))?;
+            let base_dir = super::locate::locate_tracked_path()?;
             let parent_dir = base_dir
                 .parent()
                 .unwrap()

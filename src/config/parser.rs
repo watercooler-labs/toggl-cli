@@ -1,23 +1,13 @@
-use std::{collections::HashMap, path::Path};
+use std::path::Path;
 use toml;
 
-use super::model::{BranchConfig, TrackConfig};
-
-const DEFAULT_BRANCH: &str = "*";
+use super::model::TrackConfig;
 
 pub fn get_config_from_file<P: AsRef<Path>>(
     path: P,
 ) -> Result<TrackConfig, Box<dyn std::error::Error>> {
     let contents = std::fs::read_to_string(path)?;
-    let mut branches: HashMap<String, BranchConfig> = toml::from_str(&contents)?;
+    let config: TrackConfig = toml::from_str(&contents)?;
 
-    let default = branches.get(DEFAULT_BRANCH).cloned().unwrap_or_default();
-
-    // Delete the default config from the branches config
-    branches.remove(DEFAULT_BRANCH);
-
-    Ok(TrackConfig {
-        default,
-        branches: branches.into_iter().collect(),
-    })
+    Ok(config)
 }
