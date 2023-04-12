@@ -2310,6 +2310,7 @@ dependencies = [
  "colored",
  "directories",
  "keyring",
+ "lazy_static",
  "mockall",
  "regex",
  "reqwest",

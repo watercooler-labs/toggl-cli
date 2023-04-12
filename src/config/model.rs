@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::{env, fmt};
 
 use colored::Colorize;
@@ -82,7 +82,9 @@ impl<'de> Deserialize<'de> for BranchConfig {
     where
         D: Deserializer<'de>,
     {
-        struct BranchConfigVisitor;
+        struct BranchConfigVisitor {
+            base_dir: PathBuf,
+        }
 
         impl<'de> Visitor<'de> for BranchConfigVisitor {
             type Value = BranchConfig;
@@ -95,6 +97,8 @@ impl<'de> Deserialize<'de> for BranchConfig {
             where
                 V: MapAccess<'de>,
             {
+                let process_template = |value: String| process_config_value(&self.base_dir, value);
+
                 let mut workspace: Option<String> = None;
                 let mut description: Option<String> = None;
                 let mut project: Option<String> = None;
@@ -107,32 +111,32 @@ impl<'de> Deserialize<'de> for BranchConfig {
                             if workspace.is_some() {
                                 return Err(de::Error::duplicate_field("workspace"));
                             }
-                            workspace = Some(map.next_value().map(process_config_value)?);
+                            workspace = Some(map.next_value().map(process_template)?);
                         }
                         "description" => {
                             if description.is_some() {
                                 return Err(de::Error::duplicate_field("description"));
                             }
-                            description = Some(map.next_value().map(process_config_value)?);
+                            description = Some(map.next_value().map(process_template)?);
                         }
                         "project" => {
                             if project.is_some() {
                                 return Err(de::Error::duplicate_field("project"));
                             }
-                            project = Some(map.next_value().map(process_config_value)?);
+                            project = Some(map.next_value().map(process_template)?);
                         }
                         "task" => {
                             if task.is_some() {
                                 return Err(de::Error::duplicate_field("task"));
                             }
-                            task = Some(map.next_value().map(process_config_value)?);
+                            task = Some(map.next_value().map(process_template)?);
                         }
                         "tags" => {
                             if tags.is_some() {
                                 return Err(de::Error::duplicate_field("tags"));
                             }
                             tags = Some(map.next_value()?).map(|tags: Vec<String>| {
-                                tags.into_iter().map(process_config_value).collect()
+                                tags.into_iter().map(process_template).collect()
                             });
                         }
                         "billable" => {
@@ -176,7 +180,15 @@ impl<'de> Deserialize<'de> for BranchConfig {
             "billable",
         ];
 
-        deserializer.deserialize_struct("BranchConfig", FIELDS, BranchConfigVisitor)
+        deserializer.deserialize_struct(
+            "BranchConfig",
+            FIELDS,
+            BranchConfigVisitor {
+                base_dir: super::locate::TRACKED_PATH
+                    .to_owned()
+                    .expect("Could not locate tracked path while deserializing config"),
+            },
+        )
     }
 }
 
@@ -310,7 +322,10 @@ fn resolve_token_to_macro(token: &str) -> Option<Macro> {
     }
 }
 
-fn resolve_macro(instruction: Macro) -> Result<String, Box<dyn std::error::Error>> {
+fn resolve_macro(
+    base_dir: &Path,
+    instruction: Macro,
+) -> Result<String, Box<dyn std::error::Error>> {
     match instruction {
         Macro::Branch => {
             let output = std::process::Command::new("git")
@@ -320,20 +335,15 @@ fn resolve_macro(instruction: Macro) -> Result<String, Box<dyn std::error::Error
                 .output()?;
             Ok(String::from_utf8(output.stdout)?.trim().to_string())
         }
-        Macro::BaseDir => {
-            let base_dir = super::locate::locate_tracked_path()?;
-
-            Ok(base_dir
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap()
-                .to_string()
-                .trim()
-                .to_string())
-        }
+        Macro::BaseDir => Ok(base_dir
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string()
+            .trim()
+            .to_string()),
         Macro::ParentBaseDir => {
-            let base_dir = super::locate::locate_tracked_path()?;
             let parent_dir = base_dir
                 .parent()
                 .unwrap()
@@ -392,14 +402,14 @@ fn resolve_macro(instruction: Macro) -> Result<String, Box<dyn std::error::Error
     }
 }
 
-fn resolve_token(token: &str) -> Result<String, Box<dyn std::error::Error>> {
+fn resolve_token(base_dir: &Path, token: &str) -> Result<String, Box<dyn std::error::Error>> {
     match resolve_token_to_macro(token) {
-        Some(macro_) => resolve_macro(macro_),
+        Some(macro_) => resolve_macro(base_dir, macro_),
         None => Ok(token.to_string()),
     }
 }
 
-fn process_config_value(input: String) -> String {
+fn process_config_value(base_dir: &Path, input: String) -> String {
     let mut result = String::new();
     let mut chars = input.chars().peekable();
 
@@ -414,7 +424,7 @@ fn process_config_value(input: String) -> String {
                 }
                 token.push(c);
             }
-            result.push_str(&resolve_token(&token).unwrap());
+            result.push_str(&resolve_token(base_dir, &token).unwrap());
         } else {
             result.push(c);
         }

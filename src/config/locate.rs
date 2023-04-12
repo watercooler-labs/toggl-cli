@@ -1,8 +1,13 @@
 use std::path::{Path, PathBuf};
 
 use base64::{engine::general_purpose, Engine as _};
+use lazy_static::lazy_static;
 
 use crate::error::ConfigError;
+
+lazy_static! {
+    pub static ref TRACKED_PATH: Option<PathBuf> = locate_tracked_path().ok();
+}
 
 pub fn locate_config_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let config_root = get_config_root();
@@ -19,9 +24,7 @@ pub fn locate_config_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
     Ok(config_filename)
 }
 
-/// TODO: Cache config_path to avoid calling locate_tracked_path() multiple times
-/// It's guaranteed to be the same for the duration of the program
-pub fn locate_tracked_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
+fn locate_tracked_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let config_root = get_config_root();
 
     let mut config_path = std::env::current_dir()?;
