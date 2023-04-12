@@ -13,7 +13,7 @@ billable = false
 # e.g. 1234/feature-branch
 ['^\d+/.*']
 description = "🔨 {{branch}}"
-project = "{{base_dir}}"
+project = "{{git_root}}"
 task = """
   {{$if [[ "$PWD" == *"android"* ]]; then echo "Android"; else echo "iOS"; fi}}
 """

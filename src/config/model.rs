@@ -15,10 +15,12 @@ use crate::utilities;
 ///
 /// The templating syntax is `{{<field>}}`. The following fields are supported:
 /// - `branch` -- the name of the current branch
-/// - `base_dir` -- the base directory of the repository
+/// - `base_dir` -- the directory registered with the config file
 /// - `parent_base_dir` -- the base directory of the parent repository
 /// - `current_dir` -- the current working directory
 /// - `parent_dir` -- the parent directory of the current working directory
+/// - `git_root` -- the root directory of the current repository
+/// - `parent_git_root` -- the parent directory of the current git repository
 /// - `$<shell_statement>` -- the output of the shell statement
 ///
 /// The variables can be combined with other strings,
@@ -300,6 +302,8 @@ enum Macro {
     ParentBaseDir,
     CurrentDir,
     ParentDir,
+    GitRoot,
+    ParentGitRoot,
     Shell(String),
 }
 
@@ -310,6 +314,8 @@ fn resolve_token_to_macro(token: &str) -> Option<Macro> {
         "parent_base_dir" => Some(Macro::ParentBaseDir),
         "current_dir" => Some(Macro::CurrentDir),
         "parent_dir" => Some(Macro::ParentDir),
+        "git_root" => Some(Macro::GitRoot),
+        "parent_git_root" => Some(Macro::ParentGitRoot),
         _ => {
             if token.starts_with('$') {
                 let command = token.trim_start_matches('$').trim();
@@ -340,7 +346,6 @@ fn resolve_macro(
             .unwrap()
             .to_str()
             .unwrap()
-            .to_string()
             .trim()
             .to_string()),
         Macro::ParentBaseDir => {
@@ -367,6 +372,60 @@ fn resolve_macro(
                 .to_str()
                 .unwrap()
                 .to_string())
+        }
+        Macro::GitRoot => {
+            let output = std::process::Command::new("git")
+                .arg("rev-parse")
+                .arg("--show-toplevel")
+                .output();
+
+            match output {
+                Ok(output) => {
+                    if !output.status.success() {
+                        return Err(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::Other,
+                            "Failed to resolve git root",
+                        )));
+                    }
+                    let git_root = PathBuf::from(String::from_utf8(output.stdout)?);
+                    Ok(git_root
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .trim()
+                        .to_string())
+                }
+                Err(err) => Err(Box::new(err)),
+            }
+        }
+        Macro::ParentGitRoot => {
+            let output = std::process::Command::new("git")
+                .arg("rev-parse")
+                .arg("--show-toplevel")
+                .output();
+
+            match output {
+                Ok(output) => {
+                    if !output.status.success() {
+                        return Err(Box::new(std::io::Error::new(
+                            std::io::ErrorKind::Other,
+                            "Failed to resolve git root",
+                        )));
+                    }
+                    let git_root = PathBuf::from(String::from_utf8(output.stdout)?);
+                    Ok(git_root
+                        .parent()
+                        .unwrap()
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .trim()
+                        .to_string())
+                }
+                Err(err) => Err(Box::new(err)),
+            }
         }
         Macro::Shell(command) => {
             let output = std::process::Command::new("sh")
@@ -424,7 +483,11 @@ fn process_config_value(base_dir: &Path, input: String) -> String {
                 }
                 token.push(c);
             }
-            result.push_str(&resolve_token(base_dir, &token).unwrap());
+            if let Ok(resolved) = resolve_token(base_dir, &token) {
+                result.push_str(&resolved);
+            } else {
+                result.push_str(&token);
+            }
         } else {
             result.push(c);
         }

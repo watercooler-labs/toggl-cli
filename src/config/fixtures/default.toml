@@ -18,7 +18,7 @@ description = "🔨 {{branch}}"
 
 # Project (optional, default=No project)
 # Accepts any string template with our marcros in them
-project = "{{base_dir}}"
+project = "{{git_root}}"
 
 # Task (optional, default=No task)
 # task = "Some task"
