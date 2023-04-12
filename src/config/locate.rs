@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use sha2::{Digest, Sha256};
+use base64::{engine::general_purpose, Engine as _};
 
 use super::model::TrackConfig;
 
@@ -10,11 +10,10 @@ pub fn locate_config() -> Result<TrackConfig, Box<dyn std::error::Error>> {
 }
 
 pub fn locate_config_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
-    let mut hasher = Sha256::new();
     let config_root = get_config_root();
     let mut config_path = std::env::current_dir()?;
 
-    let mut config_filename = get_hashed_config_path(&mut hasher, &config_root, &config_path);
+    let mut config_filename = get_encoded_config_path(&config_root, &config_path);
     while !config_filename.exists() {
         if !config_path.pop() {
             let global_config_filename = config_root.join("global.toml");
@@ -24,16 +23,15 @@ pub fn locate_config_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
             }
             return Err("No config file found".into());
         }
-        config_filename = get_hashed_config_path(&mut hasher, &config_root, &config_path);
+        config_filename = get_encoded_config_path(&config_root, &config_path);
     }
     Ok(config_filename)
 }
 
 pub fn get_config_path_for_current_dir() -> Result<PathBuf, Box<dyn std::error::Error>> {
-    let mut hasher = Sha256::new();
     let config_root = get_config_root();
     let path = std::env::current_dir()?;
-    Ok(get_hashed_config_path(&mut hasher, &config_root, &path))
+    Ok(get_encoded_config_path(&config_root, &path))
 }
 
 fn get_config_root() -> PathBuf {
@@ -43,7 +41,11 @@ fn get_config_root() -> PathBuf {
         .to_path_buf()
 }
 
-fn get_hashed_config_path(hasher: &mut Sha256, config_root: &Path, path: &Path) -> PathBuf {
-    hasher.update(path.to_str().unwrap().as_bytes());
-    config_root.join(format!("{:x}.toml", hasher.finalize_reset()))
+fn get_encoded_config_path(config_root: &Path, path: &Path) -> PathBuf {
+    let encoded = general_purpose::STANDARD.encode(
+        path.to_str()
+            .expect("Could not convert path to string")
+            .as_bytes(),
+    );
+    config_root.join(format!("{}.toml", encoded))
 }

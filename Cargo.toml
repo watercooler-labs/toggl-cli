@@ -31,7 +31,6 @@ keyring = "2"
 
 # Config
 directories = "5.0.0"
-sha2 = "0.10.6"
 toml = "0.7.3"
 
 # API
