@@ -29,7 +29,7 @@ use crate::utilities;
 ///
 /// Given the following configuration:
 /// ```toml
-/// [default]
+/// ['my-.+']
 /// workspace = "Default"
 /// description = "Working on {{branch}} for {{base_dir}}"
 /// project = "Default"
@@ -439,7 +439,10 @@ impl TrackConfig {
             Some(branch) => self
                 .configs
                 .iter()
-                .find(|(b, _)| b == branch)
+                .find(|(b, _)| {
+                    let re = regex::Regex::new(b).expect("Invalid branch regex");
+                    re.is_match(branch)
+                })
                 .map(|(_, c)| c)
                 .unwrap_or(&self.default),
             None => &self.default,

@@ -11,7 +11,7 @@ billable = false
 
 # Match all branches that start with a number and a slash
 # e.g. 1234/feature-branch
-["^\\d+\\/.*"]
+['^\d+/.*']
 description = "🔨 {{branch}}"
 project = "{{base_dir}}"
 task = """

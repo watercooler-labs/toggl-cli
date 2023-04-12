@@ -1,11 +1,11 @@
 # Branch (required)
 # Regex to choose which branch(-es) this block applies to, some examples
-# ["will\/.*"] applies to branches like`will/release-workflows`
-# ["\d\/.*"] applies to branches starting with numbers `123/feat-some-issue`
+# ['will/.*'] applies to branches like`will/release-workflows`
+# ['^\d+/.*'] applies to branches starting with numbers `123/feat-some-issue`
 # [main] applies only to the branch called `main`
-# ["*"] is the reserved default that applies if no block of higher precedence is present.
-# ["*"] It also applies if current folder is not tracked under source control
-["*"]
+# ['*'] is the reserved default that applies if no block of higher precedence is present.
+# ['*'] It also applies if current folder is not tracked under source control
+['*']
 
 # Workspace (optional, default={{default}}
 # {{default}} in this context would resolve to the user's default workspace
