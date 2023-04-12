@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::{env, fmt};
 
 use colored::Colorize;
-use serde::de::{self, Deserializer, MapAccess, SeqAccess, Visitor};
+use serde::de::{self, Deserializer, MapAccess, Visitor};
 use serde::{Deserialize, Serialize};
 
 /// BranchConfig optionally determines workspace, description, project, task,
@@ -90,38 +90,6 @@ impl<'de> Deserialize<'de> for BranchConfig {
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("struct BranchConfig")
-            }
-
-            fn visit_seq<V>(self, mut seq: V) -> Result<Self::Value, V::Error>
-            where
-                V: SeqAccess<'de>,
-            {
-                let workspace = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
-                let description = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
-                let project = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(2, &self))?;
-                let task = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(3, &self))?;
-                let tags = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(4, &self))?;
-                let billable = seq
-                    .next_element()?
-                    .ok_or_else(|| de::Error::invalid_length(5, &self))?;
-                Ok(BranchConfig {
-                    workspace,
-                    description,
-                    project,
-                    task,
-                    tags,
-                    billable,
-                })
             }
 
             fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>
@@ -374,7 +342,7 @@ fn resolve_macro(instruction: Macro) -> Result<String, Box<dyn std::error::Error
                         "Command".yellow(),
                         command.yellow().bold()
                     );
-                    return Ok(command);
+                    Ok(command)
                 }
             }
         }
