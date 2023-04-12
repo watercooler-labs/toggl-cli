@@ -16,11 +16,6 @@ pub fn locate_config_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let mut config_filename = get_encoded_config_path(&config_root, &config_path);
     while !config_filename.exists() {
         if !config_path.pop() {
-            let global_config_filename = config_root.join("global.toml");
-            if global_config_filename.exists() {
-                config_filename = global_config_filename;
-                break;
-            }
             return Err("No config file found".into());
         }
         config_filename = get_encoded_config_path(&config_root, &config_path);
