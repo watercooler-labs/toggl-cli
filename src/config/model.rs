@@ -74,7 +74,7 @@ pub struct BranchConfig {
 #[derive(Debug, Serialize, Clone)]
 pub struct TrackConfig {
     pub default: BranchConfig,
-    pub branches: Vec<(String, BranchConfig)>,
+    pub configs: Vec<(String, BranchConfig)>,
 }
 
 impl<'de> Deserialize<'de> for BranchConfig {
@@ -232,7 +232,7 @@ impl std::fmt::Display for TrackConfig {
             f,
             "{}\n{}",
             summary,
-            self.branches
+            self.configs
                 .iter()
                 .map(|(branch, config)| {
                     format!("{}\n{}", format!("[{}]", branch).blue().bold(), config)
@@ -262,7 +262,7 @@ impl<'de> Deserialize<'de> for TrackConfig {
                 V: MapAccess<'de>,
             {
                 let mut default: Option<BranchConfig> = None;
-                let mut branches: Vec<(String, BranchConfig)> = Vec::new();
+                let mut configs: Vec<(String, BranchConfig)> = Vec::new();
                 while let Some(key) = map.next_key::<String>()? {
                     match key.as_str() {
                         "*" => {
@@ -272,18 +272,18 @@ impl<'de> Deserialize<'de> for TrackConfig {
                             default = Some(map.next_value()?);
                         }
                         _ => {
-                            if branches.iter().any(|(branch, _)| branch == &key) {
+                            if configs.iter().any(|(branch, _)| branch == &key) {
                                 // TODO: Report duplicate key error can't seem to figure out a way to
                                 // return the repeated branch here
                                 return Err(de::Error::duplicate_field("branch"));
                             }
-                            branches.push((key, map.next_value()?));
+                            configs.push((key, map.next_value()?));
                         }
                     }
                 }
                 Ok(TrackConfig {
                     default: default.unwrap_or(BranchConfig::default()),
-                    branches,
+                    configs,
                 })
             }
         }
@@ -437,7 +437,7 @@ impl TrackConfig {
     fn get_branch_config(&self, branch: Option<&str>) -> &BranchConfig {
         match branch {
             Some(branch) => self
-                .branches
+                .configs
                 .iter()
                 .find(|(b, _)| b == branch)
                 .map(|(_, c)| c)
