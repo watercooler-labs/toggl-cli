@@ -5,6 +5,7 @@ use colored::Colorize;
 use serde::de::{self, Deserializer, MapAccess, Visitor};
 use serde::{Deserialize, Serialize};
 
+use crate::error::ConfigError;
 use crate::utilities;
 
 /// BranchConfig optionally determines workspace, description, project, task,
@@ -321,7 +322,6 @@ fn resolve_token_to_macro(token: &str) -> Option<Macro> {
                 let command = token.trim_start_matches('$').trim();
                 Some(Macro::Shell(command.to_string()))
             } else {
-                println!("{} {}", "Invalid macro".red(), token.red().bold());
                 None
             }
         }
@@ -435,27 +435,17 @@ fn resolve_macro(
             match output {
                 Ok(output) => {
                     if !output.status.success() {
-                        println!(
-                            "{}: {}\n{}: {}",
-                            "Error resolving shell macro".red(),
-                            String::from_utf8(output.stderr)?.red().bold(),
-                            "Command".yellow(),
-                            command.yellow().bold()
-                        );
-                        return Ok(command);
+                        return Err(Box::new(ConfigError::ShellResolution(
+                            command,
+                            String::from_utf8(output.stderr)?,
+                        )));
                     }
                     Ok(String::from_utf8(output.stdout)?.trim().to_string())
                 }
-                Err(e) => {
-                    println!(
-                        "{}: {}\n{}: {}",
-                        "Error resolving shell macro".red(),
-                        e.to_string().red().bold(),
-                        "Command".yellow(),
-                        command.yellow().bold()
-                    );
-                    Ok(command)
-                }
+                Err(e) => Err(Box::new(ConfigError::ShellResolution(
+                    command,
+                    e.to_string(),
+                ))),
             }
         }
     }
@@ -464,7 +454,7 @@ fn resolve_macro(
 fn resolve_token(base_dir: &Path, token: &str) -> Result<String, Box<dyn std::error::Error>> {
     match resolve_token_to_macro(token) {
         Some(macro_) => resolve_macro(base_dir, macro_),
-        None => Ok(token.to_string()),
+        None => Err(Box::new(ConfigError::UnrecognizedMarco(token.to_string()))),
     }
 }
 
