@@ -2,13 +2,6 @@ use std::path::{Path, PathBuf};
 
 use base64::{engine::general_purpose, Engine as _};
 
-use super::model::TrackConfig;
-
-pub fn locate_config() -> Result<TrackConfig, Box<dyn std::error::Error>> {
-    let config_filename = locate_config_path()?;
-    super::parser::get_config_from_file(config_filename)
-}
-
 pub fn locate_config_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let config_root = get_config_root();
     let mut config_path = std::env::current_dir()?;
