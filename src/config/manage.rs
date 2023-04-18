@@ -2,20 +2,13 @@ use std::fs;
 
 use colored::Colorize;
 
-use crate::{models::ResultWithDefaultError, utilities};
+use crate::{error::ConfigError, models::ResultWithDefaultError, utilities};
 
 pub struct ConfigManageCommand;
 
 impl ConfigManageCommand {
     pub async fn execute(delete: bool, edit: bool, show_path: bool) -> ResultWithDefaultError<()> {
-        let path = super::locate::locate_config_path().map_err(
-            |e|
-            {
-                println!("{}", "No config file found".red().bold());
-                println!("Run {} to create one", "toggl config init".blue().bold());
-                e
-            }
-        )?;
+        let path = super::locate::locate_config_path()?;
 
         if delete {
             let path = path.as_path();
@@ -37,12 +30,9 @@ impl ConfigManageCommand {
         match super::parser::get_config_from_file(path) {
             Ok(config) => {
                 println!("{}", config);
+                Ok(())
             }
-            Err(_) => {
-                println!("{}", "No config file found".red().bold());
-                println!("Run {} to create one", "toggl config init".blue().bold());
-            }
+            Err(_) => Err(Box::new(ConfigError::Parse)),
         }
-        Ok(())
     }
 }

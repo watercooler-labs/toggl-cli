@@ -68,3 +68,33 @@ impl Display for PickerError {
 }
 
 impl Error for PickerError {}
+
+#[derive(Debug)]
+pub enum ConfigError {
+    Parse,
+    FileNotFound,
+}
+
+impl Display for ConfigError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let summary = match self {
+            ConfigError::Parse => {
+                format!(
+                    "{}\nTo edit the configuration file in your editor run {}",
+                    constants::CONFIG_PARSE_ERROR.red().bold(),
+                    "toggl config --edit".blue().bold(),
+                )
+            }
+            ConfigError::FileNotFound => {
+                format!(
+                    "{}\nRun {} to create one",
+                    constants::CONFIG_FILE_NOT_FOUND_ERROR.red().bold(),
+                    "toggl config init".blue().bold(),
+                )
+            }
+        };
+        writeln!(f, "{}", summary)
+    }
+}
+
+impl Error for ConfigError {}

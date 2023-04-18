@@ -2,6 +2,8 @@ use std::path::{Path, PathBuf};
 
 use base64::{engine::general_purpose, Engine as _};
 
+use crate::error::ConfigError;
+
 pub fn locate_config_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let config_root = get_config_root();
     let mut config_path = std::env::current_dir()?;
@@ -9,7 +11,7 @@ pub fn locate_config_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let mut config_filename = get_encoded_config_path(&config_root, &config_path);
     while !config_filename.exists() {
         if !config_path.pop() {
-            return Err("No config file found".into());
+            return Err(Box::new(ConfigError::FileNotFound));
         }
         config_filename = get_encoded_config_path(&config_root, &config_path);
     }
