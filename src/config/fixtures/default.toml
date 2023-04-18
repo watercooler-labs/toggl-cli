@@ -18,7 +18,6 @@ description = "🔨 {{current_branch}}"
 
 # Project (optional, default=No project)
 # Accepts any string template with our marcros in them
-# A project is created if it doesn't exist
 project = "{{base_dir}}"
 
 # Task (optional, default=No task)
