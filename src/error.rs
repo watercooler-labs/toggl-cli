@@ -73,6 +73,8 @@ impl Error for PickerError {}
 pub enum ConfigError {
     Parse,
     FileNotFound,
+    UnrecognizedMarco(String),
+    ShellResolution(String, String),
 }
 
 impl Display for ConfigError {
@@ -90,6 +92,22 @@ impl Display for ConfigError {
                     "{}\nRun {} to create one",
                     constants::CONFIG_FILE_NOT_FOUND_ERROR.red().bold(),
                     "toggl config init".blue().bold(),
+                )
+            }
+            ConfigError::UnrecognizedMarco(marco) => {
+                format!(
+                    "{}: {}",
+                    constants::CONFIG_UNRECOGNIZED_MACRO_ERROR.red().bold(),
+                    marco.red().bold(),
+                )
+            }
+            ConfigError::ShellResolution(command, output_or_error) => {
+                format!(
+                    "{}: {}\n{}: {}",
+                    constants::CONFIG_SHELL_MACRO_RESOLUTION_ERROR.red(),
+                    output_or_error.red().bold(),
+                    "Command".yellow(),
+                    command.yellow().bold(),
                 )
             }
         };

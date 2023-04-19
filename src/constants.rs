@@ -11,3 +11,5 @@ pub const FZF_NOT_INSTALLED_ERROR: &str = "fzf could not be found. Is it install
 pub const OPERATION_CANCELLED: &str = "Operation cancelled";
 pub const CONFIG_FILE_NOT_FOUND_ERROR: &str = "No config file found";
 pub const CONFIG_PARSE_ERROR: &str = "Failed to parse config file";
+pub const CONFIG_UNRECOGNIZED_MACRO_ERROR: &str = "Unrecognized macro in config file";
+pub const CONFIG_SHELL_MACRO_RESOLUTION_ERROR: &str = "Failed to resolve shell macro";

@@ -32,7 +32,10 @@ impl ConfigManageCommand {
                 println!("{}", config);
                 Ok(())
             }
-            Err(_) => Err(Box::new(ConfigError::Parse)),
+            Err(e) => {
+                println!("In config parse {}", e);
+                Err(Box::new(ConfigError::Parse))
+            }
         }
     }
 }

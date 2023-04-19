@@ -1,11 +1,11 @@
 # Branch (required)
 # Regex to choose which branch(-es) this block applies to, some examples
-# ["will\\/.*"] applies to branches like`will/release-workflows`
-# ["^\\d+\\/.*"] applies to branches starting with numbers `123/feat-some-issue`
+# ['will/.*'] applies to branches like`will/release-workflows`
+# ['^\d+/.*'] applies to branches starting with numbers `123/feat-some-issue`
 # [main] applies only to the branch called `main`
-# ["*"] is the reserved default that applies if no block of higher precedence is present.
-# ["*"] It also applies if current folder is not tracked under source control
-["*"]
+# ['*'] is the reserved default that applies if no block of higher precedence is present.
+# ['*'] It also applies if current folder is not tracked under source control
+['*']
 
 # Workspace (optional, default=null)
 # in this context would resolve to the user's default workspace
@@ -14,11 +14,11 @@
 
 # Description (optional, default="")
 # Accepts any string template with our marcros in them
-description = "🔨 {{current_branch}}"
+description = "🔨 {{branch}}"
 
 # Project (optional, default=No project)
 # Accepts any string template with our marcros in them
-project = "{{base_dir}}"
+project = "{{git_root}}"
 
 # Task (optional, default=No task)
 # task = "Some task"
@@ -35,8 +35,8 @@ billable = true
 # The exception is the default block, which is applied to all branches that
 # don't match any other block.
 
-# ["will\\/.*"]
-# description = "Review {{current_branch}}"
+# ['will/.*']
+# description = "Review {{branch}}"
 # project = "{{base_dir}}"
 # tags = ["review"]
 # billable = false
