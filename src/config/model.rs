@@ -114,32 +114,32 @@ impl<'de> Deserialize<'de> for BranchConfig {
                             if workspace.is_some() {
                                 return Err(de::Error::duplicate_field("workspace"));
                             }
-                            workspace = Some(map.next_value().map(process_template)?);
+                            workspace = map.next_value().map(process_template)?;
                         }
                         "description" => {
                             if description.is_some() {
                                 return Err(de::Error::duplicate_field("description"));
                             }
-                            description = Some(map.next_value().map(process_template)?);
+                            description = map.next_value().map(process_template)?;
                         }
                         "project" => {
                             if project.is_some() {
                                 return Err(de::Error::duplicate_field("project"));
                             }
-                            project = Some(map.next_value().map(process_template)?);
+                            project = map.next_value().map(process_template)?;
                         }
                         "task" => {
                             if task.is_some() {
                                 return Err(de::Error::duplicate_field("task"));
                             }
-                            task = Some(map.next_value().map(process_template)?);
+                            task = map.next_value().map(process_template)?;
                         }
                         "tags" => {
                             if tags.is_some() {
                                 return Err(de::Error::duplicate_field("tags"));
                             }
                             tags = Some(map.next_value()?).map(|tags: Vec<String>| {
-                                tags.into_iter().map(process_template).collect()
+                                tags.into_iter().filter_map(process_template).collect()
                             });
                         }
                         "billable" => {
@@ -458,7 +458,7 @@ fn resolve_token(base_dir: &Path, token: &str) -> Result<String, Box<dyn std::er
     }
 }
 
-fn process_config_value(base_dir: &Path, input: String) -> String {
+fn process_config_value(base_dir: &Path, input: String) -> Option<String> {
     let mut result = String::new();
     let mut chars = input.chars().peekable();
 
@@ -473,17 +473,20 @@ fn process_config_value(base_dir: &Path, input: String) -> String {
                 }
                 token.push(c);
             }
-            if let Ok(resolved) = resolve_token(base_dir, &token) {
-                result.push_str(&resolved);
+            let resolved = resolve_token(base_dir, &token).map_err(|e| {
+                println!("Failed to resolve token: {}", e);
+            });
+            if let Ok(resolved_token) = resolved {
+                result.push_str(&resolved_token);
             } else {
-                result.push_str(&token);
+                return None;
             }
         } else {
             result.push(c);
         }
     }
 
-    result
+    Some(result)
 }
 
 impl TrackConfig {
