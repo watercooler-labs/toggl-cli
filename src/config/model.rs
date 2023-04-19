@@ -428,10 +428,7 @@ fn resolve_macro(
             }
         }
         Macro::Shell(command) => {
-            let output = std::process::Command::new("sh")
-                .arg("-c")
-                .arg(&command)
-                .output();
+            let output = utilities::get_shell_cmd(&command).output();
             match output {
                 Ok(output) => {
                     if !output.status.success() {
