@@ -23,8 +23,8 @@ pub struct TimeEntry {
     pub duration: i64,
     pub billable: bool,
     pub workspace_id: i64,
+    pub tags: Vec<String>,
     pub project_id: Option<i64>,
-    pub tags: Option<Vec<String>>,
     pub task_id: Option<i64>,
     pub created_with: Option<String>,
 }
@@ -75,6 +75,11 @@ impl TimeEntry {
             ..self.clone()
         }
     }
+
+    pub fn get_display_tags(&self) -> String {
+        if self.tags.is_empty() { "".to_string() }
+        else { format!(" [{}]", self.tags.join(", ")) }
+    }
 }
 
 impl Default for TimeEntry {
@@ -89,7 +94,7 @@ impl Default for TimeEntry {
             project_id: None,
             start,
             stop: None,
-            tags: None,
+            tags: Vec::new(),
             task_id: None,
             workspace_id: -1,
         }
@@ -99,14 +104,15 @@ impl Default for TimeEntry {
 impl std::fmt::Display for TimeEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let summary = format!(
-            "[{}]{} –  {}",
+            "[{}]{} –  {}{}",
             if self.is_running() {
                 self.get_duration_hmmss().green().bold()
             } else {
                 self.get_duration_hmmss().normal()
             },
             if self.is_running() { "*" } else { " " },
-            self.get_description()
+            self.get_description(),
+            self.get_display_tags().italic()
         );
         write!(f, "{}", summary)
     }
