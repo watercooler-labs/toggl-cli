@@ -77,8 +77,11 @@ impl TimeEntry {
     }
 
     pub fn get_display_tags(&self) -> String {
-        if self.tags.is_empty() { "".to_string() }
-        else { format!(" [{}]", self.tags.join(", ")) }
+        if self.tags.is_empty() {
+            "".to_string()
+        } else {
+            format!(" [{}]", self.tags.join(", "))
+        }
     }
 }
 
