@@ -1,6 +1,5 @@
-use colored::Colorize;
-
 use crate::{models::ResultWithDefaultError, utilities};
+use colored::Colorize;
 
 pub struct ConfigInitCommand;
 
@@ -12,10 +11,11 @@ impl ConfigInitCommand {
                 if edit {
                     utilities::open_path_in_editor(path)?
                 } else {
+                    let display_path = utilities::simplify_config_path_for_display(path.as_path());
                     println!(
                         "{} {}",
                         "Config file already exists at".yellow(),
-                        path.display()
+                        display_path
                     );
                     return Ok(());
                 }
@@ -24,10 +24,11 @@ impl ConfigInitCommand {
                 let default_config = include_bytes!("./fixtures/default.toml");
                 let config_path = super::locate::get_config_path_for_current_dir()?;
                 let config_dir = config_path.parent().unwrap();
+                let display_config_path = utilities::simplify_config_path_for_display(config_dir);
                 let msg = format!(
                     "{} {}",
                     "Created config at".green().bold(),
-                    config_path.display()
+                    display_config_path
                 );
                 std::fs::create_dir_all(config_dir)?;
                 std::fs::write(config_path, default_config)?;
