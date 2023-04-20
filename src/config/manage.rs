@@ -9,14 +9,14 @@ pub struct ConfigManageCommand;
 impl ConfigManageCommand {
     pub async fn execute(delete: bool, edit: bool, show_path: bool) -> ResultWithDefaultError<()> {
         let path = super::locate::locate_config_path()?;
+        let display_path = utilities::simplify_config_path_for_display(path.as_path());
 
         if delete {
-            let path = path.as_path();
             return fs::remove_file(path).map_err(|e| e.into()).map(|_| {
                 println!(
                     "{} {}",
                     "Config file deleted from".red().bold(),
-                    path.display()
+                    display_path
                 );
             });
         }
@@ -24,7 +24,7 @@ impl ConfigManageCommand {
             return utilities::open_path_in_editor(path);
         }
         if show_path {
-            println!("{}", path.display());
+            println!("{}", display_path);
             return Ok(());
         }
         match super::parser::get_config_from_file(path) {

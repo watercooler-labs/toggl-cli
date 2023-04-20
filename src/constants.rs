@@ -13,3 +13,10 @@ pub const CONFIG_FILE_NOT_FOUND_ERROR: &str = "No config file found";
 pub const CONFIG_PARSE_ERROR: &str = "Failed to parse config file";
 pub const CONFIG_UNRECOGNIZED_MACRO_ERROR: &str = "Unrecognized macro in config file";
 pub const CONFIG_SHELL_MACRO_RESOLUTION_ERROR: &str = "Failed to resolve shell macro";
+
+#[cfg(target_os = "macos")]
+pub const SIMPLE_HOME_PATH: &str = "~/Library/Application Support";
+#[cfg(windows)]
+pub const SIMPLE_HOME_PATH: &str = "%localappdata%";
+#[cfg(target_os = "linux")]
+pub const SIMPLE_HOME_PATH: &str = "~/.config";

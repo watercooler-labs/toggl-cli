@@ -48,7 +48,7 @@ pub fn get_config_path_for_current_dir() -> Result<PathBuf, Box<dyn std::error::
 fn get_config_root() -> PathBuf {
     directories::ProjectDirs::from("studio.watercooler", "labs", "toggl-cli")
         .unwrap()
-        .config_dir()
+        .config_local_dir()
         .to_path_buf()
 }
 

@@ -4,6 +4,9 @@ use std::{
 };
 
 use colored::Colorize;
+use directories::BaseDirs;
+
+use crate::constants;
 
 pub fn remove_trailing_newline(value: String) -> String {
     value.trim_end().to_string()
@@ -16,6 +19,15 @@ pub fn read_from_stdin(text: &str) -> String {
         .read_line(&mut result)
         .expect("Failed to read line");
     remove_trailing_newline(result)
+}
+
+pub fn simplify_config_path_for_display(dir: &Path) -> String {
+    let base_dirs = BaseDirs::new().unwrap();
+    let local_config_base_path = base_dirs.config_local_dir().to_str().unwrap();
+    let mut display_config_path = dir.to_str().unwrap().to_string();
+    display_config_path.replace_range(..local_config_base_path.len(), constants::SIMPLE_HOME_PATH);
+
+    display_config_path
 }
 
 pub fn read_from_stdin_with_constraints(text: &str, valid_values: &[String]) -> String {
