@@ -3,9 +3,10 @@ mod fzf;
 mod skim;
 use std::collections::HashMap;
 
-use crate::{models, constants::{PROJECT_NOT_FOUND, self}};
-use chrono::format;
-use models::{ResultWithDefaultError, TimeEntry, Project};
+use crate::constants;
+use crate::models;
+
+use models::{Project, ResultWithDefaultError, TimeEntry};
 
 pub struct PickableItem {
     id: i64,
@@ -22,8 +23,8 @@ impl PickableItem {
                 // TODO: Print the actual project name here.
                 Some(project_id) => match projects.get(&project_id) {
                     Some(project) => project.name.as_str(),
-                    None => constants::PROJECT_NOT_FOUND
-                }
+                    None => constants::PROJECT_NOT_FOUND,
+                },
                 None => constants::NO_PROJECT,
             },
             time_entry.get_display_tags()

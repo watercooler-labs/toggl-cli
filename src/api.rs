@@ -58,7 +58,7 @@ impl ApiClient for V9ApiClient {
 
     async fn get_projects(&self) -> ResultWithDefaultError<HashMap<i64, Project>> {
         // TODO: fetch the actual list of projects here
-        return Ok(HashMap::new())
+        return Ok(HashMap::new());
     }
 }
 

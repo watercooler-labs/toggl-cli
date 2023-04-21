@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::api;
 use crate::commands;
 use crate::models;
