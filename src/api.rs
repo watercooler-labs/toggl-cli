@@ -57,8 +57,9 @@ impl ApiClient for V9ApiClient {
     }
 
     async fn get_projects(&self) -> ResultWithDefaultError<HashMap<i64, Project>> {
-        // TODO: fetch the actual list of projects here
-        return Ok(HashMap::new());
+        let url = format!("{}/me/projects", self.base_url);
+        let projects = self.get::<Vec<Project>>(url).await?;
+        return Ok(projects.into_iter().map(|p| (p.id, p)).collect());
     }
 }
 
