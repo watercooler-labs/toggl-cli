@@ -17,7 +17,7 @@ impl PickableItem {
         let formatted_time_entry = format!(
             "{} {} - {} {}",
             if time_entry.billable { "$" } else { " " },
-            time_entry.description,
+            time_entry.get_description(),
             match project {
                 Some(p) => p.name,
                 None => constants::NO_PROJECT.to_string(),
