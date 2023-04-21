@@ -80,7 +80,7 @@ impl TimeEntry {
         if self.tags.is_empty() {
             "".to_string()
         } else {
-            format!(" [{}]", self.tags.join(", "))
+            format!("[{}]", self.tags.join(", "))
         }
     }
 }
@@ -107,7 +107,7 @@ impl Default for TimeEntry {
 impl std::fmt::Display for TimeEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let summary = format!(
-            "[{}]{} –  {}{}",
+            "[{}]{} –  {} {}",
             if self.is_running() {
                 self.get_duration_hmmss().green().bold()
             } else {

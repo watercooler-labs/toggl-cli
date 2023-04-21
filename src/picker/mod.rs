@@ -12,7 +12,7 @@ pub struct PickableItem {
 impl PickableItem {
     pub fn from_time_entry(time_entry: TimeEntry) -> PickableItem {
         let formatted_time_entry = format!(
-            "{} {} - {}{}",
+            "{} {} - {} {}",
             if time_entry.billable { "$" } else { " " },
             time_entry.description,
             match time_entry.project_id {
