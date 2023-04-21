@@ -23,7 +23,7 @@ pub struct Project {
     pub id: i64,
     pub name: String,
     pub workspace_id: i64,
-    pub client_id: i64,
+    pub client_id: Option<i64>,
     pub is_private: bool,
     pub active: bool,
     pub at: DateTime<Utc>,
