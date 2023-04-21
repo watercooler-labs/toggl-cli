@@ -27,13 +27,7 @@ impl ContinueCommand {
             return Ok(());
         }
 
-        let projects = match api_client.get_projects().await {
-            Ok(p) => p,
-            Err(er) => {
-                print!("{}", er);
-                HashMap::new()
-            }
-        };
+        let projects = api_client.get_projects().await.unwrap_or_else(|_| HashMap::new());
 
         let time_entry_to_continue = match picker {
             None => get_first_stopped_time_entry(time_entries, running_time_entry),

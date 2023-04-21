@@ -66,6 +66,7 @@ impl ApiClient for V9ApiClient {
 impl V9ApiClient {
     pub fn from_credentials(
         credentials: credentials::Credentials,
+        proxy: Option<String>,
     ) -> ResultWithDefaultError<V9ApiClient> {
         let auth_string = credentials.api_token + ":api_token";
         let header_content =
@@ -74,7 +75,15 @@ impl V9ApiClient {
         let auth_header = header::HeaderValue::from_str(header_content.as_str())?;
         headers.insert(header::AUTHORIZATION, auth_header);
 
-        let http_client = Client::builder().default_headers(headers).build()?;
+        let base_client = Client::builder().default_headers(headers);
+        let http_client = {
+            if let Some(proxy) = proxy {
+                base_client.proxy(reqwest::Proxy::all(proxy)?)
+            } else {
+                base_client
+            }
+        }
+        .build()?;
         let api_client = Self {
             http_client,
             base_url: "https://track.toggl.com/api/v9".to_string(),
