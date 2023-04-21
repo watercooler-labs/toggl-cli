@@ -1,7 +1,6 @@
 mod fzf;
 #[cfg(unix)]
 mod skim;
-use std::collections::HashMap;
 
 use crate::constants;
 use crate::models;
@@ -14,18 +13,14 @@ pub struct PickableItem {
 }
 
 impl PickableItem {
-    pub fn from_time_entry(time_entry: TimeEntry, projects: HashMap<i64, Project>) -> PickableItem {
+    pub fn from_time_entry(time_entry: TimeEntry, project: Option<Project>) -> PickableItem {
         let formatted_time_entry = format!(
             "{} {} - {} {}",
             if time_entry.billable { "$" } else { " " },
             time_entry.description,
-            match time_entry.project_id {
-                // TODO: Print the actual project name here.
-                Some(project_id) => match projects.get(&project_id) {
-                    Some(project) => project.name.as_str(),
-                    None => constants::PROJECT_NOT_FOUND,
-                },
-                None => constants::NO_PROJECT,
+            match project {
+                Some(p) => p.name,
+                None => constants::NO_PROJECT.to_string(),
             },
             time_entry.get_display_tags()
         );
