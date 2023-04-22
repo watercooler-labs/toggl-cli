@@ -1,7 +1,6 @@
-use crate::api;
+use crate::api::client::ApiClient;
 use crate::credentials;
 use crate::models;
-use api::ApiClient;
 use colored::Colorize;
 use credentials::CredentialsStorage;
 use models::ResultWithDefaultError;
@@ -33,8 +32,8 @@ impl AuthenticationCommand {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::api::client::MockApiClient;
     use crate::error;
-    use api::MockApiClient;
     use credentials::MockCredentialsStorage;
     use error::{ApiError, StorageError};
     use models::User;

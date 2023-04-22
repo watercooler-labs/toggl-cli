@@ -1,10 +1,7 @@
-use std::collections::HashMap;
-
-use crate::api;
+use crate::api::client::ApiClient;
 use crate::commands;
 use crate::models;
 use crate::picker;
-use api::ApiClient;
 use chrono::Utc;
 use colored::Colorize;
 use commands::stop::{StopCommand, StopCommandOrigin};

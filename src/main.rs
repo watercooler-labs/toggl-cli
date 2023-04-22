@@ -8,8 +8,9 @@ mod error;
 mod models;
 mod picker;
 mod utilities;
-use api::{ApiClient, V9ApiClient};
 
+use api::client::ApiClient;
+use api::client::V9ApiClient;
 use arguments::Command::Auth;
 use arguments::Command::Config;
 use arguments::Command::Continue;

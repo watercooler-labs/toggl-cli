@@ -1,6 +1,6 @@
 use crate::api;
 use crate::models;
-use api::ApiClient;
+use api::client::ApiClient;
 use chrono::Utc;
 use colored::Colorize;
 use models::{ResultWithDefaultError, TimeEntry};

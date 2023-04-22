@@ -2,7 +2,7 @@ use crate::api;
 use crate::commands;
 use crate::models;
 use crate::utilities;
-use api::ApiClient;
+use api::client::ApiClient;
 use colored::Colorize;
 use commands::stop::{StopCommand, StopCommandOrigin};
 use models::ResultWithDefaultError;

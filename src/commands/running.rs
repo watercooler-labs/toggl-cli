@@ -1,6 +1,6 @@
 use crate::api;
 use crate::models;
-use api::ApiClient;
+use api::client::ApiClient;
 use colored::Colorize;
 use models::ResultWithDefaultError;
 
