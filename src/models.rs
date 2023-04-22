@@ -154,7 +154,7 @@ pub struct TimeEntry {
 impl TimeEntry {
     pub fn get_description(&self) -> String {
         match self.description.as_ref() {
-            "" => "(no description)".to_string(),
+            "" => constants::NO_DESCRIPTION.to_string(),
             _ => self.description.to_string(),
         }
     }

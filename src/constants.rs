@@ -14,6 +14,7 @@ pub const CONFIG_PARSE_ERROR: &str = "Failed to parse config file";
 pub const CONFIG_UNRECOGNIZED_MACRO_ERROR: &str = "Unrecognized macro in config file";
 pub const CONFIG_SHELL_MACRO_RESOLUTION_ERROR: &str = "Failed to resolve shell macro";
 pub const NO_PROJECT: &str = "No Project";
+pub const NO_DESCRIPTION: &str = "(no description)";
 
 #[cfg(target_os = "macos")]
 pub const SIMPLE_HOME_PATH: &str = "~/Library/Application Support";
