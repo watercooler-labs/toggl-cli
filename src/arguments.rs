@@ -5,6 +5,9 @@ use structopt::StructOpt;
 pub struct CommandLineArguments {
     #[structopt(subcommand)]
     pub cmd: Option<Command>,
+
+    #[structopt(long, help = "Use custom proxy")]
+    pub proxy: Option<String>,
 }
 
 #[derive(Debug, StructOpt)]

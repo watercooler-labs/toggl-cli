@@ -9,7 +9,7 @@ mod models;
 mod picker;
 mod utilities;
 use api::{ApiClient, V9ApiClient};
-use arguments::Command;
+
 use arguments::Command::Auth;
 use arguments::Command::Config;
 use arguments::Command::Continue;
@@ -36,7 +36,7 @@ use structopt::StructOpt;
 #[tokio::main]
 async fn main() -> ResultWithDefaultError<()> {
     let parsed_args = CommandLineArguments::from_args();
-    match execute_subcommand(parsed_args.cmd).await {
+    match execute_subcommand(parsed_args).await {
         Ok(()) => Ok(()),
         Err(error) => {
             // We are catching the error and pretty printing it instead of letting the
@@ -48,12 +48,15 @@ async fn main() -> ResultWithDefaultError<()> {
     }
 }
 
-pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultError<()> {
+async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultError<()> {
+    let command = args.cmd;
+    let get_default_api_client = || get_api_client(args.proxy.clone());
     match command {
-        None => RunningTimeEntryCommand::execute(get_api_client()?).await?,
+        None => RunningTimeEntryCommand::execute(get_default_api_client()?).await?,
         Some(subcommand) => match subcommand {
             Stop => {
-                StopCommand::execute(&get_api_client()?, StopCommandOrigin::CommandLine).await?;
+                StopCommand::execute(&get_default_api_client()?, StopCommandOrigin::CommandLine)
+                    .await?;
             }
             Continue { interactive, fzf } => {
                 let picker = if interactive {
@@ -61,18 +64,20 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
                 } else {
                     None
                 };
-                ContinueCommand::execute(get_api_client()?, picker).await?
+                ContinueCommand::execute(get_default_api_client()?, picker).await?
             }
-            List { number } => ListCommand::execute(get_api_client()?, number).await?,
-            Current | Running => RunningTimeEntryCommand::execute(get_api_client()?).await?,
+            List { number } => ListCommand::execute(get_default_api_client()?, number).await?,
+            Current | Running => {
+                RunningTimeEntryCommand::execute(get_default_api_client()?).await?
+            }
             Start {
                 billable,
                 description,
                 project: _,
-            } => StartCommand::execute(get_api_client()?, description, billable).await?,
+            } => StartCommand::execute(get_default_api_client()?, description, billable).await?,
             Auth { api_token } => {
                 let credentials = Credentials { api_token };
-                let api_client = V9ApiClient::from_credentials(credentials)?;
+                let api_client = V9ApiClient::from_credentials(credentials, args.proxy)?;
                 AuthenticationCommand::execute(io::stdout(), api_client, get_storage()).await?
             }
 
@@ -98,10 +103,10 @@ pub async fn execute_subcommand(command: Option<Command>) -> ResultWithDefaultEr
     Ok(())
 }
 
-fn get_api_client() -> ResultWithDefaultError<impl ApiClient> {
+fn get_api_client(proxy: Option<String>) -> ResultWithDefaultError<impl ApiClient> {
     let credentials_storage = get_storage();
     return match credentials_storage.read() {
-        Ok(credentials) => V9ApiClient::from_credentials(credentials),
+        Ok(credentials) => V9ApiClient::from_credentials(credentials, proxy),
         Err(err) => {
             println!(
                 "{}\n{} {}",

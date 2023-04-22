@@ -25,6 +25,7 @@ structopt = { version = "0.3" }
 
 # Terminal utilities
 colored = "2.0.0"
+colors-transform = "0.2.11"
 
 # Storage
 keyring = "2"

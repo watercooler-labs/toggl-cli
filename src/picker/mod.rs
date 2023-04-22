@@ -1,8 +1,11 @@
 mod fzf;
 #[cfg(unix)]
 mod skim;
+
+use crate::constants;
 use crate::models;
-use models::{ResultWithDefaultError, TimeEntry};
+
+use models::{Project, ResultWithDefaultError, TimeEntry};
 
 pub struct PickableItem {
     id: i64,
@@ -10,15 +13,14 @@ pub struct PickableItem {
 }
 
 impl PickableItem {
-    pub fn from_time_entry(time_entry: TimeEntry) -> PickableItem {
+    pub fn from_time_entry(time_entry: TimeEntry, project: Option<Project>) -> PickableItem {
         let formatted_time_entry = format!(
             "{} {} - {} {}",
             if time_entry.billable { "$" } else { " " },
-            time_entry.description,
-            match time_entry.project_id {
-                // TODO: Print the actual project name here.
-                Some(_) => "With project",
-                None => "No project",
+            time_entry.get_description(),
+            match project {
+                Some(p) => p.name,
+                None => constants::NO_PROJECT.to_string(),
             },
             time_entry.get_display_tags()
         );

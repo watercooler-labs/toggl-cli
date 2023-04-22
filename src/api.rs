@@ -1,6 +1,9 @@
+use std::collections::HashMap;
+
 use crate::credentials;
 use crate::error;
 use crate::models;
+use crate::models::Project;
 use async_trait::async_trait;
 use base64::{engine::general_purpose, Engine as _};
 use error::ApiError;
@@ -16,6 +19,7 @@ pub trait ApiClient {
     async fn get_user(&self) -> ResultWithDefaultError<User>;
     async fn get_running_time_entry(&self) -> ResultWithDefaultError<Option<TimeEntry>>;
     async fn get_time_entries(&self) -> ResultWithDefaultError<Vec<TimeEntry>>;
+    async fn get_projects(&self) -> ResultWithDefaultError<HashMap<i64, Project>>;
     async fn create_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<TimeEntry>;
     async fn update_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<TimeEntry>;
 }
@@ -51,11 +55,18 @@ impl ApiClient for V9ApiClient {
         let url = format!("{}/time_entries/{}", self.base_url, time_entry.id);
         return self.put::<TimeEntry, TimeEntry>(url, &time_entry).await;
     }
+
+    async fn get_projects(&self) -> ResultWithDefaultError<HashMap<i64, Project>> {
+        let url = format!("{}/me/projects", self.base_url);
+        let projects = self.get::<Vec<Project>>(url).await?;
+        return Ok(projects.into_iter().map(|p| (p.id, p)).collect());
+    }
 }
 
 impl V9ApiClient {
     pub fn from_credentials(
         credentials: credentials::Credentials,
+        proxy: Option<String>,
     ) -> ResultWithDefaultError<V9ApiClient> {
         let auth_string = credentials.api_token + ":api_token";
         let header_content =
@@ -64,7 +75,15 @@ impl V9ApiClient {
         let auth_header = header::HeaderValue::from_str(header_content.as_str())?;
         headers.insert(header::AUTHORIZATION, auth_header);
 
-        let http_client = Client::builder().default_headers(headers).build()?;
+        let base_client = Client::builder().default_headers(headers);
+        let http_client = {
+            if let Some(proxy) = proxy {
+                base_client.proxy(reqwest::Proxy::all(proxy)?)
+            } else {
+                base_client
+            }
+        }
+        .build()?;
         let api_client = Self {
             http_client,
             base_url: "https://track.toggl.com/api/v9".to_string(),

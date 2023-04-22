@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::api;
 use crate::commands;
 use crate::models;
@@ -25,12 +27,22 @@ impl ContinueCommand {
             return Ok(());
         }
 
+        let projects = api_client
+            .get_projects()
+            .await
+            .unwrap_or_else(|_| HashMap::new());
+
         let time_entry_to_continue = match picker {
             None => get_first_stopped_time_entry(time_entries, running_time_entry),
             Some(time_entry_picker) => {
                 let pickable_items = time_entries
                     .iter()
-                    .map(|te| PickableItem::from_time_entry(te.clone()))
+                    .map(|te| {
+                        PickableItem::from_time_entry(
+                            te.clone(),
+                            projects.get(&te.project_id.unwrap_or(-1)).cloned(),
+                        )
+                    })
                     .collect();
                 let picked_id = time_entry_picker.pick(pickable_items)?;
                 let picked_time_entry = time_entries.iter().find(|te| te.id == picked_id).unwrap();
