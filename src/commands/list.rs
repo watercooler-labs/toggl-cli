@@ -19,7 +19,7 @@ impl ListCommand {
             ),
             Ok(entities) => entities
                 .time_entries
-                .into_values()
+                .iter()
                 .take(count.unwrap_or(usize::max_value()))
                 .for_each(|time_entry| println!("{}", time_entry)),
         }

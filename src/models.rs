@@ -3,7 +3,6 @@ use std::{cmp, env};
 use crate::constants;
 use std::collections::HashMap;
 
-use crate::api::models::NetworkTimeEntry;
 use chrono::{DateTime, Duration, Utc};
 use colored::{ColoredString, Colorize};
 use colors_transform::{Color, Rgb};
@@ -13,7 +12,7 @@ use serde::{Deserialize, Serialize};
 pub type ResultWithDefaultError<T> = Result<T, Box<dyn std::error::Error>>;
 
 pub struct Entities {
-    pub time_entries: HashMap<i64, TimeEntry>,
+    pub time_entries: Vec<TimeEntry>,
     pub projects: HashMap<i64, Project>,
     pub tasks: HashMap<i64, Task>,
     pub clients: HashMap<i64, Client>,
@@ -21,14 +20,11 @@ pub struct Entities {
 
 impl Entities {
     pub fn running_time_entry(&self) -> Option<TimeEntry> {
-        self.time_entries
-            .iter()
-            .find(|(_, te)| te.is_running())
-            .map(|(_, te)| te.clone())
+        self.time_entries.iter().find(|te| te.is_running()).cloned()
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct User {
     pub api_token: String,
     pub email: String,
@@ -37,7 +33,7 @@ pub struct User {
     pub default_workspace_id: i64,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TimeEntry {
     pub id: i64,
     pub description: String,
@@ -52,7 +48,7 @@ pub struct TimeEntry {
     pub created_with: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Project {
     pub id: i64,
     pub name: String,
@@ -62,7 +58,6 @@ pub struct Project {
     pub active: bool,
     pub at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
-    pub server_deleted_at: Option<DateTime<Utc>>,
     pub color: String,
 }
 
@@ -158,14 +153,14 @@ impl std::fmt::Display for Project {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Client {
     pub id: i64,
     pub name: String,
     pub workspace_id: i64,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Task {
     pub id: i64,
     pub name: String,
@@ -224,28 +219,6 @@ impl TimeEntry {
             "".to_string()
         } else {
             format!("[{}]", self.tags.join(", "))
-        }
-    }
-
-    pub fn as_network_time_entry(&self) -> NetworkTimeEntry {
-        NetworkTimeEntry {
-            id: self.id,
-            description: self.description.to_string(),
-            start: self.start,
-            stop: self.stop,
-            duration: self.duration,
-            billable: self.billable,
-            workspace_id: self.workspace_id,
-            tags: self.tags.clone(),
-            project_id: match self.project.clone() {
-                Some(p) => Some(p.id),
-                None => None,
-            },
-            task_id: match self.task.clone() {
-                Some(t) => Some(t.id),
-                None => None,
-            },
-            created_with: self.created_with.clone(),
         }
     }
 }

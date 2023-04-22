@@ -1,7 +1,9 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone)]
+use crate::models::TimeEntry;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NetworkTimeEntry {
     pub id: i64,
     pub description: String,
@@ -16,7 +18,7 @@ pub struct NetworkTimeEntry {
     pub created_with: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NetworkProject {
     pub id: i64,
     pub name: String,
@@ -30,16 +32,34 @@ pub struct NetworkProject {
     pub color: String,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NetworkClient {
     pub id: i64,
     pub name: String,
     pub wid: i64,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NetworkTask {
     pub id: i64,
     pub name: String,
     pub workspace_id: i64,
+}
+
+impl From<TimeEntry> for NetworkTimeEntry {
+    fn from(value: TimeEntry) -> Self {
+        NetworkTimeEntry {
+            id: value.id,
+            description: value.description.to_string(),
+            start: value.start,
+            stop: value.stop,
+            duration: value.duration,
+            billable: value.billable,
+            workspace_id: value.workspace_id,
+            tags: value.tags.clone(),
+            project_id: value.project.map(|p| p.id),
+            task_id: value.task.map(|t| t.id),
+            created_with: value.created_with,
+        }
+    }
 }

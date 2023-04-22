@@ -126,7 +126,7 @@ impl ApiClient for V9ApiClient {
     async fn create_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<i64> {
         let url = format!("{}/time_entries", self.base_url);
         let network_time_entry = self
-            .post::<NetworkTimeEntry, NetworkTimeEntry>(url, &time_entry.as_network_time_entry())
+            .post::<NetworkTimeEntry, NetworkTimeEntry>(url, &time_entry.into())
             .await?;
         return Ok(network_time_entry.id);
     }
@@ -134,7 +134,7 @@ impl ApiClient for V9ApiClient {
     async fn update_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<i64> {
         let url = format!("{}/time_entries/{}", self.base_url, time_entry.id);
         let network_time_entry = self
-            .put::<NetworkTimeEntry, NetworkTimeEntry>(url, &time_entry.as_network_time_entry())
+            .put::<NetworkTimeEntry, NetworkTimeEntry>(url, &time_entry.into())
             .await?;
         return Ok(network_time_entry.id);
     }
@@ -145,57 +145,76 @@ impl ApiClient for V9ApiClient {
         let network_tasks = self.get_tasks().await?;
         let network_clients = self.get_clients().await?;
 
-        let clients = network_clients.iter().map(|c| crate::models::Client {
-            id: c.id,
-            name: c.name.clone(),
-            workspace_id: c.wid,
-        });
-        let client_map: HashMap<i64, crate::models::Client> =
-            clients.into_iter().map(|c| (c.id, c)).collect();
+        let clients: HashMap<i64, crate::models::Client> = network_clients
+            .iter()
+            .map(|c| {
+                (
+                    c.id,
+                    crate::models::Client {
+                        id: c.id,
+                        name: c.name.clone(),
+                        workspace_id: c.wid,
+                    },
+                )
+            })
+            .collect();
 
-        let projects = network_projects.iter().map(|p| Project {
-            id: p.id,
-            name: p.name.clone(),
-            workspace_id: p.workspace_id,
-            client: client_map.get(&p.client_id.unwrap_or(-1)).cloned(),
-            is_private: p.is_private,
-            active: p.active,
-            at: p.at,
-            created_at: p.created_at,
-            server_deleted_at: p.server_deleted_at,
-            color: p.color.clone(),
-        });
-        let project_map: HashMap<i64, Project> = projects.into_iter().map(|p| (p.id, p)).collect();
+        let projects: HashMap<i64, Project> = network_projects
+            .iter()
+            .map(|p| {
+                (
+                    p.id,
+                    Project {
+                        id: p.id,
+                        name: p.name.clone(),
+                        workspace_id: p.workspace_id,
+                        client: clients.get(&p.client_id.unwrap_or(-1)).cloned(),
+                        is_private: p.is_private,
+                        active: p.active,
+                        at: p.at,
+                        created_at: p.created_at,
+                        color: p.color.clone(),
+                    },
+                )
+            })
+            .collect();
 
-        let tasks = network_tasks.iter().map(|t| Task {
-            id: t.id,
-            name: t.name.clone(),
-            workspace_id: t.workspace_id,
-        });
-        let task_map: HashMap<i64, Task> = tasks.into_iter().map(|t| (t.id, t)).collect();
+        let tasks: HashMap<i64, Task> = network_tasks
+            .iter()
+            .map(|t| {
+                (
+                    t.id,
+                    Task {
+                        id: t.id,
+                        name: t.name.clone(),
+                        workspace_id: t.workspace_id,
+                    },
+                )
+            })
+            .collect();
 
-        // let clients = network_clients.iter().map(|c|crate::models::Client:: { c. })
-
-        let time_entries = network_time_entries.iter().map(|te| TimeEntry {
-            id: te.id,
-            description: te.description.clone(),
-            start: te.start,
-            stop: te.stop,
-            duration: te.duration,
-            billable: te.billable,
-            workspace_id: te.workspace_id,
-            tags: te.tags.clone(),
-            project: project_map.get(&te.project_id.unwrap_or(-1)).cloned(),
-            task: task_map.get(&te.task_id.unwrap_or(-1)).cloned(),
-            ..Default::default()
-        });
-        let time_entry_map = time_entries.into_iter().map(|t| (t.id, t)).collect();
+        let time_entries = network_time_entries
+            .iter()
+            .map(|te| TimeEntry {
+                id: te.id,
+                description: te.description.clone(),
+                start: te.start,
+                stop: te.stop,
+                duration: te.duration,
+                billable: te.billable,
+                workspace_id: te.workspace_id,
+                tags: te.tags.clone(),
+                project: projects.get(&te.project_id.unwrap_or(-1)).cloned(),
+                task: tasks.get(&te.task_id.unwrap_or(-1)).cloned(),
+                ..Default::default()
+            })
+            .collect();
 
         Ok(Entities {
-            time_entries: time_entry_map,
-            projects: project_map,
-            tasks: task_map,
-            clients: client_map,
+            time_entries,
+            projects,
+            tasks,
+            clients,
         })
     }
 }
