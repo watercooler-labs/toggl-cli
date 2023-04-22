@@ -18,28 +18,20 @@ impl ContinueCommand {
         let running_time_entry =
             StopCommand::execute(&api_client, StopCommandOrigin::ContinueCommand).await?;
 
-        let time_entries = api_client.get_time_entries().await?;
-        if time_entries.is_empty() {
+        let entities = api_client.get_entities().await?;
+        if entities.time_entries.is_empty() {
             println!("{}", "No time entries in last 90 days".red());
             return Ok(());
         }
 
-        let projects = api_client
-            .get_projects()
-            .await
-            .unwrap_or_else(|_| HashMap::new());
+        let time_entries = entities.time_entries.into_values().collect();
 
         let time_entry_to_continue = match picker {
             None => get_first_stopped_time_entry(time_entries, running_time_entry),
             Some(time_entry_picker) => {
                 let pickable_items = time_entries
                     .iter()
-                    .map(|te| {
-                        PickableItem::from_time_entry(
-                            te.clone(),
-                            projects.get(&te.project_id.unwrap_or(-1)).cloned(),
-                        )
-                    })
+                    .map(|te| PickableItem::from_time_entry(te.clone()))
                     .collect();
                 let picked_id = time_entry_picker.pick(pickable_items)?;
                 let picked_time_entry = time_entries.iter().find(|te| te.id == picked_id).unwrap();

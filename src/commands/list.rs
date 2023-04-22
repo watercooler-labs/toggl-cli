@@ -11,14 +11,15 @@ impl ListCommand {
         api_client: impl ApiClient,
         count: Option<usize>,
     ) -> ResultWithDefaultError<()> {
-        match api_client.get_time_entries().await {
+        match api_client.get_entities().await {
             Err(error) => println!(
                 "{}\n{}",
                 "Couldn't fetch time entries the from API".red(),
                 error
             ),
-            Ok(time_entries) => time_entries
-                .iter()
+            Ok(entities) => entities
+                .time_entries
+                .into_values()
                 .take(count.unwrap_or(usize::max_value()))
                 .for_each(|time_entry| println!("{}", time_entry)),
         }

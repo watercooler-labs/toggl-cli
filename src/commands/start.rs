@@ -50,7 +50,9 @@ impl StartCommand {
             },
         };
 
-        let started_entry = api_client.create_time_entry(time_entry_to_create).await?;
+        let started_entry_id = api_client.create_time_entry(time_entry_to_create).await?;
+        let entities = api_client.get_entities().await?;
+        let started_entry = entities.time_entries.get(&started_entry_id).unwrap();
 
         println!("{}\n{}", "Time entry started".green(), started_entry);
 

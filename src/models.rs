@@ -1,6 +1,9 @@
 use std::{cmp, env};
 
 use crate::constants;
+use std::collections::HashMap;
+
+use crate::api::models::NetworkTimeEntry;
 use chrono::{DateTime, Duration, Utc};
 use colored::{ColoredString, Colorize};
 use colors_transform::{Color, Rgb};
@@ -8,6 +11,22 @@ use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
 pub type ResultWithDefaultError<T> = Result<T, Box<dyn std::error::Error>>;
+
+pub struct Entities {
+    pub time_entries: HashMap<i64, TimeEntry>,
+    pub projects: HashMap<i64, Project>,
+    pub tasks: HashMap<i64, Task>,
+    pub clients: HashMap<i64, Client>,
+}
+
+impl Entities {
+    pub fn running_time_entry(&self) -> Option<TimeEntry> {
+        self.time_entries
+            .iter()
+            .find(|(_, te)| te.is_running())
+            .map(|(_, te)| te.clone())
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct User {
@@ -19,29 +38,32 @@ pub struct User {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+pub struct TimeEntry {
+    pub id: i64,
+    pub description: String,
+    pub start: DateTime<Utc>,
+    pub stop: Option<DateTime<Utc>>,
+    pub duration: i64,
+    pub billable: bool,
+    pub workspace_id: i64,
+    pub tags: Vec<String>,
+    pub project: Option<Project>,
+    pub task: Option<Task>,
+    pub created_with: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Project {
     pub id: i64,
     pub name: String,
     pub workspace_id: i64,
-    pub client_id: Option<i64>,
+    pub client: Option<Client>,
     pub is_private: bool,
     pub active: bool,
     pub at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
     pub server_deleted_at: Option<DateTime<Utc>>,
     pub color: String,
-    // "billable":null,
-    // "template":null,
-    // "auto_estimates":null,
-    // "estimated_hours":null,
-    // "rate":null,
-    // "rate_last_updated":null,
-    // "currency":null,
-    // "recurring":false,
-    // "recurring_parameters":null,
-    // "current_period":null,
-    // "fixed_fee":null,
-    // "actual_hours":142,
 }
 
 lazy_static! {
@@ -137,18 +159,17 @@ impl std::fmt::Display for Project {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct TimeEntry {
+pub struct Client {
     pub id: i64,
-    pub description: String,
-    pub start: DateTime<Utc>,
-    pub stop: Option<DateTime<Utc>>,
-    pub duration: i64,
-    pub billable: bool,
+    pub name: String,
     pub workspace_id: i64,
-    pub tags: Vec<String>,
-    pub project_id: Option<i64>,
-    pub task_id: Option<i64>,
-    pub created_with: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Task {
+    pub id: i64,
+    pub name: String,
+    pub workspace_id: i64,
 }
 
 impl TimeEntry {
@@ -205,6 +226,28 @@ impl TimeEntry {
             format!("[{}]", self.tags.join(", "))
         }
     }
+
+    pub fn as_network_time_entry(&self) -> NetworkTimeEntry {
+        NetworkTimeEntry {
+            id: self.id,
+            description: self.description.to_string(),
+            start: self.start,
+            stop: self.stop,
+            duration: self.duration,
+            billable: self.billable,
+            workspace_id: self.workspace_id,
+            tags: self.tags.clone(),
+            project_id: match self.project.clone() {
+                Some(p) => Some(p.id),
+                None => None,
+            },
+            task_id: match self.task.clone() {
+                Some(t) => Some(t.id),
+                None => None,
+            },
+            created_with: self.created_with.clone(),
+        }
+    }
 }
 
 impl Default for TimeEntry {
@@ -216,11 +259,11 @@ impl Default for TimeEntry {
             billable: false,
             description: "".to_string(),
             duration: -start.timestamp(),
-            project_id: None,
+            project: None,
             start,
             stop: None,
             tags: Vec::new(),
-            task_id: None,
+            task: None,
             workspace_id: -1,
         }
     }
