@@ -1,6 +1,6 @@
 use crate::api;
 use crate::models;
-use api::ApiClient;
+use api::client::ApiClient;
 use chrono::Utc;
 use colored::Colorize;
 use models::{ResultWithDefaultError, TimeEntry};
@@ -18,7 +18,8 @@ impl StopCommand {
         api_client: &impl ApiClient,
         origin: StopCommandOrigin,
     ) -> ResultWithDefaultError<Option<TimeEntry>> {
-        match api_client.get_running_time_entry().await? {
+        let entities = api_client.get_entities().await?;
+        match entities.running_time_entry() {
             None => {
                 match origin {
                     StopCommandOrigin::CommandLine => {
@@ -33,7 +34,9 @@ impl StopCommand {
             Some(running_time_entry) => {
                 let stop_time = Utc::now();
                 let stopped_time_entry = running_time_entry.as_stopped_time_entry(stop_time);
-                let updated_time_entry = api_client.update_time_entry(stopped_time_entry).await?;
+                api_client
+                    .update_time_entry(stopped_time_entry.clone())
+                    .await?;
 
                 let message = match origin {
                     StopCommandOrigin::CommandLine => "Time entry stopped successfully".green(),
@@ -41,9 +44,9 @@ impl StopCommand {
                     StopCommandOrigin::ContinueCommand => "Running time entry stopped".yellow(),
                 };
 
-                println!("{}\n{}", message, updated_time_entry);
+                println!("{}\n{}", message, stopped_time_entry.clone());
 
-                Ok(Some(updated_time_entry))
+                Ok(Some(stopped_time_entry))
             }
         }
     }

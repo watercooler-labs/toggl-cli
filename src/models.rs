@@ -1,6 +1,8 @@
 use std::{cmp, env};
 
 use crate::constants;
+use std::collections::HashMap;
+
 use chrono::{DateTime, Duration, Utc};
 use colored::{ColoredString, Colorize};
 use colors_transform::{Color, Rgb};
@@ -9,7 +11,20 @@ use serde::{Deserialize, Serialize};
 
 pub type ResultWithDefaultError<T> = Result<T, Box<dyn std::error::Error>>;
 
-#[derive(Serialize, Deserialize, Clone)]
+pub struct Entities {
+    pub time_entries: Vec<TimeEntry>,
+    pub projects: HashMap<i64, Project>,
+    pub tasks: HashMap<i64, Task>,
+    pub clients: HashMap<i64, Client>,
+}
+
+impl Entities {
+    pub fn running_time_entry(&self) -> Option<TimeEntry> {
+        self.time_entries.iter().find(|te| te.is_running()).cloned()
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct User {
     pub api_token: String,
     pub email: String,
@@ -18,30 +33,32 @@ pub struct User {
     pub default_workspace_id: i64,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct TimeEntry {
+    pub id: i64,
+    pub description: String,
+    pub start: DateTime<Utc>,
+    pub stop: Option<DateTime<Utc>>,
+    pub duration: i64,
+    pub billable: bool,
+    pub workspace_id: i64,
+    pub tags: Vec<String>,
+    pub project: Option<Project>,
+    pub task: Option<Task>,
+    pub created_with: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Project {
     pub id: i64,
     pub name: String,
     pub workspace_id: i64,
-    pub client_id: Option<i64>,
+    pub client: Option<Client>,
     pub is_private: bool,
     pub active: bool,
     pub at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
-    pub server_deleted_at: Option<DateTime<Utc>>,
     pub color: String,
-    // "billable":null,
-    // "template":null,
-    // "auto_estimates":null,
-    // "estimated_hours":null,
-    // "rate":null,
-    // "rate_last_updated":null,
-    // "currency":null,
-    // "recurring":false,
-    // "recurring_parameters":null,
-    // "current_period":null,
-    // "fixed_fee":null,
-    // "actual_hours":142,
 }
 
 lazy_static! {
@@ -136,19 +153,18 @@ impl std::fmt::Display for Project {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct TimeEntry {
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Client {
     pub id: i64,
-    pub description: String,
-    pub start: DateTime<Utc>,
-    pub stop: Option<DateTime<Utc>>,
-    pub duration: i64,
-    pub billable: bool,
+    pub name: String,
     pub workspace_id: i64,
-    pub tags: Vec<String>,
-    pub project_id: Option<i64>,
-    pub task_id: Option<i64>,
-    pub created_with: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Task {
+    pub id: i64,
+    pub name: String,
+    pub workspace_id: i64,
 }
 
 impl TimeEntry {
@@ -216,11 +232,11 @@ impl Default for TimeEntry {
             billable: false,
             description: "".to_string(),
             duration: -start.timestamp(),
-            project_id: None,
+            project: None,
             start,
             stop: None,
             tags: Vec::new(),
-            task_id: None,
+            task: None,
             workspace_id: -1,
         }
     }
@@ -229,7 +245,13 @@ impl Default for TimeEntry {
 impl std::fmt::Display for TimeEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let summary = format!(
-            "[{}]{} –  {} {}",
+            //{$/space} [{duration}]{running indicator/space} - {description/No Description}{@project/empty string} {#tags/empty string}
+            "{} [{}]{} –  {}{} {}",
+            if self.billable {
+                "$".green().bold().to_string()
+            } else {
+                " ".to_string()
+            },
             if self.is_running() {
                 self.get_duration_hmmss().green().bold()
             } else {
@@ -237,7 +259,15 @@ impl std::fmt::Display for TimeEntry {
             },
             if self.is_running() { "*" } else { " " },
             self.get_description(),
-            self.get_display_tags().italic()
+            match self.project.clone() {
+                Some(p) => format!(" @{}", p),
+                None => "".to_string(),
+            },
+            if self.tags.is_empty() {
+                "".to_string()
+            } else {
+                format!("#{}", self.get_display_tags().italic())
+            }
         );
         write!(f, "{}", summary)
     }

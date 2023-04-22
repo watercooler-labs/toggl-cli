@@ -1,10 +1,7 @@
-use std::collections::HashMap;
-
-use crate::api;
+use crate::api::client::ApiClient;
 use crate::commands;
 use crate::models;
 use crate::picker;
-use api::ApiClient;
 use chrono::Utc;
 use colored::Colorize;
 use commands::stop::{StopCommand, StopCommandOrigin};
@@ -21,31 +18,26 @@ impl ContinueCommand {
         let running_time_entry =
             StopCommand::execute(&api_client, StopCommandOrigin::ContinueCommand).await?;
 
-        let time_entries = api_client.get_time_entries().await?;
-        if time_entries.is_empty() {
+        let entities = api_client.get_entities().await?;
+        if entities.time_entries.is_empty() {
             println!("{}", "No time entries in last 90 days".red());
             return Ok(());
         }
 
-        let projects = api_client
-            .get_projects()
-            .await
-            .unwrap_or_else(|_| HashMap::new());
-
         let time_entry_to_continue = match picker {
-            None => get_first_stopped_time_entry(time_entries, running_time_entry),
+            None => get_first_stopped_time_entry(entities.time_entries, running_time_entry),
             Some(time_entry_picker) => {
-                let pickable_items = time_entries
+                let pickable_items = entities
+                    .time_entries
                     .iter()
-                    .map(|te| {
-                        PickableItem::from_time_entry(
-                            te.clone(),
-                            projects.get(&te.project_id.unwrap_or(-1)).cloned(),
-                        )
-                    })
+                    .map(|te| PickableItem::from_time_entry(te.clone()))
                     .collect();
                 let picked_id = time_entry_picker.pick(pickable_items)?;
-                let picked_time_entry = time_entries.iter().find(|te| te.id == picked_id).unwrap();
+                let picked_time_entry = entities
+                    .time_entries
+                    .iter()
+                    .find(|te| te.id == picked_id)
+                    .unwrap();
                 Some(picked_time_entry.clone())
             }
         };
@@ -55,7 +47,13 @@ impl ContinueCommand {
             Some(time_entry) => {
                 let start_time = Utc::now();
                 let time_entry_to_create = time_entry.as_running_time_entry(start_time);
-                let continued_entry = api_client.create_time_entry(time_entry_to_create).await?;
+                let continued_entry_id = api_client.create_time_entry(time_entry_to_create).await?;
+                let entities = api_client.get_entities().await?;
+                let continued_entry = entities
+                    .time_entries
+                    .iter()
+                    .find(|te| te.id == continued_entry_id)
+                    .unwrap();
                 println!(
                     "{}\n{}",
                     "Time entry continued successfully".green(),

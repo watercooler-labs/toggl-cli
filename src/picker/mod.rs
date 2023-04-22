@@ -5,7 +5,7 @@ mod skim;
 use crate::constants;
 use crate::models;
 
-use models::{Project, ResultWithDefaultError, TimeEntry};
+use models::{ResultWithDefaultError, TimeEntry};
 
 pub struct PickableItem {
     id: i64,
@@ -13,12 +13,12 @@ pub struct PickableItem {
 }
 
 impl PickableItem {
-    pub fn from_time_entry(time_entry: TimeEntry, project: Option<Project>) -> PickableItem {
+    pub fn from_time_entry(time_entry: TimeEntry) -> PickableItem {
         let formatted_time_entry = format!(
             "{} {} - {} {}",
             if time_entry.billable { "$" } else { " " },
             time_entry.get_description(),
-            match project {
+            match time_entry.project.clone() {
                 Some(p) => p.name,
                 None => constants::NO_PROJECT.to_string(),
             },

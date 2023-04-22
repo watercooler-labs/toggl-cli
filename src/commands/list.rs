@@ -1,6 +1,6 @@
 use crate::api;
 use crate::models;
-use api::ApiClient;
+use api::client::ApiClient;
 use colored::Colorize;
 use models::ResultWithDefaultError;
 
@@ -11,13 +11,14 @@ impl ListCommand {
         api_client: impl ApiClient,
         count: Option<usize>,
     ) -> ResultWithDefaultError<()> {
-        match api_client.get_time_entries().await {
+        match api_client.get_entities().await {
             Err(error) => println!(
                 "{}\n{}",
                 "Couldn't fetch time entries the from API".red(),
                 error
             ),
-            Ok(time_entries) => time_entries
+            Ok(entities) => entities
+                .time_entries
                 .iter()
                 .take(count.unwrap_or(usize::max_value()))
                 .for_each(|time_entry| println!("{}", time_entry)),

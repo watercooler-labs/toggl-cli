@@ -2,7 +2,7 @@ use crate::api;
 use crate::commands;
 use crate::models;
 use crate::utilities;
-use api::ApiClient;
+use api::client::ApiClient;
 use colored::Colorize;
 use commands::stop::{StopCommand, StopCommandOrigin};
 use models::ResultWithDefaultError;
@@ -50,7 +50,13 @@ impl StartCommand {
             },
         };
 
-        let started_entry = api_client.create_time_entry(time_entry_to_create).await?;
+        let started_entry_id = api_client.create_time_entry(time_entry_to_create).await?;
+        let entities = api_client.get_entities().await?;
+        let started_entry = entities
+            .time_entries
+            .iter()
+            .find(|te| te.id == started_entry_id)
+            .unwrap();
 
         println!("{}\n{}", "Time entry started".green(), started_entry);
 
