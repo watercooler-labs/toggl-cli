@@ -272,7 +272,13 @@ impl Default for TimeEntry {
 impl std::fmt::Display for TimeEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let summary = format!(
-            "[{}]{} –  {} {}",
+            //{$/space} [{duration}]{running indicator/space} - {description/No Description}{@project/empty string} {#tags/empty string}
+            "{} [{}]{} –  {}{} {}",
+            if self.billable {
+                "$".green().bold().to_string()
+            } else {
+                " ".to_string()
+            },
             if self.is_running() {
                 self.get_duration_hmmss().green().bold()
             } else {
@@ -280,7 +286,15 @@ impl std::fmt::Display for TimeEntry {
             },
             if self.is_running() { "*" } else { " " },
             self.get_description(),
-            self.get_display_tags().italic()
+            match self.project.clone() {
+                Some(p) => format!(" @{}", p),
+                None => "".to_string(),
+            },
+            if self.tags.is_empty() {
+                "".to_string()
+            } else {
+                format!("#{}", self.get_display_tags().italic())
+            }
         );
         write!(f, "{}", summary)
     }
