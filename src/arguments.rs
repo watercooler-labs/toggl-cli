@@ -8,6 +8,9 @@ pub struct CommandLineArguments {
 
     #[structopt(long, help = "Use custom proxy")]
     pub proxy: Option<String>,
+
+    #[structopt(long, help = "Use fzf instead of the default picker")]
+    pub fzf: bool,
 }
 
 #[derive(Debug, StructOpt)]
@@ -40,9 +43,6 @@ pub enum Command {
     Continue {
         #[structopt(short, long)]
         interactive: bool,
-
-        #[structopt(long)]
-        fzf: bool,
     },
     #[structopt(about = "Manage auto-tracking configuration")]
     Config {

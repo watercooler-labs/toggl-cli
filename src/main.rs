@@ -52,6 +52,7 @@ async fn main() -> ResultWithDefaultError<()> {
 async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultError<()> {
     let command = args.cmd;
     let get_default_api_client = || get_api_client(args.proxy.clone());
+    let picker = picker::get_picker(args.fzf);
     match command {
         None => RunningTimeEntryCommand::execute(get_default_api_client()?).await?,
         Some(subcommand) => match subcommand {
@@ -59,12 +60,8 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 StopCommand::execute(&get_default_api_client()?, StopCommandOrigin::CommandLine)
                     .await?;
             }
-            Continue { interactive, fzf } => {
-                let picker = if interactive {
-                    Some(picker::get_picker(fzf))
-                } else {
-                    None
-                };
+            Continue { interactive } => {
+                let picker = if interactive { Some(picker) } else { None };
                 ContinueCommand::execute(get_default_api_client()?, picker).await?
             }
             List { number } => ListCommand::execute(get_default_api_client()?, number).await?,
