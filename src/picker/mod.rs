@@ -2,6 +2,10 @@ mod fzf;
 #[cfg(unix)]
 mod skim;
 
+use std::borrow::BorrowMut;
+use std::fmt::Display;
+use std::str::FromStr;
+
 use crate::constants;
 use crate::models;
 use crate::models::Project;
@@ -24,6 +28,43 @@ pub enum PickableItemKind {
 pub struct PickableItem {
     id: PickableItemId,
     formatted: String,
+}
+
+impl FromStr for PickableItemId {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut split_string = s.split(' ');
+        let pieces = split_string.borrow_mut();
+        let kind = match pieces.next().unwrap() {
+            "TimeEntry" => PickableItemKind::TimeEntry,
+            "Project" => PickableItemKind::Project,
+            "Task" => PickableItemKind::Task,
+            _ => return Err(()),
+        };
+
+        let id = match pieces.next().unwrap().parse::<i64>() {
+            Ok(id) => id,
+            Err(_) => return Err(()),
+        };
+
+        Ok(PickableItemId { kind, id })
+    }
+}
+
+impl Display for PickableItemId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {}",
+            match self.kind {
+                PickableItemKind::TimeEntry => "TimeEntry",
+                PickableItemKind::Project => "Project",
+                PickableItemKind::Task => "Task",
+            },
+            self.id
+        )
+    }
 }
 
 impl PickableItem {
