@@ -174,6 +174,7 @@ impl ApiClient for V9ApiClient {
                         at: p.at,
                         created_at: p.created_at,
                         color: p.color.clone(),
+                        billable: p.billable,
                     },
                 )
             })
@@ -187,6 +188,7 @@ impl ApiClient for V9ApiClient {
                     Task {
                         id: t.id,
                         name: t.name.clone(),
+                        project: projects.get(&t.project_id).unwrap().clone(),
                         workspace_id: t.workspace_id,
                     },
                 )

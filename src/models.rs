@@ -59,6 +59,7 @@ pub struct Project {
     pub at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
     pub color: String,
+    pub billable: Option<bool>,
 }
 
 lazy_static! {
@@ -165,6 +166,7 @@ pub struct Task {
     pub id: i64,
     pub name: String,
     pub workspace_id: i64,
+    pub project: Project,
 }
 
 impl TimeEntry {
