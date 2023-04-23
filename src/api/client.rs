@@ -140,12 +140,13 @@ impl ApiClient for V9ApiClient {
     }
 
     async fn get_entities(&self) -> ResultWithDefaultError<Entities> {
-        let network_time_entries = self.get_time_entries().await?;
-        let network_projects = self.get_projects().await?;
-        let network_tasks = self.get_tasks().await?;
-        let network_clients = self.get_clients().await?;
+        let network_time_entries = self.get_time_entries();
+        let network_projects = self.get_projects();
+        let network_tasks = self.get_tasks();
+        let network_clients = self.get_clients();
 
         let clients: HashMap<i64, crate::models::Client> = network_clients
+            .await?
             .iter()
             .map(|c| {
                 (
@@ -160,6 +161,7 @@ impl ApiClient for V9ApiClient {
             .collect();
 
         let projects: HashMap<i64, Project> = network_projects
+            .await?
             .iter()
             .map(|p| {
                 (
@@ -180,6 +182,7 @@ impl ApiClient for V9ApiClient {
             .collect();
 
         let tasks: HashMap<i64, Task> = network_tasks
+            .await?
             .iter()
             .map(|t| {
                 (
@@ -194,6 +197,7 @@ impl ApiClient for V9ApiClient {
             .collect();
 
         let time_entries = network_time_entries
+            .await?
             .iter()
             .map(|te| TimeEntry {
                 id: te.id,
