@@ -7,8 +7,21 @@ use crate::models;
 
 use models::{ResultWithDefaultError, TimeEntry};
 
+#[derive(Clone)]
+pub struct PickableItemId {
+    pub id: i64,
+    pub kind: PickableItemKind,
+}
+
+#[derive(Clone, Copy)]
+pub enum PickableItemKind {
+    TimeEntry,
+    Project,
+    Task,
+}
+
 pub struct PickableItem {
-    id: i64,
+    id: PickableItemId,
     formatted: String,
 }
 
@@ -26,14 +39,17 @@ impl PickableItem {
         );
 
         PickableItem {
-            id: time_entry.id,
+            id: PickableItemId {
+                id: time_entry.id,
+                kind: PickableItemKind::TimeEntry,
+            },
             formatted: formatted_time_entry,
         }
     }
 }
 
 pub trait ItemPicker {
-    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<i64>;
+    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<PickableItemId>;
 }
 
 #[cfg(unix)]

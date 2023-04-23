@@ -10,6 +10,8 @@ use std::io;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
+use super::PickableItemId;
+
 pub struct FzfPicker;
 
 fn format_as_fzf_input(items: &[PickableItem]) -> String {
@@ -19,15 +21,15 @@ fn format_as_fzf_input(items: &[PickableItem]) -> String {
         .fold("".to_string(), |acc, item| acc + item.as_str() + "\n")
 }
 
-fn create_element_hash_map(items: &[PickableItem]) -> HashMap<String, i64> {
+fn create_element_hash_map(items: &[PickableItem]) -> HashMap<String, PickableItemId> {
     items
         .iter()
-        .map(|item| (item.formatted.clone(), item.id))
-        .collect::<HashMap<String, i64>>()
+        .map(|item| (item.formatted.clone(), item.id.clone()))
+        .collect()
 }
 
 impl ItemPicker for FzfPicker {
-    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<i64> {
+    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<PickableItemId> {
         let mut command = Command::new("fzf");
         command
             .arg("-n2..")
@@ -51,7 +53,7 @@ impl ItemPicker for FzfPicker {
                                 utilities::remove_trailing_newline(user_selected_string);
                             let selected_item =
                                 possible_elements.get(&selected_item_index).unwrap();
-                            Ok(*selected_item)
+                            Ok(selected_item.clone())
                         }
                         // This is copied from zoxide's fzf handler.
                         // https://github.com/rohankumardubey/zoxide/blob/main/src/util.rs

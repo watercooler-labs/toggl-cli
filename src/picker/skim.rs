@@ -38,7 +38,7 @@ impl SkimItem for PickableItem {
 }
 
 impl ItemPicker for SkimPicker {
-    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<i64> {
+    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<PickableItemKind> {
         let (options, source) = get_skim_configuration(items);
         let output = Skim::run_with(&options, Some(source));
 
@@ -52,7 +52,7 @@ impl ItemPicker for SkimPicker {
                         .selected_items
                         .iter()
                         .map(|selected_items| selected_items.output().parse::<i64>().unwrap())
-                        .collect::<Vec<i64>>();
+                        .collect::<Vec<PickableItemKind>>();
 
                     match selectable_items.first() {
                         None => Err(Box::new(PickerError::Generic)),

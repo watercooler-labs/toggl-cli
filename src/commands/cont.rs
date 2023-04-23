@@ -36,7 +36,7 @@ impl ContinueCommand {
                 let picked_time_entry = entities
                     .time_entries
                     .iter()
-                    .find(|te| te.id == picked_id)
+                    .find(|te| te.id == picked_id.id)
                     .unwrap();
                 Some(picked_time_entry.clone())
             }
