@@ -4,7 +4,8 @@ mod skim;
 
 use crate::constants;
 use crate::models;
-
+use crate::models::Project;
+use crate::models::Task;
 use models::{ResultWithDefaultError, TimeEntry};
 
 #[derive(Clone)]
@@ -44,6 +45,45 @@ impl PickableItem {
                 kind: PickableItemKind::TimeEntry,
             },
             formatted: formatted_time_entry,
+        }
+    }
+
+    pub fn from_project(project: Project) -> PickableItem {
+        let formatted_project = format!(
+            "{}{}",
+            project.name,
+            match project.client.clone() {
+                Some(c) => format!(" - Client: {}", c.name),
+                None => "".to_string(),
+            }
+        );
+
+        PickableItem {
+            id: PickableItemId {
+                id: project.id,
+                kind: PickableItemKind::Project,
+            },
+            formatted: formatted_project,
+        }
+    }
+
+    pub fn from_task(task: Task) -> PickableItem {
+        let formatted_task = format!(
+            "{} (Task: {}){}",
+            task.project.name,
+            task.name,
+            match task.project.client.clone() {
+                Some(c) => format!(" - Client: {}", c.name),
+                None => "".to_string(),
+            }
+        );
+
+        PickableItem {
+            id: PickableItemId {
+                id: task.id,
+                kind: PickableItemKind::Task,
+            },
+            formatted: formatted_task,
         }
     }
 }

@@ -69,10 +69,21 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 RunningTimeEntryCommand::execute(get_default_api_client()?).await?
             }
             Start {
+                interactive,
                 billable,
                 description,
-                project: _,
-            } => StartCommand::execute(get_default_api_client()?, description, billable).await?,
+                project,
+            } => {
+                StartCommand::execute(
+                    get_default_api_client()?,
+                    picker,
+                    description,
+                    project,
+                    billable,
+                    interactive,
+                )
+                .await?
+            }
             Auth { api_token } => {
                 let credentials = Credentials { api_token };
                 let api_client = V9ApiClient::from_credentials(credentials, args.proxy)?;
