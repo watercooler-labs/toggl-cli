@@ -42,7 +42,7 @@ pub enum Command {
         )]
         project: Option<String>,
         #[structopt(short, long)]
-        billable: Option<bool>,
+        billable: bool,
     },
     Continue {
         #[structopt(short, long)]

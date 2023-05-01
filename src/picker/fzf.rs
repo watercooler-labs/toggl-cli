@@ -10,7 +10,7 @@ use std::io;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
-use super::PickableItemId;
+use super::PickableItemKey;
 
 pub struct FzfPicker;
 
@@ -21,15 +21,15 @@ fn format_as_fzf_input(items: &[PickableItem]) -> String {
         .fold("".to_string(), |acc, item| acc + item.as_str() + "\n")
 }
 
-fn create_element_hash_map(items: &[PickableItem]) -> HashMap<String, PickableItemId> {
+fn create_element_hash_map(items: &[PickableItem]) -> HashMap<String, PickableItemKey> {
     items
         .iter()
-        .map(|item| (item.formatted.clone(), item.id.clone()))
+        .map(|item| (item.formatted.clone(), item.key.clone()))
         .collect()
 }
 
 impl ItemPicker for FzfPicker {
-    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<PickableItemId> {
+    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<PickableItemKey> {
         let mut command = Command::new("fzf");
         command
             .arg("-n2..")

@@ -13,7 +13,7 @@ use crate::models::Task;
 use models::{ResultWithDefaultError, TimeEntry};
 
 #[derive(Clone)]
-pub struct PickableItemId {
+pub struct PickableItemKey {
     pub id: i64,
     pub kind: PickableItemKind,
 }
@@ -26,11 +26,11 @@ pub enum PickableItemKind {
 }
 
 pub struct PickableItem {
-    id: PickableItemId,
+    key: PickableItemKey,
     formatted: String,
 }
 
-impl FromStr for PickableItemId {
+impl FromStr for PickableItemKey {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -48,11 +48,11 @@ impl FromStr for PickableItemId {
             Err(_) => return Err(()),
         };
 
-        Ok(PickableItemId { kind, id })
+        Ok(PickableItemKey { kind, id })
     }
 }
 
-impl Display for PickableItemId {
+impl Display for PickableItemKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -81,7 +81,7 @@ impl PickableItem {
         );
 
         PickableItem {
-            id: PickableItemId {
+            key: PickableItemKey {
                 id: time_entry.id,
                 kind: PickableItemKind::TimeEntry,
             },
@@ -100,7 +100,7 @@ impl PickableItem {
         );
 
         PickableItem {
-            id: PickableItemId {
+            key: PickableItemKey {
                 id: project.id,
                 kind: PickableItemKind::Project,
             },
@@ -120,7 +120,7 @@ impl PickableItem {
         );
 
         PickableItem {
-            id: PickableItemId {
+            key: PickableItemKey {
                 id: task.id,
                 kind: PickableItemKind::Task,
             },
@@ -130,7 +130,7 @@ impl PickableItem {
 }
 
 pub trait ItemPicker {
-    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<PickableItemId>;
+    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<PickableItemKey>;
 }
 
 #[cfg(unix)]

@@ -21,7 +21,7 @@ fn interactively_create_time_entry(
     picker: Box<dyn ItemPicker>,
     description: Option<String>,
     project: Option<Project>,
-    billable: Option<bool>,
+    billable: bool,
 ) -> TimeEntry {
     let yes_or_default_no = [
         "y".to_string(),
@@ -54,13 +54,13 @@ fn interactively_create_time_entry(
                 );
 
                 match picker.pick(pickable_items) {
-                    Ok(pickable_item_id) => match pickable_item_id.kind {
+                    Ok(picked_key) => match picked_key.kind {
                         PickableItemKind::TimeEntry => (None, None),
                         PickableItemKind::Project => {
-                            (entities.projects.get(&pickable_item_id.id).cloned(), None)
+                            (entities.projects.get(&picked_key.id).cloned(), None)
                         }
                         PickableItemKind::Task => {
-                            let task = entities.tasks.get(&pickable_item_id.id).cloned().unwrap();
+                            let task = entities.tasks.get(&picked_key.id).cloned().unwrap();
                             (Some(task.clone().project), Some(task))
                         }
                     },
@@ -72,12 +72,13 @@ fn interactively_create_time_entry(
     };
 
     // Only ask for billable if the user didn't provide a value AND if the selected project doesn't have a default billable setting.
-    let billable = billable.unwrap_or(project.clone().and_then(|p| p.billable).unwrap_or(
-        utilities::read_from_stdin_with_constraints(
-            "Is your time entry billable? (y/N): ",
-            &yes_or_default_no,
-        ) == "y",
-    ));
+    let billable = billable
+        || project.clone().and_then(|p| p.billable).unwrap_or(
+            utilities::read_from_stdin_with_constraints(
+                "Is your time entry billable? (y/N): ",
+                &yes_or_default_no,
+            ) == "y",
+        );
 
     TimeEntry {
         billable,
@@ -95,7 +96,7 @@ impl StartCommand {
         picker: Box<dyn ItemPicker>,
         description: Option<String>,
         project_name: Option<String>,
-        billable: Option<bool>,
+        billable: bool,
         interactive: bool,
     ) -> ResultWithDefaultError<()> {
         StopCommand::execute(&api_client, StopCommandOrigin::StartCommand).await?;
@@ -122,8 +123,7 @@ impl StartCommand {
             )
         } else {
             TimeEntry {
-                billable: billable
-                    .unwrap_or(project.clone().and_then(|p| p.billable).unwrap_or(false)),
+                billable: billable || project.clone().and_then(|p| p.billable).unwrap_or(false),
                 description: description.unwrap_or("".to_string()),
                 project: project.clone(),
                 workspace_id,
