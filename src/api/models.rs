@@ -30,6 +30,7 @@ pub struct NetworkProject {
     pub created_at: DateTime<Utc>,
     pub server_deleted_at: Option<DateTime<Utc>>,
     pub color: String,
+    pub billable: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -44,6 +45,7 @@ pub struct NetworkTask {
     pub id: i64,
     pub name: String,
     pub workspace_id: i64,
+    pub project_id: i64,
 }
 
 impl From<TimeEntry> for NetworkTimeEntry {

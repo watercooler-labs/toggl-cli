@@ -32,11 +32,11 @@ impl ContinueCommand {
                     .iter()
                     .map(|te| PickableItem::from_time_entry(te.clone()))
                     .collect();
-                let picked_id = time_entry_picker.pick(pickable_items)?;
+                let picked_key = time_entry_picker.pick(pickable_items)?;
                 let picked_time_entry = entities
                     .time_entries
                     .iter()
-                    .find(|te| te.id == picked_id)
+                    .find(|te| te.id == picked_key.id)
                     .unwrap();
                 Some(picked_time_entry.clone())
             }

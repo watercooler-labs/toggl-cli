@@ -3,7 +3,7 @@ use crate::models;
 use crate::picker;
 use error::PickerError;
 use models::ResultWithDefaultError;
-use picker::{ItemPicker, PickableItem};
+use picker::{ItemPicker, PickableItem, PickableItemKey};
 use skim::prelude::*;
 
 pub struct SkimPicker;
@@ -33,12 +33,12 @@ impl SkimItem for PickableItem {
     }
 
     fn output(&self) -> Cow<str> {
-        Cow::from(self.id.to_string())
+        Cow::from(self.key.to_string())
     }
 }
 
 impl ItemPicker for SkimPicker {
-    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<i64> {
+    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<PickableItemKey> {
         let (options, source) = get_skim_configuration(items);
         let output = Skim::run_with(&options, Some(source));
 
@@ -51,12 +51,14 @@ impl ItemPicker for SkimPicker {
                     let selectable_items = item
                         .selected_items
                         .iter()
-                        .map(|selected_items| selected_items.output().parse::<i64>().unwrap())
-                        .collect::<Vec<i64>>();
+                        .map(|selected_items| {
+                            selected_items.output().parse::<PickableItemKey>().unwrap()
+                        })
+                        .collect::<Vec<PickableItemKey>>();
 
                     match selectable_items.first() {
                         None => Err(Box::new(PickerError::Generic)),
-                        Some(id) => Ok(*id),
+                        Some(id) => Ok(id.clone()),
                     }
                 }
             }

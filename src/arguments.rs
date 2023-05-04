@@ -8,6 +8,9 @@ pub struct CommandLineArguments {
 
     #[structopt(long, help = "Use custom proxy")]
     pub proxy: Option<String>,
+
+    #[structopt(long, help = "Use fzf instead of the default picker")]
+    pub fzf: bool,
 }
 
 #[derive(Debug, StructOpt)]
@@ -28,11 +31,15 @@ pub enum Command {
         about = "Start a new time entry. Call with no arguments to start in interactive mode."
     )]
     Start {
-        #[structopt(
-            help = "Description of the time entry. If not specified, the user will be prompted to enter it."
-        )]
-        description: Option<String>,
         #[structopt(short, long)]
+        interactive: bool,
+        #[structopt(help = "Description of the time entry.")]
+        description: Option<String>,
+        #[structopt(
+            short,
+            long,
+            help = "Exact name of the project you want the time entry to be associated with."
+        )]
         project: Option<String>,
         #[structopt(short, long)]
         billable: bool,
@@ -40,9 +47,6 @@ pub enum Command {
     Continue {
         #[structopt(short, long)]
         interactive: bool,
-
-        #[structopt(long)]
-        fzf: bool,
     },
     #[structopt(about = "Manage auto-tracking configuration")]
     Config {

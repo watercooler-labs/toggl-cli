@@ -2,14 +2,69 @@ mod fzf;
 #[cfg(unix)]
 mod skim;
 
+use std::borrow::BorrowMut;
+use std::fmt::Display;
+use std::str::FromStr;
+
 use crate::constants;
 use crate::models;
-
+use crate::models::Project;
+use crate::models::Task;
 use models::{ResultWithDefaultError, TimeEntry};
 
+#[derive(Clone)]
+pub struct PickableItemKey {
+    pub id: i64,
+    pub kind: PickableItemKind,
+}
+
+#[derive(Clone, Copy)]
+pub enum PickableItemKind {
+    TimeEntry,
+    Project,
+    Task,
+}
+
 pub struct PickableItem {
-    id: i64,
+    key: PickableItemKey,
     formatted: String,
+}
+
+impl FromStr for PickableItemKey {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut split_string = s.split(' ');
+        let pieces = split_string.borrow_mut();
+        let kind = match pieces.next().unwrap() {
+            "TimeEntry" => PickableItemKind::TimeEntry,
+            "Project" => PickableItemKind::Project,
+            "Task" => PickableItemKind::Task,
+            _ => return Err(()),
+        };
+
+        let id = match pieces.next().unwrap().parse::<i64>() {
+            Ok(id) => id,
+            Err(_) => return Err(()),
+        };
+
+        Ok(PickableItemKey { kind, id })
+    }
+}
+
+impl Display for PickableItemKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} {}",
+            match self.kind {
+                PickableItemKind::TimeEntry => "TimeEntry",
+                PickableItemKind::Project => "Project",
+                PickableItemKind::Task => "Task",
+            },
+            self.id
+        )
+    }
 }
 
 impl PickableItem {
@@ -26,14 +81,56 @@ impl PickableItem {
         );
 
         PickableItem {
-            id: time_entry.id,
+            key: PickableItemKey {
+                id: time_entry.id,
+                kind: PickableItemKind::TimeEntry,
+            },
             formatted: formatted_time_entry,
+        }
+    }
+
+    pub fn from_project(project: Project) -> PickableItem {
+        let formatted_project = format!(
+            "{}{}",
+            project.name,
+            match project.client.clone() {
+                Some(c) => format!(" - Client: {}", c.name),
+                None => "".to_string(),
+            }
+        );
+
+        PickableItem {
+            key: PickableItemKey {
+                id: project.id,
+                kind: PickableItemKind::Project,
+            },
+            formatted: formatted_project,
+        }
+    }
+
+    pub fn from_task(task: Task) -> PickableItem {
+        let formatted_task = format!(
+            "{} (Task: {}){}",
+            task.project.name,
+            task.name,
+            match task.project.client.clone() {
+                Some(c) => format!(" - Client: {}", c.name),
+                None => "".to_string(),
+            }
+        );
+
+        PickableItem {
+            key: PickableItemKey {
+                id: task.id,
+                kind: PickableItemKind::Task,
+            },
+            formatted: formatted_task,
         }
     }
 }
 
 pub trait ItemPicker {
-    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<i64>;
+    fn pick(&self, items: Vec<PickableItem>) -> ResultWithDefaultError<PickableItemKey>;
 }
 
 #[cfg(unix)]
