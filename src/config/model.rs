@@ -6,6 +6,7 @@ use serde::de::{self, Deserializer, MapAccess, Visitor};
 use serde::{Deserialize, Serialize};
 
 use crate::error::ConfigError;
+use crate::models::ResultWithDefaultError;
 use crate::utilities;
 
 /// BranchConfig optionally determines workspace, description, project, task,
@@ -504,5 +505,9 @@ impl TrackConfig {
     pub fn get_branch_config_for_dir(&self, dir: &PathBuf) -> &BranchConfig {
         let branch = utilities::get_git_branch_for_dir(dir);
         self.get_branch_config(branch.as_deref())
+    }
+    pub fn get_active_config(&self) -> ResultWithDefaultError<&BranchConfig> {
+        let current_dir = std::env::current_dir()?;
+        return Ok(self.get_branch_config_for_dir(&current_dir));
     }
 }
