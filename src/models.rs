@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 
 pub type ResultWithDefaultError<T> = Result<T, Box<dyn std::error::Error>>;
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Entities {
     pub time_entries: Vec<TimeEntry>,
     pub projects: HashMap<i64, Project>,

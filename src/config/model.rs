@@ -6,7 +6,7 @@ use serde::de::{self, Deserializer, MapAccess, Visitor};
 use serde::{Deserialize, Serialize};
 
 use crate::error::ConfigError;
-use crate::models::ResultWithDefaultError;
+use crate::models::{Entities, ResultWithDefaultError, TimeEntry};
 use crate::utilities;
 
 /// BranchConfig optionally determines workspace, description, project, task,
@@ -509,5 +509,38 @@ impl TrackConfig {
     pub fn get_active_config(&self) -> ResultWithDefaultError<&BranchConfig> {
         let current_dir = std::env::current_dir()?;
         return Ok(self.get_branch_config_for_dir(&current_dir));
+    }
+    pub fn get_default_entry(&self, entities: Entities) -> ResultWithDefaultError<TimeEntry> {
+        let config = self.get_active_config()?;
+
+        let project = config.project.clone().and_then(|name| {
+            entities
+                .projects
+                .clone()
+                .into_values()
+                .find(|p| p.name == name)
+        });
+
+        let project_id = project.clone().map(|p| p.id);
+
+        let task = config.task.clone().and_then(|name| {
+            entities
+                .tasks
+                .clone()
+                .into_values()
+                .find(|t| t.name == name && t.project.id == project_id.unwrap())
+        });
+
+        let time_entry = TimeEntry {
+            // TODO: Add support for workspace
+            description: config.description.clone().unwrap_or_default(),
+            billable: config.billable,
+            tags: config.tags.clone().unwrap_or_default(),
+            project,
+            task,
+            ..Default::default()
+        };
+
+        Ok(time_entry)
     }
 }

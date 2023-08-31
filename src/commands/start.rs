@@ -1,5 +1,6 @@
 use crate::api;
 use crate::commands;
+use crate::config;
 use crate::models;
 use crate::models::Entities;
 use crate::models::Project;
@@ -16,10 +17,11 @@ use models::TimeEntry;
 pub struct StartCommand;
 
 fn interactively_create_time_entry(
+    default_time_entry: TimeEntry,
     workspace_id: i64,
     entities: Entities,
     picker: Box<dyn ItemPicker>,
-    description: Option<String>,
+    description: String,
     project: Option<Project>,
     billable: bool,
 ) -> TimeEntry {
@@ -29,8 +31,6 @@ fn interactively_create_time_entry(
         "N".to_string(),
         "".to_string(),
     ];
-
-    let description = description.unwrap_or(utilities::read_from_stdin("Description: "));
 
     let (project, task) = match project {
         Some(_) => (project, None),
@@ -80,13 +80,15 @@ fn interactively_create_time_entry(
             ) == "y",
         );
 
+    let task = task.or(default_time_entry.task.clone());
+
     TimeEntry {
         billable,
         description,
         workspace_id,
         project,
         task,
-        ..Default::default()
+        ..default_time_entry
     }
 }
 
@@ -104,16 +106,29 @@ impl StartCommand {
         let workspace_id = (api_client.get_user().await?).default_workspace_id;
         let entities = api_client.get_entities().await?;
 
-        let project = project_name.and_then(|name| {
-            entities
-                .projects
-                .clone()
-                .into_values()
-                .find(|p| p.name.to_lowercase() == name.to_lowercase())
-        });
+        let config_path = config::locate::locate_config_path()?;
+        let track_config = config::parser::get_config_from_file(config_path)?;
+        let default_time_entry = track_config.get_default_entry(entities.clone())?;
+
+        let project = project_name
+            .and_then(|name| {
+                entities
+                    .projects
+                    .clone()
+                    .into_values()
+                    .find(|p| p.name == name)
+            })
+            .or(default_time_entry.project.clone());
+
+        let billable = billable
+            || default_time_entry.billable
+            || project.clone().and_then(|p| p.billable).unwrap_or(false);
+
+        let description = description.unwrap_or(default_time_entry.description.clone());
 
         let time_entry_to_create = if interactive {
             interactively_create_time_entry(
+                default_time_entry,
                 workspace_id,
                 entities,
                 picker,
@@ -123,11 +138,11 @@ impl StartCommand {
             )
         } else {
             TimeEntry {
-                billable: billable || project.clone().and_then(|p| p.billable).unwrap_or(false),
-                description: description.unwrap_or("".to_string()),
-                project: project.clone(),
+                billable,
+                description,
+                project,
                 workspace_id,
-                ..Default::default()
+                ..default_time_entry
             }
         };
 
