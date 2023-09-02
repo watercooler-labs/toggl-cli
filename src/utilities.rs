@@ -1,5 +1,5 @@
 use std::{
-    io::{self, Write},
+    io::{self, IsTerminal, Write},
     path::{Path, PathBuf},
 };
 
@@ -22,6 +22,9 @@ pub fn read_from_stdin(text: &str) -> String {
 }
 
 pub fn simplify_config_path_for_display(dir: &Path) -> String {
+    if !std::io::stdout().is_terminal() {
+        return dir.display().to_string();
+    }
     let base_dirs = BaseDirs::new().unwrap();
     let local_config_base_path = base_dirs.config_local_dir().to_str().unwrap();
     let mut display_config_path = dir.to_str().unwrap().to_string();
