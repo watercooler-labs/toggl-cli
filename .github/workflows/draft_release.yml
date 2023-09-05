@@ -2,7 +2,7 @@ name: Draft Release
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
@@ -41,6 +41,10 @@ jobs:
           gh release create v${{ steps.version.outputs.version }}-next \
           --draft --generate-notes \
           --title v${{ steps.version.outputs.version }}-next
+
+          cat ${{ steps.version.outputs.version }} > VERSION
+
+          gh release upload v${{ steps.version.outputs.version }}-next VERSION
 
   build:
     name: Build binary
@@ -82,5 +86,7 @@ jobs:
         run: |
           rm target/${{ matrix.target }}/release/toggl.d || true;
           zip -j toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip target/${{ matrix.target }}/release/*;
+          md5sum toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip | awk '{ print $1 }' > toggl-${{ matrix.target }}.md5
           gh release upload v${{ needs.meta.outputs.version }}-next \
-          './toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip';
+          './toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip' \
+          './toggl-${{ matrix.target }}.md5';
