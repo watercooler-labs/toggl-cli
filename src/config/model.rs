@@ -121,41 +121,23 @@ impl<'de> Deserialize<'de> for BranchConfig {
                 while let Some(key) = map.next_key::<String>()? {
                     match key.as_str() {
                         WORKSPACE => {
-                            if workspace.is_some() {
-                                return Err(de::Error::duplicate_field(WORKSPACE));
-                            }
                             workspace = map.next_value().map(process_template)?;
                         }
                         DESCRIPTION => {
-                            if description.is_some() {
-                                return Err(de::Error::duplicate_field(DESCRIPTION));
-                            }
                             description = map.next_value().map(process_template)?;
                         }
                         PROJECT => {
-                            if project.is_some() {
-                                return Err(de::Error::duplicate_field(PROJECT));
-                            }
                             project = map.next_value().map(process_template)?;
                         }
                         TASK => {
-                            if task.is_some() {
-                                return Err(de::Error::duplicate_field(TASK));
-                            }
                             task = map.next_value().map(process_template)?;
                         }
                         TAGS => {
-                            if tags.is_some() {
-                                return Err(de::Error::duplicate_field(TAGS));
-                            }
                             tags = Some(map.next_value()?).map(|tags: Vec<String>| {
                                 tags.into_iter().filter_map(process_template).collect()
                             });
                         }
                         BILLABLE => {
-                            if billable.is_some() {
-                                return Err(de::Error::duplicate_field(BILLABLE));
-                            }
                             billable = Some(map.next_value()?);
                         }
                         _ => {
@@ -260,17 +242,9 @@ impl<'de> Deserialize<'de> for TrackConfig {
                 while let Some(key) = map.next_key::<String>()? {
                     match key.as_str() {
                         "*" => {
-                            if default.is_some() {
-                                return Err(de::Error::duplicate_field("* [default]"));
-                            }
                             default = Some(map.next_value()?);
                         }
                         _ => {
-                            if configs.iter().any(|(branch, _)| branch == &key) {
-                                // TODO: Report duplicate key error can't seem to figure out a way to
-                                // return the repeated branch here
-                                return Err(de::Error::duplicate_field("branch"));
-                            }
                             configs.push((key, map.next_value()?));
                         }
                     }
