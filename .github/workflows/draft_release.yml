@@ -86,7 +86,11 @@ jobs:
         run: |
           rm target/${{ matrix.target }}/release/toggl.d || true;
           zip -j toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip target/${{ matrix.target }}/release/*;
-          md5sum toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip | awk '{ print $1 }' > toggl-${{ matrix.target }}.md5
+          if command -v md5sum > /dev/null; then
+            md5sum toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip | awk '{ print $1 }' > toggl-${{ matrix.target }}.md5
+          else
+            md5 -q toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip > toggl-${{ matrix.target }}.md5
+          fi
           gh release upload v${{ needs.meta.outputs.version }}-next \
           './toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip' \
           './toggl-${{ matrix.target }}.md5';
