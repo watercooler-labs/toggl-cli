@@ -13,11 +13,11 @@
 # workspace = "My Workspace"
 
 # Description (optional, default="")
-# Accepts any string template with our marcros in them
+# Accepts any string template with our macros in them
 description = "🔨 {{branch}}"
 
 # Project (optional, default=No project)
-# Accepts any string template with our marcros in them
+# Accepts any string template with our macros in them
 project = "{{git_root}}"
 
 # Task (optional, default=No task)

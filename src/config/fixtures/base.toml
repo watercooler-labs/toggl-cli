@@ -12,7 +12,7 @@
 workspace = "default"
 
 # Description (optional, default=null)
-# Accepts any string template with our marcros in them
+# Accepts any string template with our macros in them
 description = "🔨 {{branch}}"
 
 # Project (optional, default=null)
