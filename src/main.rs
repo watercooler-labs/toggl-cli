@@ -55,10 +55,10 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
     let picker = picker::get_picker(args.fzf);
     if let Some(directory) = args.directory {
         if !directory.exists() {
-            return Err(Box::new(error::CliError::DirectoryNotFound(directory)));
+            return Err(Box::new(error::ArgumentError::DirectoryNotFound(directory)));
         }
         if !directory.is_dir() {
-            return Err(Box::new(error::CliError::NotADirectory(directory)));
+            return Err(Box::new(error::ArgumentError::NotADirectory(directory)));
         }
         std::env::set_current_dir(directory)?;
     }

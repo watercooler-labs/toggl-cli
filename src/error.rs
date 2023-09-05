@@ -119,22 +119,22 @@ impl Display for ConfigError {
 impl Error for ConfigError {}
 
 #[derive(Debug)]
-pub enum CliError {
+pub enum ArgumentError {
     DirectoryNotFound(PathBuf),
     NotADirectory(PathBuf),
 }
 
-impl Display for CliError {
+impl Display for ArgumentError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let summary = match self {
-            CliError::DirectoryNotFound(path) => {
+            ArgumentError::DirectoryNotFound(path) => {
                 format!(
                     "{}: {}",
                     constants::DIRECTORY_NOT_FOUND_ERROR.red(),
                     path.display()
                 )
             }
-            CliError::NotADirectory(path) => {
+            ArgumentError::NotADirectory(path) => {
                 format!(
                     "{}: {}",
                     constants::NOT_A_DIRECTORY_ERROR.red(),
@@ -146,4 +146,4 @@ impl Display for CliError {
     }
 }
 
-impl Error for CliError {}
+impl Error for ArgumentError {}
