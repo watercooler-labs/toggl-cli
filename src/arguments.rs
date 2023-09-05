@@ -23,22 +23,24 @@ pub enum Command {
     },
     Running,
     Stop,
-    #[structopt()]
+    #[structopt(
+        about = "Authenticate with the Toggl API. Find your API token at https://track.toggl.com/profile#api-token"
+    )]
     Auth {
         api_token: String,
     },
     #[structopt(
-        about = "Start a new time entry. Call with no arguments to start in interactive mode."
+        about = "Start a new time entry, call with no arguments to start in interactive mode"
     )]
     Start {
         #[structopt(short, long)]
         interactive: bool,
-        #[structopt(help = "Description of the time entry.")]
+        #[structopt(help = "Description of the time entry")]
         description: Option<String>,
         #[structopt(
             short,
             long,
-            help = "Exact name of the project you want the time entry to be associated with."
+            help = "Exact name of the project you want the time entry to be associated with"
         )]
         project: Option<String>,
         #[structopt(short, long)]
