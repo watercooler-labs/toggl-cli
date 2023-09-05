@@ -42,7 +42,7 @@ jobs:
           --draft --generate-notes \
           --title v${{ steps.version.outputs.version }}-next
 
-          cat ${{ steps.version.outputs.version }} > VERSION
+          echo ${{ steps.version.outputs.version }} > VERSION
 
           gh release upload v${{ steps.version.outputs.version }}-next VERSION
 
