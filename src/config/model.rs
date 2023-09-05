@@ -81,6 +81,15 @@ pub struct TrackConfig {
     pub configs: Vec<(String, BranchConfig)>,
 }
 
+const WORKSPACE: &str = "workspace";
+const DESCRIPTION: &str = "description";
+const PROJECT: &str = "project";
+const TASK: &str = "task";
+const TAGS: &str = "tags";
+const BILLABLE: &str = "billable";
+
+const FIELDS: &[&str] = &[WORKSPACE, DESCRIPTION, PROJECT, TASK, TAGS, BILLABLE];
+
 impl<'de> Deserialize<'de> for BranchConfig {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -111,56 +120,46 @@ impl<'de> Deserialize<'de> for BranchConfig {
                 let mut billable: Option<bool> = None;
                 while let Some(key) = map.next_key::<String>()? {
                     match key.as_str() {
-                        "workspace" => {
+                        WORKSPACE => {
                             if workspace.is_some() {
-                                return Err(de::Error::duplicate_field("workspace"));
+                                return Err(de::Error::duplicate_field(WORKSPACE));
                             }
                             workspace = map.next_value().map(process_template)?;
                         }
-                        "description" => {
+                        DESCRIPTION => {
                             if description.is_some() {
-                                return Err(de::Error::duplicate_field("description"));
+                                return Err(de::Error::duplicate_field(DESCRIPTION));
                             }
                             description = map.next_value().map(process_template)?;
                         }
-                        "project" => {
+                        PROJECT => {
                             if project.is_some() {
-                                return Err(de::Error::duplicate_field("project"));
+                                return Err(de::Error::duplicate_field(PROJECT));
                             }
                             project = map.next_value().map(process_template)?;
                         }
-                        "task" => {
+                        TASK => {
                             if task.is_some() {
-                                return Err(de::Error::duplicate_field("task"));
+                                return Err(de::Error::duplicate_field(TASK));
                             }
                             task = map.next_value().map(process_template)?;
                         }
-                        "tags" => {
+                        TAGS => {
                             if tags.is_some() {
-                                return Err(de::Error::duplicate_field("tags"));
+                                return Err(de::Error::duplicate_field(TAGS));
                             }
                             tags = Some(map.next_value()?).map(|tags: Vec<String>| {
                                 tags.into_iter().filter_map(process_template).collect()
                             });
                         }
-                        "billable" => {
+                        BILLABLE => {
                             if billable.is_some() {
-                                return Err(de::Error::duplicate_field("billable"));
+                                return Err(de::Error::duplicate_field(BILLABLE));
                             }
                             billable = Some(map.next_value()?);
                         }
                         _ => {
-                            return Err(de::Error::unknown_field(
-                                &key,
-                                &[
-                                    "workspace",
-                                    "description",
-                                    "project",
-                                    "task",
-                                    "tags",
-                                    "billable",
-                                ],
-                            ));
+                            return Err(de::Error::unknown_field(&key, FIELDS));
                         }
                     }
                 }
@@ -174,15 +173,6 @@ impl<'de> Deserialize<'de> for BranchConfig {
                 })
             }
         }
-
-        const FIELDS: &[&str] = &[
-            "workspace",
-            "description",
-            "project",
-            "task",
-            "tags",
-            "billable",
-        ];
 
         deserializer.deserialize_struct(
             "BranchConfig",
@@ -200,29 +190,29 @@ impl std::fmt::Display for BranchConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let summary = format!(
             "{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}\n",
-            "workspace".green(),
+            WORKSPACE.green(),
             self.workspace
                 .as_ref()
                 .unwrap_or(&"default".purple().to_string()),
-            "description".green(),
+            DESCRIPTION.green(),
             self.description
                 .as_ref()
                 .unwrap_or(&"none".yellow().to_string()),
-            "project".green(),
+            PROJECT.green(),
             self.project
                 .as_ref()
                 .unwrap_or(&"none".yellow().to_string()),
-            "task".green(),
+            TASK.green(),
             self.task
                 .as_ref()
                 .unwrap_or(&"none".yellow().to_string())
                 .trim(),
-            "tags".green(),
+            TAGS.green(),
             self.tags
                 .as_ref()
                 .map(|tags| format!("[{}]", tags.join(", ")))
                 .unwrap_or("[]".yellow().to_string()),
-            "billable".green(),
+            BILLABLE.green(),
             self.billable,
         );
         write!(f, "{}", summary)
