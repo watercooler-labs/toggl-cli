@@ -1,6 +1,6 @@
 # toggl-cli
 
-Unofficial CLI for [Toggl Track](https://toggl.com/track/) written in Rust, using the (undocumented) v9 API.
+Unofficial CLI for [Toggl Track](https://toggl.com/track/) written in Rust, using the [v9 API](https://developers.track.toggl.com/docs/).
 
 ## Usage
 
@@ -15,9 +15,10 @@ Installing the binary.
 ```shell
 cargo install --path .
 ```
+
 > This places the release optimized binary at `~/.cargo/bin/toggl`. Make sure to add `~/.cargo/bin` to your `$PATH` so that you can run the binary from any directory.
 
-You can invoke the binary using the `toggl` command  now. Alternativly you can also run the command directly using `cargo run`
+You can invoke the binary using the `toggl` command now. Alternatively you can also run the command directly using `cargo run`
 
 ```shell
 cargo run [command]
@@ -41,24 +42,29 @@ Run the `help` command to see a list of available commands.
 
 ```shell
 $ toggl help
-toggl 0.1.0
+toggl 0.3.0
 Toggl command line app.
 
 USAGE:
-    toggl [SUBCOMMAND]
+    toggl [FLAGS] [OPTIONS] [SUBCOMMAND]
 
 FLAGS:
+        --fzf        Use fzf instead of the default picker
     -h, --help       Prints help information
     -V, --version    Prints version information
 
+OPTIONS:
+        --proxy <proxy>    Use custom proxy
+
 SUBCOMMANDS:
     auth
+    config      Manage auto-tracking configuration
     continue
     current
     help        Prints this message or the help of the given subcommand(s)
     list
     running
-    start
+    start       Start a new time entry. Call with no arguments to start in interactive mode.
     stop
 ```
 
