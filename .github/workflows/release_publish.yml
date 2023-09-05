@@ -1,0 +1,23 @@
+name: Draft Release
+
+on:
+  release:
+    types: [published]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  meta:
+    name: Publish scoop package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create 
+        id: version
+        shell: bash
+        run: |
+          gh release download v0.3.0 -p '*windows*'
+          hash=$(md5 toggl* | rg -o '= (.*)' --replace '$1')
+          version=${{ github.event.release.tag_name }}
+          echo "Release version is ${version#v}"
+          curl -O https://raw.githubusercontent.com/watercooler-labs/toggl-cli/main/pkg/scoop/toggl-cli.json
