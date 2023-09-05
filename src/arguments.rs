@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -5,6 +7,9 @@ use structopt::StructOpt;
 pub struct CommandLineArguments {
     #[structopt(subcommand)]
     pub cmd: Option<Command>,
+
+    #[structopt(short = "C", help = "Change directory before running the command")]
+    pub directory: Option<PathBuf>,
 
     #[structopt(long, help = "Use custom proxy")]
     pub proxy: Option<String>,

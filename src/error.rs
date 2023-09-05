@@ -2,6 +2,7 @@ use crate::constants;
 use colored::Colorize;
 use std::error::Error;
 use std::fmt::Display;
+use std::path::PathBuf;
 
 #[derive(Debug)]
 pub enum ApiError {
@@ -116,3 +117,33 @@ impl Display for ConfigError {
 }
 
 impl Error for ConfigError {}
+
+#[derive(Debug)]
+pub enum ArgumentError {
+    DirectoryNotFound(PathBuf),
+    NotADirectory(PathBuf),
+}
+
+impl Display for ArgumentError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let summary = match self {
+            ArgumentError::DirectoryNotFound(path) => {
+                format!(
+                    "{}: {}",
+                    constants::DIRECTORY_NOT_FOUND_ERROR.red(),
+                    path.display()
+                )
+            }
+            ArgumentError::NotADirectory(path) => {
+                format!(
+                    "{}: {}",
+                    constants::NOT_A_DIRECTORY_ERROR.red(),
+                    path.display()
+                )
+            }
+        };
+        writeln!(f, "{}", summary)
+    }
+}
+
+impl Error for ArgumentError {}
