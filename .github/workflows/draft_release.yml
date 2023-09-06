@@ -54,12 +54,16 @@ jobs:
         include:
           - target: aarch64-apple-darwin
             os: macos-latest
+            sha_tag: arm64_ventura
           - target: x86_64-apple-darwin
             os: macos-latest
+            sha_tag: ventura
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
+            sha_tag: x86_64_linux
           - target: x86_64-pc-windows-gnu
             os: ubuntu-latest
+            sha_tag: x86_64_windows
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -86,11 +90,11 @@ jobs:
         run: |
           rm target/${{ matrix.target }}/release/toggl.d || true;
           zip -j toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip target/${{ matrix.target }}/release/*;
-          if command -v md5sum > /dev/null; then
-            md5sum toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip | awk '{ print $1 }' > toggl-${{ matrix.target }}.md5
+          if command -v sha256sum > /dev/null; then
+            sha256sum toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip | awk '{print $1}' > ${{ matrix.sha_tag }}.sha256
           else
-            md5 -q toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip > toggl-${{ matrix.target }}.md5
+            shasum -a 256 toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip | awk '{print $1}' > ${{ matrix.sha_tag }}.sha256
           fi
           gh release upload v${{ needs.meta.outputs.version }}-next \
           './toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip' \
-          './toggl-${{ matrix.target }}.md5';
+          './${{ matrix.sha_tag }}.sha256';

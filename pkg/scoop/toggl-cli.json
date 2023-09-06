@@ -1,13 +1,13 @@
 {
-    "version": "$APP_VERSION",
-    "description": "Command Line App for Toggl Track.",
-    "homepage": "https://github.com/watercooler-labs/toggl-cli",
-    "license": "MIT",
-    "architecture": {
-        "64bit": {
-            "url": "https://github.com/watercooler-labs/toggl-cli/releases/download/v$APP_VERSION/toggl-x86_64-pc-windows-gnu-$APP_VERSION.zip",
-            "hash": "md5:$MD5_HASH"
-        }
-    },
-    "bin": "toggl.exe"
+  "version": "$APP_VERSION",
+  "description": "Command Line App for Toggl Track.",
+  "homepage": "https://github.com/watercooler-labs/toggl-cli",
+  "license": "MIT",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/watercooler-labs/toggl-cli/releases/download/v$APP_VERSION/toggl-x86_64-pc-windows-gnu-$APP_VERSION.zip",
+      "hash": "sha256:$SHA256_HASH"
+    }
+  },
+  "bin": "toggl.exe"
 }
