@@ -90,11 +90,7 @@ jobs:
         run: |
           rm target/${{ matrix.target }}/release/toggl.d || true;
           zip -j toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip target/${{ matrix.target }}/release/*;
-          if command -v sha256sum > /dev/null; then
-            sha256sum toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip | awk '{print $1}' > ${{ matrix.sha_tag }}.sha256
-          else
-            shasum -a 256 toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip | awk '{print $1}' > ${{ matrix.sha_tag }}.sha256
-          fi
+          shasum -a 256 toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip > ${{ matrix.sha_tag }}.sha256
           gh release upload v${{ needs.meta.outputs.version }}-next \
           './toggl-${{ matrix.target }}-${{ needs.meta.outputs.version }}.zip' \
           './${{ matrix.sha_tag }}.sha256';
