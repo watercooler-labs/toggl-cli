@@ -352,7 +352,46 @@ fn resolve_macro(
                             "Failed to resolve git root",
                         )));
                     }
-                    let git_root = PathBuf::from(String::from_utf8(output.stdout)?);
+                    let git_root = PathBuf::from(
+                        String::from_utf8(output.stdout).map(|s| s.trim().to_string())?,
+                    );
+
+                    // Check if we are in a git worktree
+                    // If so, we need to get the root of the main repository
+                    let git_dir = git_root.join(".git");
+                    if git_dir.is_file() {
+                        let git_dir = std::fs::read_to_string(git_dir)?;
+
+                        let git_dir = git_dir
+                            .split(':')
+                            .nth(1)
+                            .ok_or_else(|| {
+                                std::io::Error::new(
+                                    std::io::ErrorKind::Other,
+                                    "Failed to resolve git worktree root",
+                                )
+                            })?
+                            .trim();
+                        let git_root = PathBuf::from(git_dir);
+
+                        // git_root stores the path to the main repository in the following format
+                        // gitdir: /path/to/main/repo/.git/worktrees/<worktree_name>
+                        // We need to extract the name to the main repository `repo`
+                        return Ok(git_root
+                            .parent()
+                            .unwrap()
+                            .parent()
+                            .unwrap()
+                            .parent()
+                            .unwrap()
+                            .file_name()
+                            .unwrap()
+                            .to_str()
+                            .unwrap()
+                            .trim()
+                            .to_string());
+                    }
+
                     Ok(git_root
                         .file_name()
                         .unwrap()
