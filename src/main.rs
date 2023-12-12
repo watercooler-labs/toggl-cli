@@ -73,8 +73,8 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 let picker = if interactive { Some(picker) } else { None };
                 ContinueCommand::execute(get_default_api_client()?, picker).await?
             }
-            List { number, entry_type } => {
-                ListCommand::execute(get_default_api_client()?, number, entry_type).await?
+            List { number, entity } => {
+                ListCommand::execute(get_default_api_client()?, number, entity).await?
             }
             Current | Running => {
                 RunningTimeEntryCommand::execute(get_default_api_client()?).await?

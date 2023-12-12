@@ -26,7 +26,7 @@ pub enum Command {
         #[structopt(short, long)]
         number: Option<usize>,
         #[structopt(subcommand)]
-        entry_type: Option<EntryType>,
+        entry_type: Option<Entity>,
     },
     Running,
     Stop,
@@ -77,9 +77,9 @@ pub enum Command {
     },
 }
 #[derive(Debug, StructOpt)]
-pub enum EntryType {
+pub enum Entity {
     Project,
-    Entry,
+    TimeEntry,
 }
 #[derive(Debug, StructOpt)]
 pub enum ConfigSubCommand {
