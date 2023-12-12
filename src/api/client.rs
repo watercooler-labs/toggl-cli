@@ -141,12 +141,12 @@ impl ApiClient for V9ApiClient {
 
     async fn get_entities(&self) -> ResultWithDefaultError<Entities> {
         let (network_time_entries, network_projects, network_tasks, network_clients) =
-            futures::future::join4(
+            tokio::join!(
                 self.get_time_entries(),
                 self.get_projects(),
                 self.get_tasks(),
                 self.get_clients(),
-            ).await;
+            );
 
         let clients: HashMap<i64, crate::models::Client> = network_clients
             .unwrap_or_default()
