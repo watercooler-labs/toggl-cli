@@ -123,7 +123,7 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
 
 fn get_api_client(proxy: Option<String>) -> ResultWithDefaultError<impl ApiClient> {
     let credentials_storage = get_storage();
-    return match credentials_storage.read() {
+    match credentials_storage.read() {
         Ok(credentials) => V9ApiClient::from_credentials(credentials, proxy),
         Err(err) => {
             println!(
@@ -134,7 +134,7 @@ fn get_api_client(proxy: Option<String>) -> ResultWithDefaultError<impl ApiClien
             );
             Err(err)
         }
-    };
+    }
 }
 
 fn get_storage() -> impl CredentialsStorage {
