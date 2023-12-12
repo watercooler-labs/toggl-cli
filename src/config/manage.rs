@@ -13,13 +13,15 @@ impl ConfigManageCommand {
 
         if delete {
             return {
-                fs::remove_file(path).map(|_| {
-                    println!(
-                        "{} {}",
-                        "Config file deleted from".red().bold(),
-                        display_path
-                    );
-                }).expect("failed to delete config");
+                fs::remove_file(path)
+                    .map(|_| {
+                        println!(
+                            "{} {}",
+                            "Config file deleted from".red().bold(),
+                            display_path
+                        );
+                    })
+                    .expect("failed to delete config");
                 Ok(())
             };
         }
