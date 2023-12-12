@@ -250,7 +250,7 @@ impl<'de> Deserialize<'de> for TrackConfig {
                     }
                 }
                 Ok(TrackConfig {
-                    default: default.unwrap_or(BranchConfig::default()),
+                    default: default.unwrap_or_default(),
                     configs,
                 })
             }
