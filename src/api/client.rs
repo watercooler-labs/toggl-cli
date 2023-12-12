@@ -66,18 +66,18 @@ impl V9ApiClient {
         let header_content =
             "Basic ".to_string() + general_purpose::STANDARD.encode(auth_string).as_str();
         let mut headers = header::HeaderMap::new();
-        let auth_header = header::HeaderValue::from_str(header_content.as_str())?;
+        let auth_header = header::HeaderValue::from_str(header_content.as_str()).expect("Invalid header value");
         headers.insert(header::AUTHORIZATION, auth_header);
 
         let base_client = Client::builder().default_headers(headers);
         let http_client = {
             if let Some(proxy) = proxy {
-                base_client.proxy(reqwest::Proxy::all(proxy)?)
+                base_client.proxy(reqwest::Proxy::all(proxy).expect("Invalid proxy"))
             } else {
                 base_client
             }
         }
-        .build()?;
+        .build().expect("Couldn't build a http client");
         let api_client = Self {
             http_client,
             base_url: "https://track.toggl.com/api/v9".to_string(),
@@ -140,13 +140,16 @@ impl ApiClient for V9ApiClient {
     }
 
     async fn get_entities(&self) -> ResultWithDefaultError<Entities> {
-        let network_time_entries = self.get_time_entries();
-        let network_projects = self.get_projects();
-        let network_tasks = self.get_tasks();
-        let network_clients = self.get_clients();
+        let (network_time_entries, network_projects, network_tasks, network_clients) =
+            tokio::join!(
+                self.get_time_entries(),
+                self.get_projects(),
+                self.get_tasks(),
+                self.get_clients(),
+            );
 
         let clients: HashMap<i64, crate::models::Client> = network_clients
-            .await?
+            .unwrap_or_default()
             .iter()
             .map(|c| {
                 (
@@ -161,7 +164,7 @@ impl ApiClient for V9ApiClient {
             .collect();
 
         let projects: HashMap<i64, Project> = network_projects
-            .await?
+            .unwrap_or_default()
             .iter()
             .map(|p| {
                 (
@@ -183,7 +186,7 @@ impl ApiClient for V9ApiClient {
             .collect();
 
         let tasks: HashMap<i64, Task> = network_tasks
-            .await?
+            .unwrap_or_default()
             .iter()
             .map(|t| {
                 (
@@ -199,7 +202,7 @@ impl ApiClient for V9ApiClient {
             .collect();
 
         let time_entries = network_time_entries
-            .await?
+            .unwrap_or_default()
             .iter()
             .map(|te| TimeEntry {
                 id: te.id,

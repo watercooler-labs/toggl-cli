@@ -12,13 +12,16 @@ impl ConfigManageCommand {
         let display_path = utilities::simplify_config_path_for_display(path.as_path());
 
         if delete {
-            return fs::remove_file(path).map_err(|e| e.into()).map(|_| {
-                println!(
-                    "{} {}",
-                    "Config file deleted from".red().bold(),
-                    display_path
-                );
-            });
+            return {
+                fs::remove_file(path).map(|_| {
+                    println!(
+                        "{} {}",
+                        "Config file deleted from".red().bold(),
+                        display_path
+                    );
+                }).expect("failed to delete config");
+                Ok(())
+            };
         }
         if edit {
             return utilities::open_path_in_editor(path);

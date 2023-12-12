@@ -9,7 +9,7 @@ impl ConfigInitCommand {
         match config_path {
             Ok(path) => {
                 if edit {
-                    utilities::open_path_in_editor(path)?
+                    utilities::open_path_in_editor(path)?;
                 } else {
                     let display_path = utilities::simplify_config_path_for_display(path.as_path());
                     println!(
@@ -30,8 +30,8 @@ impl ConfigInitCommand {
                     "Created config at".green().bold(),
                     display_config_path
                 );
-                std::fs::create_dir_all(config_dir)?;
-                std::fs::write(config_path, default_config)?;
+                std::fs::create_dir_all(config_dir).expect("failed to create config directory");
+                std::fs::write(config_path, default_config).expect("failed to write config");
                 println!("{}", msg);
             }
         }

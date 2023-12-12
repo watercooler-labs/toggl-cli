@@ -23,7 +23,7 @@ impl AuthenticationCommand {
             "{} {}",
             AUTH_SUCCEEDED_MESSAGE.green(),
             user.email.green().bold(),
-        )?;
+        ).expect("failed to write to stdout");
 
         Ok(())
     }

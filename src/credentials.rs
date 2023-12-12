@@ -30,7 +30,10 @@ impl KeyringStorage {
 
 impl CredentialsStorage for KeyringStorage {
     fn read(&self) -> ResultWithDefaultError<Credentials> {
-        let api_token = self.keyring.get_password()?;
+        let api_token = self
+            .keyring
+            .get_password()
+            .expect("failed to read from keyring");
         Ok(Credentials { api_token })
     }
 
