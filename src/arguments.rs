@@ -25,6 +25,8 @@ pub enum Command {
     List {
         #[structopt(short, long)]
         number: Option<usize>,
+        #[structopt(subcommand)]
+        entry_type: Option<EntryType>,
     },
     Running,
     Stop,
@@ -74,7 +76,12 @@ pub enum Command {
         cmd: Option<ConfigSubCommand>,
     },
 }
-
+#[derive(Debug, StructOpt)]
+pub enum EntryType {
+    Project,
+    Tag,
+    Entry,
+}
 #[derive(Debug, StructOpt)]
 pub enum ConfigSubCommand {
     #[structopt(about = "Initialize a configuration file.")]
