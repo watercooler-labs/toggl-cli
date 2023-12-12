@@ -28,11 +28,9 @@ impl ListCommand {
 
                 EntryType::Project => entities
                     .projects
-                    .values()
-                    .collect::<Vec<&Project>>()
                     .iter()
                     .take(count.unwrap_or(usize::max_value()))
-                    .for_each(|projects| println!("{}", projects)),
+                    .for_each(|(_, projects)| println!("{}", projects)),
             },
         }
         Ok(())
