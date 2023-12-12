@@ -33,7 +33,6 @@ impl ListCommand {
                     .iter()
                     .take(count.unwrap_or(usize::max_value()))
                     .for_each(|projects| println!("{}", projects)),
-                EntryType::Tag => {}
             },
         }
         Ok(())

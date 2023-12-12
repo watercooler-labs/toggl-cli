@@ -79,7 +79,6 @@ pub enum Command {
 #[derive(Debug, StructOpt)]
 pub enum EntryType {
     Project,
-    Tag,
     Entry,
 }
 #[derive(Debug, StructOpt)]
