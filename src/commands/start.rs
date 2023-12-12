@@ -106,8 +106,8 @@ impl StartCommand {
         let workspace_id = (api_client.get_user().await?).default_workspace_id;
         let entities = api_client.get_entities().await?;
 
-        let config_path = config::locate::locate_config_path().expect("failed to locate config");
-        let track_config = config::parser::get_config_from_file(config_path).expect("failed to parse config");
+        let config_path = config::locate::locate_config_path()?;
+        let track_config = config::parser::get_config_from_file(config_path)?;
         let default_time_entry = track_config.get_default_entry(entities.clone())?;
 
         let project = project_name

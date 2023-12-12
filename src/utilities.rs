@@ -6,7 +6,7 @@ use std::{
 use colored::Colorize;
 use directories::BaseDirs;
 
-use crate::constants;
+use crate::{constants, models::ResultWithDefaultError};
 
 pub fn remove_trailing_newline(value: String) -> String {
     value.trim_end().to_string()
@@ -50,7 +50,7 @@ pub fn read_from_stdin_with_constraints(text: &str, valid_values: &[String]) -> 
     }
 }
 
-pub fn open_path_in_editor<P>(path: P) -> Result<(), Box<dyn std::error::Error + Send>>
+pub fn open_path_in_editor<P>(path: P) -> ResultWithDefaultError<()>
 where
     P: AsRef<Path> + std::convert::AsRef<std::ffi::OsStr>,
 {

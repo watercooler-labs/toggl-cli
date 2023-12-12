@@ -293,18 +293,19 @@ fn resolve_token_to_macro(token: &str) -> Option<Macro> {
     }
 }
 
-fn resolve_macro(
-    base_dir: &Path,
-    instruction: Macro,
-) -> Result<String, Box<dyn std::error::Error>> {
+fn resolve_macro(base_dir: &Path, instruction: Macro) -> ResultWithDefaultError<String> {
     match instruction {
         Macro::Branch => {
             let output = std::process::Command::new("git")
                 .arg("rev-parse")
                 .arg("--abbrev-ref")
                 .arg("HEAD")
-                .output()?;
-            Ok(String::from_utf8(output.stdout)?.trim().to_string())
+                .output()
+                .expect("Failed to resolve branch");
+            Ok(String::from_utf8(output.stdout)
+                .expect("Failed to convert branch name to string. This should never happen.")
+                .trim()
+                .to_string())
         }
         Macro::BaseDir => Ok(base_dir
             .file_name()
@@ -325,11 +326,11 @@ fn resolve_macro(
             Ok(parent_dir)
         }
         Macro::CurrentDir => {
-            let output = env::current_dir()?;
+            let output = env::current_dir().expect("Failed to get current directory");
             Ok(output.file_name().unwrap().to_str().unwrap().to_string())
         }
         Macro::ParentDir => {
-            let current_dir = env::current_dir()?;
+            let current_dir = env::current_dir().expect("Failed to get current directory");
             let parent_dir_path = current_dir.parent().unwrap().to_path_buf();
             Ok(parent_dir_path
                 .file_name()
@@ -353,24 +354,24 @@ fn resolve_macro(
                         )));
                     }
                     let git_root = PathBuf::from(
-                        String::from_utf8(output.stdout).map(|s| s.trim().to_string())?,
+                        String::from_utf8(output.stdout)
+                            .map(|s| s.trim().to_string())
+                            .expect(
+                                "Failed to convert git root to string. This should never happen.",
+                            ),
                     );
 
                     // Check if we are in a git worktree
                     // If so, we need to get the root of the main repository
                     let git_dir = git_root.join(".git");
                     if git_dir.is_file() {
-                        let git_dir = std::fs::read_to_string(git_dir)?;
+                        let git_dir = std::fs::read_to_string(git_dir)
+                            .expect("Failed to read git directory. No git root maybe?");
 
                         let git_dir = git_dir
                             .split(':')
                             .nth(1)
-                            .ok_or_else(|| {
-                                std::io::Error::new(
-                                    std::io::ErrorKind::Other,
-                                    "Failed to resolve git worktree root",
-                                )
-                            })?
+                            .expect("Failed to resolve git worktree root")
                             .trim();
                         let git_root = PathBuf::from(git_dir);
 
@@ -417,7 +418,10 @@ fn resolve_macro(
                             "Failed to resolve git root",
                         )));
                     }
-                    let git_root = PathBuf::from(String::from_utf8(output.stdout)?);
+                    let git_root = PathBuf::from(
+                        String::from_utf8(output.stdout)
+                            .expect("Failed to convert git root to string. Not in a git root?"),
+                    );
                     Ok(git_root
                         .parent()
                         .unwrap()
@@ -438,10 +442,15 @@ fn resolve_macro(
                     if !output.status.success() {
                         return Err(Box::new(ConfigError::ShellResolution(
                             command,
-                            String::from_utf8(output.stderr)?,
+                            String::from_utf8(output.stderr).unwrap(),
                         )));
                     }
-                    Ok(String::from_utf8(output.stdout)?.trim().to_string())
+                    Ok(String::from_utf8(output.stdout)
+                        .expect(
+                            "Failed to convert shell output to string. This should never happen.",
+                        )
+                        .trim()
+                        .to_string())
                 }
                 Err(e) => Err(Box::new(ConfigError::ShellResolution(
                     command,
@@ -452,7 +461,7 @@ fn resolve_macro(
     }
 }
 
-fn resolve_token(base_dir: &Path, token: &str) -> Result<String, Box<dyn std::error::Error>> {
+fn resolve_token(base_dir: &Path, token: &str) -> ResultWithDefaultError<String> {
     match resolve_token_to_macro(token) {
         Some(macro_) => resolve_macro(base_dir, macro_),
         None => Err(Box::new(ConfigError::UnrecognizedMarco(token.to_string()))),

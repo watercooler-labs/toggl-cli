@@ -9,7 +9,7 @@ impl ConfigInitCommand {
         match config_path {
             Ok(path) => {
                 if edit {
-                    utilities::open_path_in_editor(path).expect("failed to open config in editor");
+                    utilities::open_path_in_editor(path)?;
                 } else {
                     let display_path = utilities::simplify_config_path_for_display(path.as_path());
                     println!(
@@ -22,7 +22,7 @@ impl ConfigInitCommand {
             }
             Err(_) => {
                 let default_config = include_bytes!("./fixtures/default.toml");
-                let config_path = super::locate::get_config_path_for_current_dir().expect("failed to get config path for current directory");
+                let config_path = super::locate::get_config_path_for_current_dir()?;
                 let config_dir = config_path.parent().unwrap();
                 let display_config_path = utilities::simplify_config_path_for_display(config_dir);
                 let msg = format!(
