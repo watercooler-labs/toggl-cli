@@ -9,7 +9,7 @@ use colors_transform::{Color, Rgb};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
-pub type ResultWithDefaultError<T> = Result<T, Box<dyn std::error::Error>>;
+pub type ResultWithDefaultError<T> = Result<T, Box<dyn std::error::Error + Send>>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Entities {

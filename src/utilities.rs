@@ -50,7 +50,7 @@ pub fn read_from_stdin_with_constraints(text: &str, valid_values: &[String]) -> 
     }
 }
 
-pub fn open_path_in_editor<P>(path: P) -> Result<(), Box<dyn std::error::Error>>
+pub fn open_path_in_editor<P>(path: P) -> Result<(), Box<dyn std::error::Error + Send>>
 where
     P: AsRef<Path> + std::convert::AsRef<std::ffi::OsStr>,
 {

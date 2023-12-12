@@ -60,7 +60,7 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
         if !directory.is_dir() {
             return Err(Box::new(error::ArgumentError::NotADirectory(directory)));
         }
-        std::env::set_current_dir(directory)?;
+        std::env::set_current_dir(directory).expect("Couldn't set current directory");
     }
     match command {
         None => RunningTimeEntryCommand::execute(get_default_api_client()?).await?,

@@ -8,17 +8,17 @@ pub struct ConfigManageCommand;
 
 impl ConfigManageCommand {
     pub async fn execute(delete: bool, edit: bool, show_path: bool) -> ResultWithDefaultError<()> {
-        let path = super::locate::locate_config_path()?;
+        let path = super::locate::locate_config_path().expect("failed to locate config");
         let display_path = utilities::simplify_config_path_for_display(path.as_path());
 
         if delete {
-            return fs::remove_file(path).map_err(|e| e.into()).map(|_| {
+            return Ok(fs::remove_file(path).map(|_| {
                 println!(
                     "{} {}",
                     "Config file deleted from".red().bold(),
                     display_path
                 );
-            });
+            }).expect("failed to delete config"));
         }
         if edit {
             return utilities::open_path_in_editor(path);
