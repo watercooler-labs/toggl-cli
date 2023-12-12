@@ -26,7 +26,7 @@ pub enum Command {
         #[structopt(short, long)]
         number: Option<usize>,
         #[structopt(subcommand)]
-        entry_type: Option<Entity>,
+        entity: Option<Entity>,
     },
     Running,
     Stop,
