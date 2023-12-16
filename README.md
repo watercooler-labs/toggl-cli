@@ -12,6 +12,14 @@ cargo build # or cargo build --release
 
 Installing the binary.
 
+### From [crates.io](https://crates.io/crates/toggl)
+
+```shell
+cargo install toggl
+```
+
+### From source
+
 ```shell
 cargo install --path .
 ```
@@ -42,7 +50,7 @@ Run the `help` command to see a list of available commands.
 
 ```shell
 $ toggl help
-toggl 0.3.0
+toggl 0.4.1
 Toggl command line app.
 
 USAGE:
@@ -54,17 +62,18 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
+    -C <directory>         Change directory before running the command
         --proxy <proxy>    Use custom proxy
 
 SUBCOMMANDS:
-    auth
+    auth        Authenticate with the Toggl API. Find your API token at https://track.toggl.com/profile#api-token
     config      Manage auto-tracking configuration
     continue
     current
     help        Prints this message or the help of the given subcommand(s)
     list
     running
-    start       Start a new time entry. Call with no arguments to start in interactive mode.
+    start       Start a new time entry, call with no arguments to start in interactive mode
     stop
 ```
 
@@ -72,22 +81,23 @@ You can also run the `help` command on a specific subcommand.
 
 ```shell
 $ toggl help start
-toggl-start 0.1.0
-Start a new time entry. Call with no arguments to start in interactive mode.
+toggl-start 0.4.1
+Start a new time entry, call with no arguments to start in interactive mode
 
 USAGE:
     toggl start [FLAGS] [OPTIONS] [description]
 
 FLAGS:
     -b, --billable
-    -h, --help        Prints help information
-    -V, --version     Prints version information
+    -h, --help           Prints help information
+    -i, --interactive
+    -V, --version        Prints version information
 
 OPTIONS:
-    -p, --project <project>
+    -p, --project <project>    Exact name of the project you want the time entry to be associated with
 
 ARGS:
-    <description>
+    <description>    Description of the time entry
 ```
 
 ## Testing
