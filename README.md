@@ -121,6 +121,17 @@ cargo clippy --fix # To automatically fix common mistakes.
 The CI will also run the lint commands for all pull-requests.
 See [pull_request.yml](.github/workflows/pull_request.yml) for more details.
 
+## Releasing
+
+To create a new release, first bump the package version.
+We have a handy script at [pkg/autodoc.rs](pkg/autodoc.rs).
+Running it with no arguments, bumps the current patch version, in `Cargo.toml`
+and `Cargo.lock` files.
+It also updates the help documentation in this README to match the current
+version of the command.
+Commit and push the updated changes and a new release will show up under the
+[releases](https://github.com/watercooler-labs/toggl-cli/releases) page.
+
 ---
 
 Built by the [Watercooler Studio](https://watercooler.studio/)
