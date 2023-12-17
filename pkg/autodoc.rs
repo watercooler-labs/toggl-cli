@@ -116,8 +116,11 @@ fn update_readme(line_prefix: &str, command: &mut std::process::Command) {
 fn main() {
     let (current_version, line_number) = get_pkg_version();
 
-    let args = std::env::args();
-    let arg = args.skip(1).next();
+    let mut args = std::env::args();
+    let should_commit = args.any(|arg| arg == "--commit");
+    // Skip first argument which is the script name
+    // skip any flags that start with `--`
+    let arg = args.skip(1).skip_while(|arg| arg.starts_with("--")).next();
     let segment_or_version = arg.as_deref();
 
     // Bump version
@@ -151,4 +154,16 @@ fn main() {
             .arg("help")
             .arg("start"),
     );
+
+    if !should_commit {
+        return;
+    }
+
+    println!("Committing changes");
+    std::process::Command::new("git")
+        .arg("commit")
+        .arg("-am")
+        .arg(format!("🚢 Release {}", new_version))
+        .output()
+        .expect("Failed to commit changes");
 }
