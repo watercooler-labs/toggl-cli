@@ -50,7 +50,7 @@ Run the `help` command to see a list of available commands.
 
 ```shell
 $ toggl help
-toggl 0.4.1
+toggl 0.4.2
 Toggl command line app.
 
 USAGE:
@@ -75,13 +75,14 @@ SUBCOMMANDS:
     running
     start       Start a new time entry, call with no arguments to start in interactive mode
     stop
+
 ```
 
 You can also run the `help` command on a specific subcommand.
 
 ```shell
 $ toggl help start
-toggl-start 0.4.1
+toggl-start 0.4.2
 Start a new time entry, call with no arguments to start in interactive mode
 
 USAGE:
@@ -98,6 +99,7 @@ OPTIONS:
 
 ARGS:
     <description>    Description of the time entry
+
 ```
 
 ## Testing
