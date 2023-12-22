@@ -261,7 +261,7 @@ impl std::fmt::Display for TimeEntry {
                 self.get_duration_hmmss().normal()
             },
             if self.is_running() { "*" } else { " " },
-            self.get_description(),
+            self.get_description().replace('\n', " "),
             match self.project.clone() {
                 Some(p) => format!(" @{}", p),
                 None => "".to_string(),
