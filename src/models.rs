@@ -1,6 +1,6 @@
 use std::{cmp, env};
 
-use crate::constants;
+use crate::{constants, parcel::Parcel};
 use std::collections::HashMap;
 
 use chrono::{DateTime, Duration, Utc};
@@ -288,5 +288,89 @@ impl std::fmt::Display for TimeEntry {
             }
         );
         write!(f, "{}", summary)
+    }
+}
+
+impl Parcel for TimeEntry {
+    // Format time-entry to plain text so user can save it to a file
+    // and edit it later and create a new time-entry from it
+    //
+    // Format:
+    //      Description: [Description]
+    //
+    //      Start: [Start Time]
+    //
+    //      Stop: [Stop Time] // Optional
+    //
+    //      Billable: [true/false]
+    //
+    //      Tags: [Tag1, Tag2, ...]
+    //
+    //      Project: [Project Name] -- [Project ID]
+    //
+    //      Task: [Task Name] -- [Task ID]
+    fn serialize(&self) -> String {
+        let mut serialized = format!(
+            "Description: {}\n\nStart: {}\n\n",
+            self.description, self.start
+        );
+
+        if let Some(stop) = self.stop {
+            serialized.push_str(&format!("Stop: {}\n\n", stop));
+        }
+
+        serialized.push_str(&format!("Billable: {}\n\n", self.billable));
+
+        if !self.tags.is_empty() {
+            serialized.push_str(&format!("Tags: {}\n\n", self.tags.join(", ")));
+        }
+
+        if let Some(project) = &self.project {
+            serialized.push_str(&format!("Project: {} -- {}\n\n", project.name, project.id));
+        }
+
+        if let Some(task) = &self.task {
+            serialized.push_str(&format!("Task: {} -- {}\n\n", task.name, task.id));
+        }
+
+        serialized
+    }
+
+    fn deserialize(&self, data: &str) -> Self {
+        let mut time_entry = self.clone();
+        let project: Option<Project> = None;
+        let task: Option<Task> = None;
+
+        for line in data.lines() {
+            if line.is_empty() {
+                continue;
+            }
+            let mut parts = line.splitn(2, ": ");
+            let key = parts.next().unwrap();
+            let value = parts.next().unwrap_or("NOT FOUND");
+
+            println!("{}: {}", key, value);
+
+            match key {
+                "Start" => time_entry.start = value.parse().unwrap(),
+                "Stop" => time_entry.stop = Some(value.parse().unwrap()),
+                "Billable" => time_entry.billable = value.parse().unwrap(),
+                "Tags" => time_entry.tags = value.split(", ").map(String::from).collect(),
+                "Project" => {
+                    if project.is_some() {
+                        time_entry.project = project.clone();
+                    }
+                }
+                "Task" => {
+                    if task.is_some() {
+                        time_entry.task = task.clone();
+                    }
+                }
+                "Description" => time_entry.description = value.to_string(),
+                _ => {}
+            }
+        }
+
+        time_entry
     }
 }

@@ -46,6 +46,7 @@ async-trait = "0.1.68"
 
 # Models
 chrono = { version = "0.4.24", features = ["serde"] }
+tempfile = "3"
 
 [target.'cfg(unix)'.dependencies]
 skim = "0.10.4"
