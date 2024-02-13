@@ -6,6 +6,7 @@ mod constants;
 mod credentials;
 mod error;
 mod models;
+mod parcel;
 mod picker;
 mod utilities;
 
@@ -14,6 +15,7 @@ use api::client::V9ApiClient;
 use arguments::Command::Auth;
 use arguments::Command::Config;
 use arguments::Command::Continue;
+use arguments::Command::Edit;
 use arguments::Command::Current;
 use arguments::Command::List;
 use arguments::Command::Running;
@@ -24,6 +26,7 @@ use arguments::ConfigSubCommand;
 use colored::Colorize;
 use commands::auth::AuthenticationCommand;
 use commands::cont::ContinueCommand;
+use commands::edit::EditCommand;
 use commands::list::ListCommand;
 use commands::running::RunningTimeEntryCommand;
 use commands::start::StartCommand;
@@ -72,6 +75,10 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
             Continue { interactive } => {
                 let picker = if interactive { Some(picker) } else { None };
                 ContinueCommand::execute(get_default_api_client()?, picker).await?
+            }
+            Edit { interactive } => {
+                let picker = if interactive { Some(picker) } else { None };
+                EditCommand::execute(get_default_api_client()?, picker, interactive).await?
             }
             List { number, entity } => {
                 ListCommand::execute(get_default_api_client()?, number, entity).await?

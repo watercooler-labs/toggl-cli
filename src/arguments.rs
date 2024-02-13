@@ -53,6 +53,10 @@ pub enum Command {
         #[structopt(short, long)]
         billable: bool,
     },
+    Edit {
+        #[structopt(short, long)]
+        interactive: bool,
+    },
     Continue {
         #[structopt(short, long)]
         interactive: bool,
