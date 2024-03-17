@@ -18,9 +18,7 @@ Installing the binary.
 cargo install toggl
 ```
 
-### Linux
-
-#### Arch Linux
+### From Arch Linux aur
 [![toggl-cli](https://img.shields.io/aur/version/toggl-cli?label=toggl-cli)](https://aur.archlinux.org/packages/toggl-cli/)
 [![toggl-cli-bin](https://img.shields.io/aur/version/toggl-cli-bin?label=toggl-cli-bin)](https://aur.archlinux.org/packages/toggl-cli-bin/)
 
