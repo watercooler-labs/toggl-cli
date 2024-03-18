@@ -18,6 +18,21 @@ Installing the binary.
 cargo install toggl
 ```
 
+### From Arch Linux aur
+[![toggl-cli](https://img.shields.io/aur/version/toggl-cli?label=toggl-cli)](https://aur.archlinux.org/packages/toggl-cli/)
+[![toggl-cli-bin](https://img.shields.io/aur/version/toggl-cli-bin?label=toggl-cli-bin)](https://aur.archlinux.org/packages/toggl-cli-bin/)
+
+toggl-cli is available on the [AUR](https://wiki.archlinux.org/index.php/Arch_User_Repository):
+- [toggl-cli](https://aur.archlinux.org/packages/toggl-cli/) (release package)
+- [toggl-cli-bin](https://aur.archlinux.org/packages/toggl-cli-bin/) (binary release package)
+
+You can install it using your [AUR helper](https://wiki.archlinux.org/index.php/AUR_helpers) of choice.
+
+Example:
+```shell
+$ yay -Sy toggl-cli
+```
+
 ### From source
 
 ```shell
