@@ -22,7 +22,6 @@ use arguments::Command::Start;
 use arguments::Command::Stop;
 use arguments::CommandLineArguments;
 use arguments::ConfigSubCommand;
-use colored::Colorize;
 use commands::auth::AuthenticationCommand;
 use commands::cont::ContinueCommand;
 use commands::list::ListCommand;
@@ -70,16 +69,20 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 StopCommand::execute(&get_default_api_client()?, StopCommandOrigin::CommandLine)
                     .await?;
             }
+
             Continue { interactive } => {
                 let picker = if interactive { Some(picker) } else { None };
                 ContinueCommand::execute(get_default_api_client()?, picker).await?
             }
+
             List { number, entity } => {
                 ListCommand::execute(get_default_api_client()?, number, entity).await?
             }
+
             Current | Running => {
                 RunningTimeEntryCommand::execute(get_default_api_client()?).await?
             }
+
             Start {
                 interactive,
                 billable,
@@ -96,6 +99,7 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 )
                 .await?
             }
+
             Auth { api_token } => {
                 let credentials = Credentials { api_token };
                 let api_client = V9ApiClient::from_credentials(credentials, args.proxy)?;
@@ -104,7 +108,7 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
 
             Logout => {
                 let storage = get_storage();
-                storage.clear().expect("Failed to clear stored credentials");
+                storage.clear()?;
                 println!("Successfully logged out.");
             }
 
@@ -134,15 +138,7 @@ fn get_api_client(proxy: Option<String>) -> ResultWithDefaultError<impl ApiClien
     let credentials_storage = get_storage();
     match credentials_storage.read() {
         Ok(credentials) => V9ApiClient::from_credentials(credentials, proxy),
-        Err(err) => {
-            println!(
-                "{}\n{} {}",
-                "Please set your API token first by calling toggl auth <API_TOKEN>.".red(),
-                "You can find your API token at".blue().bold(),
-                "https://track.toggl.com/profile".blue().bold().underline()
-            );
-            Err(err)
-        }
+        Err(err) => Err(err),
     }
 }
 

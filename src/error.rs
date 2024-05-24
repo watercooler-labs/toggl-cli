@@ -29,19 +29,42 @@ impl Error for ApiError {}
 
 #[derive(Debug)]
 pub enum StorageError {
+    Read,
     Write,
     Delete,
+    Unknown,
 }
 
 impl Display for StorageError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let summary = format!(
-            "{}\n{} {}",
-            constants::CREDENTIALS_ACCESS_ERROR.red(),
-            constants::OUTDATED_APP_ERROR_MESSAGE.blue().bold(),
-            constants::ISSUE_LINK.blue().bold().underline()
-        );
-        write!(f, "{}", summary)
+        let summary = match self {
+            StorageError::Read => {
+                format!(
+                    "{}\n{} {}",
+                    constants::CREDENTIALS_EMPTY_ERROR.red(),
+                    constants::CREDENTIALS_FIND_TOKEN_MESSAGE.blue().bold(),
+                    constants::CREDENTIALS_FIND_TOKEN_LINK
+                        .blue()
+                        .bold()
+                        .underline()
+                )
+            }
+            StorageError::Write | StorageError::Delete | StorageError::Unknown => {
+                let message = match self {
+                    StorageError::Write => constants::CREDENTIALS_WRITE_ERROR.red(),
+                    StorageError::Delete => constants::CREDENTIALS_DELETE_ERROR.red(),
+                    _ => constants::CREDENTIALS_ACCESS_ERROR.red(),
+                };
+                format!(
+                    "{}\n{} {}",
+                    message,
+                    constants::OUTDATED_APP_ERROR_MESSAGE.blue().bold(),
+                    constants::ISSUE_LINK.blue().bold().underline()
+                )
+            }
+        };
+
+        writeln!(f, "{}", summary)
     }
 }
 

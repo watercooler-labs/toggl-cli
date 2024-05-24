@@ -31,11 +31,13 @@ impl KeyringStorage {
 
 impl CredentialsStorage for KeyringStorage {
     fn read(&self) -> ResultWithDefaultError<Credentials> {
-        let api_token = self
-            .keyring
+        self.keyring
             .get_password()
-            .expect("failed to read from keyring");
-        Ok(Credentials { api_token })
+            .map(|api_token| Credentials { api_token })
+            .map_err(|keyring_err| match keyring_err {
+                keyring::Error::NoEntry => Box::new(StorageError::Read),
+                _ => Box::new(StorageError::Unknown) as Box<dyn std::error::Error + Send>,
+            })
     }
 
     fn persist(&self, api_token: String) -> ResultWithDefaultError<()> {
