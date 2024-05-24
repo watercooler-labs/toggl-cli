@@ -16,6 +16,7 @@ use arguments::Command::Config;
 use arguments::Command::Continue;
 use arguments::Command::Current;
 use arguments::Command::List;
+use arguments::Command::Logout;
 use arguments::Command::Running;
 use arguments::Command::Start;
 use arguments::Command::Stop;
@@ -99,6 +100,12 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 let credentials = Credentials { api_token };
                 let api_client = V9ApiClient::from_credentials(credentials, args.proxy)?;
                 AuthenticationCommand::execute(io::stdout(), api_client, get_storage()).await?
+            }
+
+            Logout => {
+                let storage = get_storage();
+                storage.clear().expect("Failed to clear stored credentials");
+                println!("Successfully logged out.");
             }
 
             Config {

@@ -16,6 +16,7 @@ pub struct Credentials {
 pub trait CredentialsStorage {
     fn read(&self) -> ResultWithDefaultError<Credentials>;
     fn persist(&self, api_token: String) -> ResultWithDefaultError<()>;
+    fn clear(&self) -> ResultWithDefaultError<()>;
 }
 
 pub struct KeyringStorage {
@@ -40,6 +41,13 @@ impl CredentialsStorage for KeyringStorage {
     fn persist(&self, api_token: String) -> ResultWithDefaultError<()> {
         match self.keyring.set_password(api_token.as_str()) {
             Err(_) => Err(Box::new(StorageError::Write)),
+            Ok(_) => Ok(()),
+        }
+    }
+
+    fn clear(&self) -> ResultWithDefaultError<()> {
+        match self.keyring.delete_password() {
+            Err(_) => Err(Box::new(StorageError::Delete)),
             Ok(_) => Ok(()),
         }
     }

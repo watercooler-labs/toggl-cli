@@ -36,6 +36,8 @@ pub enum Command {
     Auth {
         api_token: String,
     },
+    #[structopt(about = "Clear stored credentials")]
+    Logout,
     #[structopt(
         about = "Start a new time entry, call with no arguments to start in interactive mode"
     )]

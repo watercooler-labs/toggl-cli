@@ -30,6 +30,7 @@ impl Error for ApiError {}
 #[derive(Debug)]
 pub enum StorageError {
     Write,
+    Delete,
 }
 
 impl Display for StorageError {
