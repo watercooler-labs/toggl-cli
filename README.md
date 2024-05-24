@@ -65,7 +65,7 @@ Run the `help` command to see a list of available commands.
 
 ```shell
 $ toggl help
-toggl 0.4.2
+toggl 0.4.3
 Toggl command line app.
 
 USAGE:
@@ -87,6 +87,7 @@ SUBCOMMANDS:
     current
     help        Prints this message or the help of the given subcommand(s)
     list
+    logout      Clear stored credentials
     running
     start       Start a new time entry, call with no arguments to start in interactive mode
     stop
@@ -97,7 +98,7 @@ You can also run the `help` command on a specific subcommand.
 
 ```shell
 $ toggl help start
-toggl-start 0.4.2
+toggl-start 0.4.3
 Start a new time entry, call with no arguments to start in interactive mode
 
 USAGE:
