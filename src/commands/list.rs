@@ -4,6 +4,7 @@ use crate::models;
 use api::client::ApiClient;
 use colored::Colorize;
 use models::ResultWithDefaultError;
+use std::io::{self, BufWriter, Write};
 
 pub struct ListCommand;
 
@@ -19,19 +20,31 @@ impl ListCommand {
                 "Couldn't fetch time entries the from API".red(),
                 error
             ),
-            Ok(entities) => match entity.unwrap_or(Entity::TimeEntry) {
-                Entity::TimeEntry => entities
-                    .time_entries
-                    .iter()
-                    .take(count.unwrap_or(usize::max_value()))
-                    .for_each(|time_entry| println!("{}", time_entry)),
+            Ok(entities) => {
+                // use this to avoid calling println! in a loop:
+                // <https://rust-cli.github.io/book/tutorial/output.html#a-note-on-printing-performance>
+                let stdout = io::stdout();
+                let mut handle = BufWriter::new(stdout);
 
-                Entity::Project => entities
-                    .projects
-                    .iter()
-                    .take(count.unwrap_or(usize::max_value()))
-                    .for_each(|(_, projects)| println!("{}", projects)),
-            },
+                // TODO: better error handling for writeln!
+                match entity.unwrap_or(Entity::TimeEntry) {
+                    Entity::TimeEntry => entities
+                        .time_entries
+                        .iter()
+                        .take(count.unwrap_or(usize::max_value()))
+                        .for_each(|time_entry| {
+                            writeln!(handle, "{}", time_entry).expect("failed to print")
+                        }),
+
+                    Entity::Project => entities
+                        .projects
+                        .iter()
+                        .take(count.unwrap_or(usize::max_value()))
+                        .for_each(|(_, projects)| {
+                            writeln!(handle, "{}", projects).expect("failed to print")
+                        }),
+                };
+            }
         }
         Ok(())
     }
