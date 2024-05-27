@@ -373,7 +373,10 @@ fn resolve_macro(base_dir: &Path, instruction: Macro) -> ResultWithDefaultError<
                             .nth(1)
                             .expect("Failed to resolve git worktree root")
                             .trim();
-                        let git_root = PathBuf::from(git_dir);
+
+                        let git_root = std::fs::canonicalize(git_dir)
+                            .map(PathBuf::from)
+                            .expect("Failed to canonicalize Git root directory");
 
                         // git_root stores the path to the main repository in the following format
                         // gitdir: /path/to/main/repo/.git/worktrees/<worktree_name>
