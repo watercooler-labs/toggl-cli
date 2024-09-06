@@ -28,7 +28,7 @@ colored = "2.0.0"
 colors-transform = "0.2.11"
 
 # Storage
-keyring = "2"
+keyring = { version = "2", features = ["linux-default-keyutils"] }
 
 # Config
 directories = "5.0.0"

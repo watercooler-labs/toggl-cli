@@ -31,7 +31,7 @@ impl ListCommand {
                     Entity::TimeEntry => entities
                         .time_entries
                         .iter()
-                        .take(count.unwrap_or(usize::max_value()))
+                        .take(count.unwrap_or(usize::MAX))
                         .for_each(|time_entry| {
                             writeln!(handle, "{}", time_entry).expect("failed to print")
                         }),
@@ -39,7 +39,7 @@ impl ListCommand {
                     Entity::Project => entities
                         .projects
                         .iter()
-                        .take(count.unwrap_or(usize::max_value()))
+                        .take(count.unwrap_or(usize::MAX))
                         .for_each(|(_, projects)| {
                             writeln!(handle, "{}", projects).expect("failed to print")
                         }),
