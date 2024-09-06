@@ -65,7 +65,7 @@ Run the `help` command to see a list of available commands.
 
 ```shell
 $ toggl help
-toggl 0.4.4
+toggl 0.4.5
 Toggl command line app.
 
 USAGE:
@@ -98,7 +98,7 @@ You can also run the `help` command on a specific subcommand.
 
 ```shell
 $ toggl help start
-toggl-start 0.4.4
+toggl-start 0.4.5
 Start a new time entry, call with no arguments to start in interactive mode
 
 USAGE:
