@@ -42,14 +42,20 @@ impl CredentialsStorage for KeyringStorage {
 
     fn persist(&self, api_token: String) -> ResultWithDefaultError<()> {
         match self.keyring.set_password(api_token.as_str()) {
-            Err(_) => Err(Box::new(StorageError::Write)),
+            Err(keyring_err) => {
+                eprintln!("Error writing to keyring: {}", keyring_err);
+                Err(Box::new(StorageError::Write))
+            }
             Ok(_) => Ok(()),
         }
     }
 
     fn clear(&self) -> ResultWithDefaultError<()> {
         match self.keyring.delete_password() {
-            Err(_) => Err(Box::new(StorageError::Delete)),
+            Err(keyring_err) => {
+                eprintln!("Error deleting from keyring: {}", keyring_err);
+                Err(Box::new(StorageError::Delete))
+            }
             Ok(_) => Ok(()),
         }
     }
