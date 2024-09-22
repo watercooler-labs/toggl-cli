@@ -1,4 +1,4 @@
-use std::fs::OpenOptions;
+use std::fs::File;
 use std::io::{Read, Seek, Write};
 
 use tempfile::tempdir;
@@ -18,13 +18,7 @@ pub trait Parcel {
         let dir = tempdir().map_err(|e| e.to_string())?;
         let file_path = dir.path().join("toggl.txt");
 
-        // TODO: Replace with `File::create_new` when it's stable
-        let mut file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create_new(true)
-            .open(file_path.clone())
-            .map_err(|e| e.to_string())?;
+        let mut file = File::create_new(file_path.clone()).map_err(|e| e.to_string())?;
         write!(file, "{}", contents).unwrap();
 
         utilities::open_path_in_editor(file_path).map_err(|e| e.to_string())?;
