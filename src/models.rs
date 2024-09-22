@@ -351,8 +351,6 @@ impl Parcel for TimeEntry {
             let key = parts.next().unwrap();
             let value = parts.next().unwrap_or("NOT FOUND");
 
-            println!("{}: {}", key, value);
-
             match key {
                 "Start" => time_entry.start = value.parse().unwrap(),
                 "Stop" => time_entry.stop = Some(value.parse().unwrap()),
