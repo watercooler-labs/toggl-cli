@@ -24,6 +24,7 @@ pub const CONFIG_PARSE_ERROR: &str = "Failed to parse config file";
 pub const CONFIG_UNRECOGNIZED_MACRO_ERROR: &str = "Unrecognized macro in config file";
 pub const CONFIG_SHELL_MACRO_RESOLUTION_ERROR: &str = "Failed to resolve shell macro";
 pub const NO_PROJECT: &str = "No Project";
+pub const NO_TASK: &str = "No Task";
 pub const NO_DESCRIPTION: &str = "(no description)";
 pub const DIRECTORY_NOT_FOUND_ERROR: &str = "Directory not found";
 pub const NOT_A_DIRECTORY_ERROR: &str = "Not a directory";
