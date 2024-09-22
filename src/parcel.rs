@@ -25,8 +25,8 @@ pub trait Parcel {
         utilities::open_path_in_editor(&file_path).expect("Failed to open file in editor");
         drop(file);
 
-        let contents = fs::read(file_path)
-            .expect("Failed to read file time-entry editing in editor");
+        let contents =
+            fs::read(file_path).expect("Failed to read file time-entry editing in editor");
 
         dir.close().expect("Failed to clear temp directory");
 

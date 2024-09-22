@@ -170,6 +170,23 @@ impl std::fmt::Display for Project {
     }
 }
 
+impl Default for Project {
+    fn default() -> Self {
+        Self {
+            id: -1,
+            name: constants::NO_PROJECT.to_string(),
+            workspace_id: -1,
+            client: None,
+            is_private: false,
+            active: true,
+            at: Utc::now(),
+            created_at: Utc::now(),
+            color: "0".to_string(),
+            billable: None,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Client {
     pub id: i64,
@@ -183,6 +200,17 @@ pub struct Task {
     pub name: String,
     pub workspace_id: i64,
     pub project: Project,
+}
+
+impl Default for Task {
+    fn default() -> Self {
+        Self {
+            id: -1,
+            name: constants::NO_TASK.to_string(),
+            workspace_id: -1,
+            project: Project::default(),
+        }
+    }
 }
 
 impl TimeEntry {
@@ -338,8 +366,6 @@ impl Parcel for TimeEntry {
 
     fn deserialize(&self, data: Vec<u8>) -> Self {
         let mut time_entry = self.clone();
-        let project: Option<Project> = None;
-        let task: Option<Task> = None;
 
         let data = String::from_utf8(data).unwrap();
 
@@ -357,14 +383,28 @@ impl Parcel for TimeEntry {
                 "Billable" => time_entry.billable = value.parse().unwrap(),
                 "Tags" => time_entry.tags = value.split(", ").map(String::from).collect(),
                 "Project" => {
-                    if project.is_some() {
-                        time_entry.project = project.clone();
+                    let project_parts: Vec<&str> = value.split(" -- ").collect();
+                    if project_parts.len() < 2 {
+                        continue;
                     }
+                    time_entry.project = Some(Project {
+                        id: project_parts[1].parse().unwrap(),
+                        name: project_parts[0].to_string(),
+                        workspace_id: time_entry.workspace_id,
+                        ..Project::default()
+                    });
                 }
                 "Task" => {
-                    if task.is_some() {
-                        time_entry.task = task.clone();
+                    let task_parts: Vec<&str> = value.split(" -- ").collect();
+                    if task_parts.len() < 2 {
+                        continue;
                     }
+                    time_entry.task = Some(Task {
+                        id: task_parts[1].parse().unwrap(),
+                        name: task_parts[0].to_string(),
+                        workspace_id: time_entry.workspace_id,
+                        project: time_entry.project.clone().unwrap_or(Project::default()),
+                    });
                 }
                 "Description" => time_entry.description = value.to_string(),
                 _ => {}
