@@ -309,7 +309,7 @@ impl Parcel for TimeEntry {
     //      Project: [Project Name] -- [Project ID]
     //
     //      Task: [Task Name] -- [Task ID]
-    fn serialize(&self) -> String {
+    fn serialize(&self) -> Vec<u8> {
         let mut serialized = format!(
             "Description: {}\n\nStart: {}\n\n",
             self.description, self.start
@@ -333,13 +333,15 @@ impl Parcel for TimeEntry {
             serialized.push_str(&format!("Task: {} -- {}\n\n", task.name, task.id));
         }
 
-        serialized
+        serialized.into_bytes()
     }
 
-    fn deserialize(&self, data: &str) -> Self {
+    fn deserialize(&self, data: Vec<u8>) -> Self {
         let mut time_entry = self.clone();
         let project: Option<Project> = None;
         let task: Option<Task> = None;
+
+        let data = String::from_utf8(data).unwrap();
 
         for line in data.lines() {
             if line.is_empty() {
