@@ -19,7 +19,8 @@ pub trait Parcel {
         let file_path = dir.path().join("toggl.txt");
 
         let mut file = File::create_new(file_path.clone()).map_err(|e| e.to_string())?;
-        write!(file, "{}", contents).unwrap();
+        file.write_all(contents.as_bytes())
+            .expect("Failed to write current time-entry to file");
 
         utilities::open_path_in_editor(file_path).map_err(|e| e.to_string())?;
         file.rewind().map_err(|e| e.to_string())?;
