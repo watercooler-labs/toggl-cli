@@ -31,6 +31,13 @@ impl Entities {
             .find(|w| w.name == name)
             .map(|w| w.id)
     }
+    pub fn project_for_name(&self, workspace_id: i64, name: &str) -> Option<Project> {
+        self.projects.values().find(|p| p.workspace_id == workspace_id && p.name == name).cloned()
+    }
+
+    pub fn task_for_name(&self, workspace_id: i64, name: &str) -> Option<Task> {
+        self.tasks.values().find(|t| t.workspace_id == workspace_id && t.name == name).cloned()
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -384,24 +391,36 @@ impl Parcel for TimeEntry {
                 "Tags" => time_entry.tags = value.split(", ").map(String::from).collect(),
                 "Project" => {
                     let project_parts: Vec<&str> = value.split(" -- ").collect();
-                    if project_parts.len() < 2 {
+                    if project_parts.len() < 1 {
                         continue;
                     }
+                    let project_name = project_parts[0].to_string();
+                    let project_id = if project_parts.len() > 1 {
+                        project_parts[1].parse().unwrap()
+                    } else {
+                        -1
+                    };
                     time_entry.project = Some(Project {
-                        id: project_parts[1].parse().unwrap(),
-                        name: project_parts[0].to_string(),
+                        id: project_id,
+                        name: project_name,
                         workspace_id: time_entry.workspace_id,
                         ..Project::default()
                     });
                 }
                 "Task" => {
                     let task_parts: Vec<&str> = value.split(" -- ").collect();
-                    if task_parts.len() < 2 {
+                    if task_parts.len() < 1 {
                         continue;
                     }
+                    let task_name = task_parts[0].to_string();
+                    let task_id = if task_parts.len() > 1 {
+                        task_parts[1].parse().unwrap()
+                    } else {
+                        -1
+                    };
                     time_entry.task = Some(Task {
-                        id: task_parts[1].parse().unwrap(),
-                        name: task_parts[0].to_string(),
+                        id: task_id,
+                        name: task_name,
                         workspace_id: time_entry.workspace_id,
                         project: time_entry.project.clone().unwrap_or(Project::default()),
                     });
