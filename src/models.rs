@@ -24,6 +24,13 @@ impl Entities {
     pub fn running_time_entry(&self) -> Option<TimeEntry> {
         self.time_entries.iter().find(|te| te.is_running()).cloned()
     }
+
+    pub fn workspace_id_for_name(&self, name: &str) -> Option<i64> {
+        self.workspaces
+            .iter()
+            .find(|w| w.name == name)
+            .map(|w| w.id)
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

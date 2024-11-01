@@ -546,8 +546,19 @@ impl TrackConfig {
                 .find(|t| t.name == name && t.project.id == project_id.unwrap())
         });
 
+        let workspace_id = config.workspace.as_ref().map_or(
+            // Default to -1 if workspace is not set
+            Ok(-1),
+            |name| {
+                entities.workspace_id_for_name(name).ok_or_else(|| {
+                    Box::new(ConfigError::WorkspaceNotFound(name.clone()))
+                        as Box<dyn std::error::Error + Send>
+                })
+            },
+        )?;
+
         let time_entry = TimeEntry {
-            // TODO: Add support for workspace
+            workspace_id,
             description: config.description.clone().unwrap_or_default(),
             billable: config.billable,
             tags: config.tags.clone().unwrap_or_default(),

@@ -100,6 +100,7 @@ pub enum ConfigError {
     FileNotFound,
     UnrecognizedMarco(String),
     ShellResolution(String, String),
+    WorkspaceNotFound(String),
 }
 
 impl Display for ConfigError {
@@ -133,6 +134,15 @@ impl Display for ConfigError {
                     output_or_error.red().bold(),
                     "Command".yellow(),
                     command.yellow().bold(),
+                )
+            }
+            ConfigError::WorkspaceNotFound(workspace) => {
+                format!(
+                    "{}: {}\n{}\n{}",
+                    constants::CONFIG_INVALID_WORKSPACE_ERROR.red().bold(),
+                    workspace.red().bold(),
+                    "Check your configuration file".yellow().bold(),
+                    "toggl config --edit".yellow().bold(),
                 )
             }
         };
