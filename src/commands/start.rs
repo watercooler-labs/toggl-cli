@@ -136,7 +136,7 @@ impl StartCommand {
             interactively_create_time_entry(
                 default_time_entry,
                 workspace_id,
-                entities,
+                entities.clone(),
                 picker,
                 description,
                 project,
@@ -152,15 +152,15 @@ impl StartCommand {
             }
         };
 
-        let started_entry_id = api_client.create_time_entry(time_entry_to_create).await?;
-        let entities = api_client.get_entities().await?;
-        let started_entry = entities
-            .time_entries
-            .iter()
-            .find(|te| te.id == started_entry_id)
-            .unwrap();
+        let started_entry_id = api_client
+            .create_time_entry(time_entry_to_create.clone())
+            .await;
+        if started_entry_id.is_err() {
+            println!("{}", "Failed to start time entry".red());
+            return Err(started_entry_id.err().unwrap());
+        }
 
-        println!("{}\n{}", "Time entry started".green(), started_entry);
+        println!("{}\n{}", "Time entry started".green(), time_entry_to_create);
 
         Ok(())
     }
