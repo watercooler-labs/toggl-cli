@@ -7,6 +7,7 @@ use crate::models::Entities;
 use crate::models::Project;
 use crate::models::Task;
 use crate::models::TimeEntry;
+use crate::models::Workspace;
 use async_trait::async_trait;
 use base64::{engine::general_purpose, Engine as _};
 use error::ApiError;
@@ -21,6 +22,7 @@ use super::models::NetworkClient;
 use super::models::NetworkProject;
 use super::models::NetworkTask;
 use super::models::NetworkTimeEntry;
+use super::models::NetworkWorkspace;
 
 #[cfg_attr(test, automock)]
 #[async_trait]
@@ -56,6 +58,11 @@ impl V9ApiClient {
     async fn get_tasks(&self) -> ResultWithDefaultError<Vec<NetworkTask>> {
         let url = format!("{}/me/tasks", self.base_url);
         self.get::<Vec<NetworkTask>>(url).await
+    }
+
+    async fn get_workspaces(&self) -> ResultWithDefaultError<Vec<NetworkWorkspace>> {
+        let url = format!("{}/me/workspaces", self.base_url);
+        self.get::<Vec<NetworkWorkspace>>(url).await
     }
 
     pub fn from_credentials(
@@ -142,11 +149,18 @@ impl ApiClient for V9ApiClient {
     }
 
     async fn get_entities(&self) -> ResultWithDefaultError<Entities> {
-        let (network_time_entries, network_projects, network_tasks, network_clients) = tokio::join!(
+        let (
+            network_time_entries,
+            network_projects,
+            network_tasks,
+            network_clients,
+            network_workspaces,
+        ) = tokio::join!(
             self.get_time_entries(),
             self.get_projects(),
             self.get_tasks(),
             self.get_clients(),
+            self.get_workspaces(),
         );
 
         let clients: HashMap<i64, crate::models::Client> = network_clients
@@ -220,11 +234,22 @@ impl ApiClient for V9ApiClient {
             })
             .collect();
 
+        let workspaces = network_workspaces
+            .unwrap_or_default()
+            .iter()
+            .map(|w| Workspace {
+                id: w.id,
+                name: w.name.clone(),
+                admin: w.admin,
+            })
+            .collect();
+
         Ok(Entities {
             time_entries,
             projects,
             tasks,
             clients,
+            workspaces,
         })
     }
 }

@@ -23,6 +23,7 @@ pub const CONFIG_FILE_NOT_FOUND_ERROR: &str = "No config file found";
 pub const CONFIG_PARSE_ERROR: &str = "Failed to parse config file";
 pub const CONFIG_UNRECOGNIZED_MACRO_ERROR: &str = "Unrecognized macro in config file";
 pub const CONFIG_SHELL_MACRO_RESOLUTION_ERROR: &str = "Failed to resolve shell macro";
+pub const CONFIG_INVALID_WORKSPACE_ERROR: &str = "Workspace not found";
 pub const NO_PROJECT: &str = "No Project";
 pub const NO_DESCRIPTION: &str = "(no description)";
 pub const DIRECTORY_NOT_FOUND_ERROR: &str = "Directory not found";

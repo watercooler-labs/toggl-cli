@@ -110,6 +110,12 @@ impl StartCommand {
         let track_config = config::parser::get_config_from_file(config_path)?;
         let default_time_entry = track_config.get_default_entry(entities.clone())?;
 
+        let workspace_id = if default_time_entry.workspace_id != -1 {
+            default_time_entry.workspace_id
+        } else {
+            workspace_id
+        };
+
         let project = project_name
             .and_then(|name| {
                 entities
@@ -130,7 +136,7 @@ impl StartCommand {
             interactively_create_time_entry(
                 default_time_entry,
                 workspace_id,
-                entities,
+                entities.clone(),
                 picker,
                 description,
                 project,
@@ -146,15 +152,15 @@ impl StartCommand {
             }
         };
 
-        let started_entry_id = api_client.create_time_entry(time_entry_to_create).await?;
-        let entities = api_client.get_entities().await?;
-        let started_entry = entities
-            .time_entries
-            .iter()
-            .find(|te| te.id == started_entry_id)
-            .unwrap();
+        let started_entry_id = api_client
+            .create_time_entry(time_entry_to_create.clone())
+            .await;
+        if started_entry_id.is_err() {
+            println!("{}", "Failed to start time entry".red());
+            return Err(started_entry_id.err().unwrap());
+        }
 
-        println!("{}\n{}", "Time entry started".green(), started_entry);
+        println!("{}\n{}", "Time entry started".green(), time_entry_to_create);
 
         Ok(())
     }

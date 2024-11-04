@@ -17,11 +17,19 @@ pub struct Entities {
     pub projects: HashMap<i64, Project>,
     pub tasks: HashMap<i64, Task>,
     pub clients: HashMap<i64, Client>,
+    pub workspaces: Vec<Workspace>,
 }
 
 impl Entities {
     pub fn running_time_entry(&self) -> Option<TimeEntry> {
         self.time_entries.iter().find(|te| te.is_running()).cloned()
+    }
+
+    pub fn workspace_id_for_name(&self, name: &str) -> Option<i64> {
+        self.workspaces
+            .iter()
+            .find(|w| w.name == name)
+            .map(|w| w.id)
     }
 }
 
@@ -61,6 +69,13 @@ pub struct Project {
     pub created_at: DateTime<Utc>,
     pub color: String,
     pub billable: Option<bool>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Workspace {
+    pub id: i64,
+    pub name: String,
+    pub admin: bool,
 }
 
 lazy_static! {
