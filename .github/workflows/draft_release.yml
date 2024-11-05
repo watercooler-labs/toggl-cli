@@ -73,7 +73,7 @@ jobs:
           profile: minimal
           target: ${{ matrix.target }}
           override: true
-      - uses: Swatinem/rust-cache@v4
+      - uses: Swatinem/rust-cache@v2
       - name: Install buildtools
         if: ${{ matrix.target == 'x86_64-unknown-linux-gnu' }}
         run: |
