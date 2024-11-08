@@ -32,11 +32,17 @@ impl Entities {
             .map(|w| w.id)
     }
     pub fn project_for_name(&self, workspace_id: i64, name: &str) -> Option<Project> {
-        self.projects.values().find(|p| p.workspace_id == workspace_id && p.name == name).cloned()
+        self.projects
+            .values()
+            .find(|p| p.workspace_id == workspace_id && p.name == name)
+            .cloned()
     }
 
     pub fn task_for_name(&self, workspace_id: i64, name: &str) -> Option<Task> {
-        self.tasks.values().find(|t| t.workspace_id == workspace_id && t.name == name).cloned()
+        self.tasks
+            .values()
+            .find(|t| t.workspace_id == workspace_id && t.name == name)
+            .cloned()
     }
 }
 
@@ -180,9 +186,9 @@ impl std::fmt::Display for Project {
 impl Default for Project {
     fn default() -> Self {
         Self {
-            id: -1,
+            id: constants::DEFAULT_ENTITY_ID,
             name: constants::NO_PROJECT.to_string(),
-            workspace_id: -1,
+            workspace_id: constants::DEFAULT_ENTITY_ID,
             client: None,
             is_private: false,
             active: true,
@@ -212,9 +218,9 @@ pub struct Task {
 impl Default for Task {
     fn default() -> Self {
         Self {
-            id: -1,
+            id: constants::DEFAULT_ENTITY_ID,
             name: constants::NO_TASK.to_string(),
-            workspace_id: -1,
+            workspace_id: constants::DEFAULT_ENTITY_ID,
             project: Project::default(),
         }
     }
@@ -280,7 +286,7 @@ impl Default for TimeEntry {
     fn default() -> Self {
         let start = Utc::now();
         Self {
-            id: -1,
+            id: constants::DEFAULT_ENTITY_ID,
             created_with: Some(constants::CLIENT_NAME.to_string()),
             billable: false,
             description: "".to_string(),
@@ -290,7 +296,7 @@ impl Default for TimeEntry {
             stop: None,
             tags: Vec::new(),
             task: None,
-            workspace_id: -1,
+            workspace_id: constants::DEFAULT_ENTITY_ID,
         }
     }
 }
@@ -398,7 +404,7 @@ impl Parcel for TimeEntry {
                     let project_id = if project_parts.len() > 1 {
                         project_parts[1].parse().unwrap()
                     } else {
-                        -1
+                        constants::DEFAULT_ENTITY_ID
                     };
                     time_entry.project = Some(Project {
                         id: project_id,
@@ -416,7 +422,7 @@ impl Parcel for TimeEntry {
                     let task_id = if task_parts.len() > 1 {
                         task_parts[1].parse().unwrap()
                     } else {
-                        -1
+                        constants::DEFAULT_ENTITY_ID
                     };
                     time_entry.task = Some(Task {
                         id: task_id,

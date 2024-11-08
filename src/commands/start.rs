@@ -1,6 +1,7 @@
 use crate::api;
 use crate::commands;
 use crate::config;
+use crate::constants;
 use crate::models;
 use crate::models::Entities;
 use crate::models::Project;
@@ -110,7 +111,7 @@ impl StartCommand {
         let track_config = config::parser::get_config_from_file(config_path)?;
         let default_time_entry = track_config.get_default_entry(entities.clone())?;
 
-        let workspace_id = if default_time_entry.workspace_id != -1 {
+        let workspace_id = if default_time_entry.workspace_id != constants::DEFAULT_ENTITY_ID {
             default_time_entry.workspace_id
         } else {
             workspace_id
