@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::ConfigError;
 use crate::models::{Entities, ResultWithDefaultError, TimeEntry};
-use crate::utilities;
+use crate::{constants, utilities};
 
 /// BranchConfig optionally determines workspace, description, project, task,
 /// tags, and billable status of a time entry.
@@ -546,16 +546,16 @@ impl TrackConfig {
                 .find(|t| t.name == name && t.project.id == project_id.unwrap())
         });
 
-        let workspace_id = config.workspace.as_ref().map_or(
-            // Default to -1 if workspace is not set
-            Ok(-1),
-            |name| {
-                entities.workspace_id_for_name(name).ok_or_else(|| {
-                    Box::new(ConfigError::WorkspaceNotFound(name.clone()))
-                        as Box<dyn std::error::Error + Send>
-                })
-            },
-        )?;
+        let workspace_id =
+            config
+                .workspace
+                .as_ref()
+                .map_or(Ok(constants::DEFAULT_ENTITY_ID), |name| {
+                    entities.workspace_id_for_name(name).ok_or_else(|| {
+                        Box::new(ConfigError::WorkspaceNotFound(name.clone()))
+                            as Box<dyn std::error::Error + Send>
+                    })
+                })?;
 
         let time_entry = TimeEntry {
             workspace_id,

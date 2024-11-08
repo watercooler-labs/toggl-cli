@@ -20,13 +20,21 @@ impl EditCommand {
             Some(running_time_entry) => {
                 let updated_time_entry = running_time_entry
                     .launch_in_editor()
-                    .map_err(|e| {
+                    .inspect_err(|e| {
                         println!("{}", e.to_string().red());
-                        e
                     })
                     .unwrap();
 
-                api_client.update_time_entry(updated_time_entry).await?;
+                let updated_entry_id = api_client
+                    .update_time_entry(updated_time_entry.clone())
+                    .await;
+                if updated_entry_id.is_err() {
+                    println!("{}", "Failed to update time entry".red());
+                    return Err(updated_entry_id.err().unwrap());
+                }
+
+                println!("{}\n{}", "Time entry updated".green(), updated_time_entry);
+                return Ok(());
             }
         }
         Ok(())
