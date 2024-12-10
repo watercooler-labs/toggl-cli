@@ -13,9 +13,11 @@ pub const CREDENTIALS_WRITE_ERROR: &str =
 pub const CREDENTIALS_DELETE_ERROR: &str =
     "An unknown error occurred while deleting your credentials.";
 pub const CREDENTIALS_EMPTY_ERROR: &str =
-    "Please set your API token first by calling toggl auth <API_TOKEN>.";
+    "Please set your API token first by calling toggl auth <API_TOKEN>. Or export it as TOGGL_API_TOKEN.";
 pub const CREDENTIALS_FIND_TOKEN_MESSAGE: &str = "You can find your API token at";
 pub const CREDENTIALS_FIND_TOKEN_LINK: &str = "https://track.toggl.com/profile";
+pub const CREDENTIALS_OVERRIDE_ERROR: &str =
+    "You have set TOGGL_API_TOKEN in your environment. Unset it to update or delete your saved credentials.";
 
 pub const FZF_NOT_INSTALLED_ERROR: &str = "fzf could not be found. Is it installed?";
 pub const OPERATION_CANCELLED: &str = "Operation cancelled";

@@ -14,7 +14,7 @@ impl AuthenticationCommand {
     pub async fn execute<W: Write>(
         mut writer: W,
         api_client: impl ApiClient,
-        credentials_storage: impl CredentialsStorage,
+        credentials_storage: Box<dyn CredentialsStorage>,
     ) -> ResultWithDefaultError<()> {
         let user = api_client.get_user().await?;
         credentials_storage.persist(user.api_token)?;
@@ -90,7 +90,7 @@ mod tests {
         // Arrange
         let mut output = Vec::new();
         let api_client = create_working_api_client();
-        let credentials_storage = create_working_credentials_storage();
+        let credentials_storage = Box::new(create_working_credentials_storage());
 
         // Act
         let result =
@@ -105,7 +105,7 @@ mod tests {
         // Arrange
         let mut output = Vec::new();
         let api_client = create_working_api_client();
-        let credentials_storage = create_working_credentials_storage();
+        let credentials_storage = Box::new(create_working_credentials_storage());
 
         // Act
         let _ = AuthenticationCommand::execute(&mut output, api_client, credentials_storage).await;
@@ -127,7 +127,7 @@ mod tests {
         // Arrange
         let mut output = Vec::new();
         let api_client = create_failing_api_client();
-        let credentials_storage = create_working_credentials_storage();
+        let credentials_storage = Box::new(create_working_credentials_storage());
 
         // Act
         let result =
@@ -142,7 +142,7 @@ mod tests {
         // Arrange
         let mut output = Vec::new();
         let api_client = create_working_api_client();
-        let credentials_storage = create_failing_credentials_storage();
+        let credentials_storage = Box::new(create_failing_credentials_storage());
 
         // Act
         let result =

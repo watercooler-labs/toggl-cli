@@ -33,6 +33,7 @@ pub enum StorageError {
     Write,
     Delete,
     Unknown,
+    EnvironmentOverride,
 }
 
 impl Display for StorageError {
@@ -61,6 +62,9 @@ impl Display for StorageError {
                     constants::OUTDATED_APP_ERROR_MESSAGE.blue().bold(),
                     constants::ISSUE_LINK.blue().bold().underline()
                 )
+            }
+            StorageError::EnvironmentOverride => {
+                format!("{}", constants::CREDENTIALS_OVERRIDE_ERROR.red())
             }
         };
 
