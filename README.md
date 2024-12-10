@@ -59,6 +59,12 @@ cargo run auth [API_TOKEN] # or toggl auth [API_TOKEN]
 
 The API token is stored securely in your Operating System's keychain using the [keyring](https://crates.io/crates/keyring) crate.
 
+> **Note**: On some linux environments the `keyring` store is not persistent
+> across reboots. We recommend exporting the api token as `TOGGL_API_TOKEN`
+> in your shell profile. The CLI will use this environment variable if it is
+> set. You don't need to run the `auth` command if you have the environment
+> variable set.
+
 ### Commands
 
 Run the `help` command to see a list of available commands.
