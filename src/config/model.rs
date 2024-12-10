@@ -523,7 +523,7 @@ impl TrackConfig {
     }
     pub fn get_active_config(&self) -> ResultWithDefaultError<&BranchConfig> {
         let current_dir = std::env::current_dir().expect("Failed to get current directory");
-        return Ok(self.get_branch_config_for_dir(&current_dir));
+        Ok(self.get_branch_config_for_dir(&current_dir))
     }
     pub fn get_default_entry(&self, entities: Entities) -> ResultWithDefaultError<TimeEntry> {
         let config = self.get_active_config()?;

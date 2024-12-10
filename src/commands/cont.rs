@@ -75,5 +75,5 @@ fn get_first_stopped_time_entry(
         None => 0,
         Some(_) => 1,
     };
-    return time_entries.get(continue_entry_index).cloned();
+    time_entries.get(continue_entry_index).cloned()
 }
