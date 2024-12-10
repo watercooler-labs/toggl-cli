@@ -60,3 +60,37 @@ impl CredentialsStorage for KeyringStorage {
         }
     }
 }
+
+pub struct EnvironmentStorage {
+    token: String,
+}
+
+impl EnvironmentStorage {
+    pub fn new(token: String) -> EnvironmentStorage {
+        Self { token }
+    }
+}
+
+impl CredentialsStorage for EnvironmentStorage {
+    fn read(&self) -> ResultWithDefaultError<Credentials> {
+        Ok(Credentials {
+            api_token: self.token.clone(),
+        })
+    }
+    fn persist(&self, _api_token: String) -> ResultWithDefaultError<()> {
+        Err(Box::new(StorageError::EnvironmentOverride))
+    }
+    fn clear(&self) -> ResultWithDefaultError<()> {
+        Err(Box::new(StorageError::EnvironmentOverride))
+    }
+}
+
+pub fn get_storage() -> Box<dyn CredentialsStorage> {
+    if let Ok(api_token) = std::env::var("TOGGL_API_TOKEN") {
+        return Box::new(EnvironmentStorage::new(api_token));
+    }
+
+    let keyring = Entry::new("togglcli", "default")
+        .unwrap_or_else(|err| panic!("Couldn't create credentials_storage: {err}"));
+    Box::new(KeyringStorage::new(keyring))
+}
