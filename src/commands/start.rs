@@ -3,7 +3,6 @@ use crate::commands;
 use crate::config;
 use crate::models;
 use crate::models::Entities;
-use crate::models::Project;
 use crate::picker::ItemPicker;
 use crate::picker::PickableItem;
 use crate::picker::PickableItemKind;
@@ -11,20 +10,14 @@ use crate::utilities;
 use api::client::ApiClient;
 use colored::Colorize;
 use commands::stop::{StopCommand, StopCommandOrigin};
-use models::ResultWithDefaultError;
-use models::TimeEntry;
+use models::{ResultWithDefaultError, TimeEntry};
 
 pub struct StartCommand;
 
 fn interactively_create_time_entry(
-    default_time_entry: TimeEntry,
-    workspace_id: i64,
+    time_entry: TimeEntry,
     entities: Entities,
     picker: Box<dyn ItemPicker>,
-    description: String,
-    project: Option<Project>,
-    tags: Vec<String>,
-    billable: bool,
 ) -> TimeEntry {
     let yes_or_default_no = [
         "y".to_string(),
@@ -33,8 +26,8 @@ fn interactively_create_time_entry(
         "".to_string(),
     ];
 
-    let (project, task) = match project {
-        Some(_) => (project, None),
+    let (project, task) = match time_entry.project {
+        Some(_) => (time_entry.project, None),
         None => {
             if entities.projects.is_empty() {
                 (None, None)
@@ -73,7 +66,7 @@ fn interactively_create_time_entry(
     };
 
     // Only ask for billable if the user didn't provide a value AND if the selected project doesn't have a default billable setting.
-    let billable = billable
+    let billable = time_entry.billable
         || project.clone().and_then(|p| p.billable).unwrap_or(
             utilities::read_from_stdin_with_constraints(
                 "Is your time entry billable? (y/N): ",
@@ -81,16 +74,13 @@ fn interactively_create_time_entry(
             ) == "y",
         );
 
-    let task = task.or(default_time_entry.task.clone());
+    let task = task.or(time_entry.task.clone());
 
     TimeEntry {
         billable,
-        description,
-        workspace_id,
         project,
-        tags,
         task,
-        ..default_time_entry
+        ..time_entry
     }
 }
 
@@ -138,25 +128,19 @@ impl StartCommand {
 
         let description = description.unwrap_or(default_time_entry.description.clone());
 
-        let time_entry_to_create = if interactive {
-            interactively_create_time_entry(
-                default_time_entry,
-                workspace_id,
-                entities.clone(),
-                picker,
+        let time_entry_to_create = {
+            let initial_entry = TimeEntry {
                 description,
                 project,
                 tags,
                 billable,
-            )
-        } else {
-            TimeEntry {
-                billable,
-                description,
-                project,
-                tags,
                 workspace_id,
-                ..default_time_entry
+                ..TimeEntry::default()
+            };
+            if interactive {
+                interactively_create_time_entry(initial_entry, entities.clone(), picker)
+            } else {
+                initial_entry
             }
         };
 
