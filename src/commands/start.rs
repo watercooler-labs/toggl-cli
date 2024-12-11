@@ -106,9 +106,10 @@ impl StartCommand {
         let workspace_id = (api_client.get_user().await?).default_workspace_id;
         let entities = api_client.get_entities().await?;
 
-        let config_path = config::locate::locate_config_path()?;
-        let track_config = config::parser::get_config_from_file(config_path)?;
-        let default_time_entry = track_config.get_default_entry(entities.clone())?;
+        let default_time_entry = config::locate::locate_config_path()
+            .and_then(config::parser::get_config_from_file)
+            .and_then(|track_config| track_config.get_default_entry(entities.clone()))
+            .unwrap_or_else(|_| TimeEntry::default());
 
         let workspace_id = if default_time_entry.workspace_id != -1 {
             default_time_entry.workspace_id
