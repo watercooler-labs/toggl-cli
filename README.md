@@ -71,7 +71,7 @@ Run the `help` command to see a list of available commands.
 
 ```shell
 $ toggl help
-toggl 0.4.8
+toggl 0.4.9
 Toggl command line app.
 
 USAGE:
@@ -104,11 +104,11 @@ You can also run the `help` command on a specific subcommand.
 
 ```shell
 $ toggl help start
-toggl-start 0.4.8
+toggl-start 0.4.9
 Start a new time entry, call with no arguments to start in interactive mode
 
 USAGE:
-    toggl start [FLAGS] [OPTIONS] [description]
+    toggl start [FLAGS] [OPTIONS] [--] [description]
 
 FLAGS:
     -b, --billable
@@ -118,6 +118,7 @@ FLAGS:
 
 OPTIONS:
     -p, --project <project>    Exact name of the project you want the time entry to be associated with
+    -t, --tags <tags>...       Space separated list of tags to associate with the time entry, e.g. 'tag1 tag2 tag3'
 
 ARGS:
     <description>    Description of the time entry
