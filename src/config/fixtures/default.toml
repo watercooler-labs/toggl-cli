@@ -14,11 +14,11 @@
 
 # Description (optional, default="")
 # Accepts any string template with our macros in them
-description = "🔨 {{branch}}"
+description = "🔨 {{current_dir}}"
 
 # Project (optional, default=No project)
 # Accepts any string template with our macros in them
-project = "{{git_root}}"
+project = "{{current_dir}}"
 
 # Task (optional, default=No task)
 # task = "Some task"
