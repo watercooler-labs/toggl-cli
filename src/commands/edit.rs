@@ -21,7 +21,7 @@ impl EditCommand {
                 let updated_time_entry = running_time_entry
                     .launch_in_editor()
                     .inspect_err(|e| {
-                        println!("{}", e.to_string().red());
+                        eprintln!("{}", e.to_string().red());
                     })
                     .unwrap();
 
@@ -29,7 +29,7 @@ impl EditCommand {
                     .update_time_entry(updated_time_entry.clone())
                     .await;
                 if updated_entry_id.is_err() {
-                    println!("{}", "Failed to update time entry".red());
+                    eprintln!("{}", "Failed to update time entry".red());
                     return Err(updated_entry_id.err().unwrap());
                 }
 
