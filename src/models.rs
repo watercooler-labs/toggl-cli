@@ -367,11 +367,11 @@ impl Parcel for TimeEntry {
         }
 
         if let Some(project) = &self.project {
-            serialized.push_str(&format!("Project: {} -- {}\n\n", project.name, project.id));
+            serialized.push_str(&format!("Project: {}\n\n", project.name));
         }
 
         if let Some(task) = &self.task {
-            serialized.push_str(&format!("Task: {} -- {}\n\n", task.name, task.id));
+            serialized.push_str(&format!("Task: {}\n\n", task.name));
         }
 
         serialized.into_bytes()
@@ -388,7 +388,8 @@ impl Parcel for TimeEntry {
             }
             let mut parts = line.splitn(2, ": ");
             let key = parts.next().unwrap();
-            let value = parts.next().unwrap_or("NOT FOUND");
+
+            let value = parts.next().map(|v| v.trim()).unwrap_or("NOT FOUND");
 
             match key {
                 "Start" => time_entry.start = value.parse().unwrap(),
@@ -396,36 +397,18 @@ impl Parcel for TimeEntry {
                 "Billable" => time_entry.billable = value.parse().unwrap(),
                 "Tags" => time_entry.tags = value.split(", ").map(String::from).collect(),
                 "Project" => {
-                    let project_parts: Vec<&str> = value.split(" -- ").collect();
-                    if project_parts.is_empty() {
-                        continue;
-                    }
-                    let project_name = project_parts[0].to_string();
-                    let project_id = if project_parts.len() > 1 {
-                        project_parts[1].parse().unwrap()
-                    } else {
-                        constants::DEFAULT_ENTITY_ID
-                    };
+                    let project_name = value.to_string();
                     time_entry.project = Some(Project {
-                        id: project_id,
+                        id: constants::DEFAULT_ENTITY_ID,
                         name: project_name,
                         workspace_id: time_entry.workspace_id,
                         ..Project::default()
                     });
                 }
                 "Task" => {
-                    let task_parts: Vec<&str> = value.split(" -- ").collect();
-                    if task_parts.is_empty() {
-                        continue;
-                    }
-                    let task_name = task_parts[0].to_string();
-                    let task_id = if task_parts.len() > 1 {
-                        task_parts[1].parse().unwrap()
-                    } else {
-                        constants::DEFAULT_ENTITY_ID
-                    };
+                    let task_name = value.to_string();
                     time_entry.task = Some(Task {
-                        id: task_id,
+                        id: constants::DEFAULT_ENTITY_ID,
                         name: task_name,
                         workspace_id: time_entry.workspace_id,
                         project: time_entry.project.clone().unwrap_or_default(),
