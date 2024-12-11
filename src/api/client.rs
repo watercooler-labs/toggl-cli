@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::constants;
 use crate::credentials;
 use crate::error;
 use crate::models;
@@ -188,7 +189,9 @@ impl ApiClient for V9ApiClient {
                         id: p.id,
                         name: p.name.clone(),
                         workspace_id: p.workspace_id,
-                        client: clients.get(&p.client_id.unwrap_or(-1)).cloned(),
+                        client: clients
+                            .get(&p.client_id.unwrap_or(constants::DEFAULT_ENTITY_ID))
+                            .cloned(),
                         is_private: p.is_private,
                         active: p.active,
                         at: p.at,
@@ -228,8 +231,12 @@ impl ApiClient for V9ApiClient {
                 billable: te.billable,
                 workspace_id: te.workspace_id,
                 tags: te.tags.clone(),
-                project: projects.get(&te.project_id.unwrap_or(-1)).cloned(),
-                task: tasks.get(&te.task_id.unwrap_or(-1)).cloned(),
+                project: projects
+                    .get(&te.project_id.unwrap_or(constants::DEFAULT_ENTITY_ID))
+                    .cloned(),
+                task: tasks
+                    .get(&te.task_id.unwrap_or(constants::DEFAULT_ENTITY_ID))
+                    .cloned(),
                 ..Default::default()
             })
             .collect();

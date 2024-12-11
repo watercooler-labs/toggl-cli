@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::ConfigError;
 use crate::models::{Entities, ResultWithDefaultError, TimeEntry};
-use crate::utilities;
+use crate::{constants, utilities};
 
 /// BranchConfig optionally determines workspace, description, project, task,
 /// tags, and billable status of a time entry.
@@ -486,8 +486,8 @@ fn process_config_value(base_dir: &Path, input: String) -> Option<String> {
                 }
                 token.push(c);
             }
-            let resolved = resolve_token(base_dir, &token).map_err(|e| {
-                println!("Failed to resolve token: {}", e);
+            let resolved = resolve_token(base_dir, &token).inspect_err(|e| {
+                eprintln!("Failed to resolve token: {}", e);
             });
             if let Ok(resolved_token) = resolved {
                 result.push_str(&resolved_token);
@@ -546,16 +546,16 @@ impl TrackConfig {
                 .find(|t| t.name == name && t.project.id == project_id.unwrap())
         });
 
-        let workspace_id = config.workspace.as_ref().map_or(
-            // Default to -1 if workspace is not set
-            Ok(-1),
-            |name| {
-                entities.workspace_id_for_name(name).ok_or_else(|| {
-                    Box::new(ConfigError::WorkspaceNotFound(name.clone()))
-                        as Box<dyn std::error::Error + Send>
-                })
-            },
-        )?;
+        let workspace_id =
+            config
+                .workspace
+                .as_ref()
+                .map_or(Ok(constants::DEFAULT_ENTITY_ID), |name| {
+                    entities.workspace_id_for_name(name).ok_or_else(|| {
+                        Box::new(ConfigError::WorkspaceNotFound(name.clone()))
+                            as Box<dyn std::error::Error + Send>
+                    })
+                })?;
 
         let time_entry = TimeEntry {
             workspace_id,

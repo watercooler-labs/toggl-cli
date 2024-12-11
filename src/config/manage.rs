@@ -38,7 +38,7 @@ impl ConfigManageCommand {
                 Ok(())
             }
             Err(e) => {
-                println!("In config parse {}", e);
+                eprintln!("In config parse {}", e);
                 Err(Box::new(ConfigError::Parse))
             }
         }

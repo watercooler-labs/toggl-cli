@@ -1,6 +1,6 @@
 use std::{cmp, env};
 
-use crate::constants;
+use crate::{constants, parcel::Parcel};
 use std::collections::HashMap;
 
 use chrono::{DateTime, Duration, Utc};
@@ -30,6 +30,19 @@ impl Entities {
             .iter()
             .find(|w| w.name == name)
             .map(|w| w.id)
+    }
+    pub fn project_for_name(&self, workspace_id: i64, name: &str) -> Option<Project> {
+        self.projects
+            .values()
+            .find(|p| p.workspace_id == workspace_id && p.name == name)
+            .cloned()
+    }
+
+    pub fn task_for_name(&self, workspace_id: i64, name: &str) -> Option<Task> {
+        self.tasks
+            .values()
+            .find(|t| t.workspace_id == workspace_id && t.name == name)
+            .cloned()
     }
 }
 
@@ -170,6 +183,23 @@ impl std::fmt::Display for Project {
     }
 }
 
+impl Default for Project {
+    fn default() -> Self {
+        Self {
+            id: constants::DEFAULT_ENTITY_ID,
+            name: constants::NO_PROJECT.to_string(),
+            workspace_id: constants::DEFAULT_ENTITY_ID,
+            client: None,
+            is_private: false,
+            active: true,
+            at: Utc::now(),
+            created_at: Utc::now(),
+            color: "0".to_string(),
+            billable: None,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Client {
     pub id: i64,
@@ -183,6 +213,17 @@ pub struct Task {
     pub name: String,
     pub workspace_id: i64,
     pub project: Project,
+}
+
+impl Default for Task {
+    fn default() -> Self {
+        Self {
+            id: constants::DEFAULT_ENTITY_ID,
+            name: constants::NO_TASK.to_string(),
+            workspace_id: constants::DEFAULT_ENTITY_ID,
+            project: Project::default(),
+        }
+    }
 }
 
 impl TimeEntry {
@@ -245,7 +286,7 @@ impl Default for TimeEntry {
     fn default() -> Self {
         let start = Utc::now();
         Self {
-            id: -1,
+            id: constants::DEFAULT_ENTITY_ID,
             created_with: Some(constants::CLIENT_NAME.to_string()),
             billable: false,
             description: "".to_string(),
@@ -255,7 +296,7 @@ impl Default for TimeEntry {
             stop: None,
             tags: Vec::new(),
             task: None,
-            workspace_id: -1,
+            workspace_id: constants::DEFAULT_ENTITY_ID,
         }
     }
 }
@@ -288,5 +329,96 @@ impl std::fmt::Display for TimeEntry {
             }
         );
         write!(f, "{}", summary)
+    }
+}
+
+impl Parcel for TimeEntry {
+    // Format time-entry to plain text so user can save it to a file
+    // and edit it later and create a new time-entry from it
+    //
+    // Format:
+    //      Description: [Description]
+    //
+    //      Start: [Start Time]
+    //
+    //      Stop: [Stop Time] // Optional
+    //
+    //      Billable: [true/false]
+    //
+    //      Tags: [Tag1, Tag2, ...]
+    //
+    //      Project: [Project Name] -- [Project ID]
+    //
+    //      Task: [Task Name] -- [Task ID]
+    fn serialize(&self) -> Vec<u8> {
+        let mut serialized = format!(
+            "Description: {}\n\nStart: {}\n\n",
+            self.description, self.start
+        );
+
+        if let Some(stop) = self.stop {
+            serialized.push_str(&format!("Stop: {}\n\n", stop));
+        }
+
+        serialized.push_str(&format!("Billable: {}\n\n", self.billable));
+
+        if !self.tags.is_empty() {
+            serialized.push_str(&format!("Tags: {}\n\n", self.tags.join(", ")));
+        }
+
+        if let Some(project) = &self.project {
+            serialized.push_str(&format!("Project: {}\n\n", project.name));
+        }
+
+        if let Some(task) = &self.task {
+            serialized.push_str(&format!("Task: {}\n\n", task.name));
+        }
+
+        serialized.into_bytes()
+    }
+
+    fn deserialize(&self, data: Vec<u8>) -> Self {
+        let mut time_entry = self.clone();
+
+        let data = String::from_utf8(data).unwrap();
+
+        for line in data.lines() {
+            if line.is_empty() {
+                continue;
+            }
+            let mut parts = line.splitn(2, ": ");
+            let key = parts.next().unwrap();
+
+            let value = parts.next().map(|v| v.trim()).unwrap_or("NOT FOUND");
+
+            match key {
+                "Start" => time_entry.start = value.parse().unwrap(),
+                "Stop" => time_entry.stop = Some(value.parse().unwrap()),
+                "Billable" => time_entry.billable = value.parse().unwrap(),
+                "Tags" => time_entry.tags = value.split(", ").map(String::from).collect(),
+                "Project" => {
+                    let project_name = value.to_string();
+                    time_entry.project = Some(Project {
+                        id: constants::DEFAULT_ENTITY_ID,
+                        name: project_name,
+                        workspace_id: time_entry.workspace_id,
+                        ..Project::default()
+                    });
+                }
+                "Task" => {
+                    let task_name = value.to_string();
+                    time_entry.task = Some(Task {
+                        id: constants::DEFAULT_ENTITY_ID,
+                        name: task_name,
+                        workspace_id: time_entry.workspace_id,
+                        project: time_entry.project.clone().unwrap_or_default(),
+                    });
+                }
+                "Description" => time_entry.description = value.to_string(),
+                _ => {}
+            }
+        }
+
+        time_entry
     }
 }
