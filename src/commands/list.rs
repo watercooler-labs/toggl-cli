@@ -15,7 +15,7 @@ impl ListCommand {
         entity: Option<Entity>,
     ) -> ResultWithDefaultError<()> {
         match api_client.get_entities().await {
-            Err(error) => println!(
+            Err(error) => eprintln!(
                 "{}\n{}",
                 "Couldn't fetch time entries the from API".red(),
                 error

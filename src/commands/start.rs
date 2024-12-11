@@ -149,7 +149,7 @@ impl StartCommand {
             .create_time_entry(time_entry_to_create.clone())
             .await;
         if started_entry_id.is_err() {
-            println!("{}", "Failed to start time entry".red());
+            eprintln!("{}", "Failed to start time entry".red());
             return Err(started_entry_id.err().unwrap());
         }
 

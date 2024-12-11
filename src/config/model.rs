@@ -486,8 +486,8 @@ fn process_config_value(base_dir: &Path, input: String) -> Option<String> {
                 }
                 token.push(c);
             }
-            let resolved = resolve_token(base_dir, &token).map_err(|e| {
-                println!("Failed to resolve token: {}", e);
+            let resolved = resolve_token(base_dir, &token).inspect_err(|e| {
+                eprintln!("Failed to resolve token: {}", e);
             });
             if let Ok(resolved_token) = resolved {
                 result.push_str(&resolved_token);
