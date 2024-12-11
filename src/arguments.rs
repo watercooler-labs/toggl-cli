@@ -52,6 +52,12 @@ pub enum Command {
             help = "Exact name of the project you want the time entry to be associated with"
         )]
         project: Option<String>,
+        #[structopt(
+            short,
+            long,
+            help = "Space separated list of tags to associate with the time entry, e.g. 'tag1 tag2 tag3'"
+        )]
+        tags: Option<Vec<String>>,
         #[structopt(short, long)]
         billable: bool,
     },
