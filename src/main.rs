@@ -88,12 +88,14 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 billable,
                 description,
                 project,
+                tags,
             } => {
                 StartCommand::execute(
                     get_default_api_client()?,
                     picker,
                     description,
                     project,
+                    tags,
                     billable,
                     interactive,
                 )

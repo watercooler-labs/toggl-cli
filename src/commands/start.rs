@@ -23,6 +23,7 @@ fn interactively_create_time_entry(
     picker: Box<dyn ItemPicker>,
     description: String,
     project: Option<Project>,
+    tags: Vec<String>,
     billable: bool,
 ) -> TimeEntry {
     let yes_or_default_no = [
@@ -87,6 +88,7 @@ fn interactively_create_time_entry(
         description,
         workspace_id,
         project,
+        tags,
         task,
         ..default_time_entry
     }
@@ -98,6 +100,7 @@ impl StartCommand {
         picker: Box<dyn ItemPicker>,
         description: Option<String>,
         project_name: Option<String>,
+        tags: Option<Vec<String>>,
         billable: bool,
         interactive: bool,
     ) -> ResultWithDefaultError<()> {
@@ -127,6 +130,8 @@ impl StartCommand {
             })
             .or(default_time_entry.project.clone());
 
+        let tags = tags.unwrap_or(default_time_entry.tags.clone());
+
         let billable = billable
             || default_time_entry.billable
             || project.clone().and_then(|p| p.billable).unwrap_or(false);
@@ -141,6 +146,7 @@ impl StartCommand {
                 picker,
                 description,
                 project,
+                tags,
                 billable,
             )
         } else {
@@ -148,6 +154,7 @@ impl StartCommand {
                 billable,
                 description,
                 project,
+                tags,
                 workspace_id,
                 ..default_time_entry
             }
