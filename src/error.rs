@@ -21,7 +21,7 @@ impl Display for ApiError {
                 constants::ISSUE_LINK.blue().bold().underline()
             ),
         };
-        write!(f, "{}", summary)
+        writeln!(f, "{}", summary)
     }
 }
 
