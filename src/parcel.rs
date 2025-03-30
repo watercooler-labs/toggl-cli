@@ -9,7 +9,7 @@ pub trait Parcel {
     fn serialize(&self) -> Vec<u8>;
     fn deserialize(&self, data: Vec<u8>) -> Self;
 
-    fn launch_in_editor(&self) -> Result<Self, String>
+    fn update_in_editor(&self) -> Result<Self, String>
     where
         Self: Sized,
     {

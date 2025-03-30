@@ -23,7 +23,7 @@ impl EditCommand {
                     let workspace_id = running_time_entry.workspace_id;
 
                     let new_entry = running_time_entry
-                        .launch_in_editor()
+                        .update_in_editor()
                         .inspect_err(|e| {
                             eprintln!("{}", e.to_string().red());
                         })
