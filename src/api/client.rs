@@ -227,7 +227,7 @@ impl ApiClient for V9ApiClient {
                 duration: te.duration,
                 billable: te.billable,
                 workspace_id: te.workspace_id,
-                tags: te.tags.clone(),
+                tags: te.tags.clone().unwrap_or_default(),
                 project: projects.get(&te.project_id.unwrap_or(-1)).cloned(),
                 task: tasks.get(&te.task_id.unwrap_or(-1)).cloned(),
                 ..Default::default()
