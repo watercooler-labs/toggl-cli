@@ -58,5 +58,5 @@ fn get_encoded_config_path(config_root: &Path, path: &Path) -> PathBuf {
             .expect("Could not convert path to string")
             .as_bytes(),
     );
-    config_root.join(format!("{}.toml", encoded))
+    config_root.join(format!("{encoded}.toml"))
 }

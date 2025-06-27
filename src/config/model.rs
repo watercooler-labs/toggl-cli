@@ -197,7 +197,7 @@ impl std::fmt::Display for BranchConfig {
             BILLABLE.green(),
             self.billable,
         );
-        write!(f, "{}", summary)
+        write!(f, "{summary}")
     }
 }
 
@@ -211,7 +211,7 @@ impl std::fmt::Display for TrackConfig {
             self.configs
                 .iter()
                 .map(|(branch, config)| {
-                    format!("{}\n{}", format!("[{}]", branch).blue().bold(), config)
+                    format!("{}\n{}", format!("[{branch}]").blue().bold(), config)
                 })
                 .collect::<Vec<String>>()
                 .join("\n")
@@ -348,8 +348,7 @@ fn resolve_macro(base_dir: &Path, instruction: Macro) -> ResultWithDefaultError<
             match output {
                 Ok(output) => {
                     if !output.status.success() {
-                        return Err(Box::new(std::io::Error::new(
-                            std::io::ErrorKind::Other,
+                        return Err(Box::new(std::io::Error::other(
                             "Failed to resolve git root",
                         )));
                     }
@@ -374,9 +373,7 @@ fn resolve_macro(base_dir: &Path, instruction: Macro) -> ResultWithDefaultError<
                             .expect("Failed to resolve git worktree root")
                             .trim();
 
-                        let git_root = std::fs::canonicalize(git_dir)
-                            .map(PathBuf::from)
-                            .expect("Failed to canonicalize Git root directory");
+                        let git_root = std::fs::canonicalize(git_dir).expect("Failed to canonicalize Git root directory");
 
                         // git_root stores the path to the main repository in the following format
                         // gitdir: /path/to/main/repo/.git/worktrees/<worktree_name>
@@ -416,8 +413,7 @@ fn resolve_macro(base_dir: &Path, instruction: Macro) -> ResultWithDefaultError<
             match output {
                 Ok(output) => {
                     if !output.status.success() {
-                        return Err(Box::new(std::io::Error::new(
-                            std::io::ErrorKind::Other,
+                        return Err(Box::new(std::io::Error::other(
                             "Failed to resolve git root",
                         )));
                     }
@@ -487,7 +483,7 @@ fn process_config_value(base_dir: &Path, input: String) -> Option<String> {
                 token.push(c);
             }
             let resolved = resolve_token(base_dir, &token).map_err(|e| {
-                println!("Failed to resolve token: {}", e);
+                println!("Failed to resolve token: {e}");
             });
             if let Ok(resolved_token) = resolved {
                 result.push_str(&resolved_token);

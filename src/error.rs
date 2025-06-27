@@ -21,7 +21,7 @@ impl Display for ApiError {
                 constants::ISSUE_LINK.blue().bold().underline()
             ),
         };
-        write!(f, "{}", summary)
+        write!(f, "{summary}")
     }
 }
 
@@ -68,7 +68,7 @@ impl Display for StorageError {
             }
         };
 
-        writeln!(f, "{}", summary)
+        writeln!(f, "{summary}")
     }
 }
 
@@ -92,7 +92,7 @@ impl Display for PickerError {
             }
             .red(),
         );
-        write!(f, "{}", summary)
+        write!(f, "{summary}")
     }
 }
 
@@ -150,7 +150,7 @@ impl Display for ConfigError {
                 )
             }
         };
-        writeln!(f, "{}", summary)
+        writeln!(f, "{summary}")
     }
 }
 
@@ -180,7 +180,7 @@ impl Display for ArgumentError {
                 )
             }
         };
-        writeln!(f, "{}", summary)
+        writeln!(f, "{summary}")
     }
 }
 

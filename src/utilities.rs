@@ -94,6 +94,6 @@ pub fn get_shell_cmd(command: &str) -> std::process::Command {
 }
 
 fn print_without_buffer(text: &str) {
-    print!("{}", text);
+    print!("{text}");
     io::stdout().flush().unwrap();
 }

@@ -11,7 +11,7 @@ impl RunningTimeEntryCommand {
         let entities = api_client.get_entities().await?;
         match entities.running_time_entry() {
             None => println!("{}", "No time entry is running at the moment".yellow()),
-            Some(running_time_entry) => println!("{}", running_time_entry),
+            Some(running_time_entry) => println!("{running_time_entry}"),
         }
 
         Ok(())

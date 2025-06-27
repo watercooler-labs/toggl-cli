@@ -117,7 +117,7 @@ mod tests {
             MOCK_EMAIL.green().bold()
         );
         let actual_output = String::from_utf8(output)
-            .unwrap_or_else(|_| panic!("empty output when {} was expected", expected_output));
+            .unwrap_or_else(|_| panic!("empty output when {expected_output} was expected"));
 
         assert_eq!(expected_output, actual_output);
     }

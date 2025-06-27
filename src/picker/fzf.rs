@@ -42,7 +42,7 @@ impl ItemPicker for FzfPicker {
                 let fzf_input = format_as_fzf_input(&items);
                 let possible_elements = create_element_hash_map(&items);
 
-                writeln!(child.stdin.as_mut().unwrap(), "{}", fzf_input)
+                writeln!(child.stdin.as_mut().unwrap(), "{fzf_input}")
                     .expect("Failed to write to fzf stdin");
 
                 match child.wait_with_output() {
