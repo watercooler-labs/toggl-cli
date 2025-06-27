@@ -1,6 +1,6 @@
 [package]
 name = "toggl"
-version = "0.4.9"
+version = "0.4.10"
 authors = [
   "Shantanu Raj <s@sraj.me>",
   "Tyler <tylerchc92@gmail.com>",
