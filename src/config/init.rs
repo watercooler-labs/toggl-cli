@@ -32,7 +32,7 @@ impl ConfigInitCommand {
                 );
                 std::fs::create_dir_all(config_dir).expect("failed to create config directory");
                 std::fs::write(config_path, default_config).expect("failed to write config");
-                println!("{}", msg);
+                println!("{msg}");
             }
         }
         Ok(())

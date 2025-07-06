@@ -12,7 +12,7 @@ pub struct NetworkTimeEntry {
     pub duration: i64,
     pub billable: bool,
     pub workspace_id: i64,
-    pub tags: Vec<String>,
+    pub tags: Option<Vec<String>>,
     pub project_id: Option<i64>,
     pub task_id: Option<i64>,
     pub created_with: Option<String>,
@@ -65,7 +65,11 @@ impl From<TimeEntry> for NetworkTimeEntry {
             duration: value.duration,
             billable: value.billable,
             workspace_id: value.workspace_id,
-            tags: value.tags.clone(),
+            tags: if value.tags.is_empty() {
+                None
+            } else {
+                Some(value.tags.clone())
+            },
             project_id: value.project.map(|p| p.id),
             task_id: value.task.map(|t| t.id),
             created_with: value.created_with,

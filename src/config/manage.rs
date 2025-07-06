@@ -29,16 +29,16 @@ impl ConfigManageCommand {
             return utilities::open_path_in_editor(path);
         }
         if show_path {
-            println!("{}", display_path);
+            println!("{display_path}");
             return Ok(());
         }
         match super::parser::get_config_from_file(path) {
             Ok(config) => {
-                println!("{}", config);
+                println!("{config}");
                 Ok(())
             }
             Err(e) => {
-                println!("In config parse {}", e);
+                println!("In config parse {e}");
                 Err(Box::new(ConfigError::Parse))
             }
         }

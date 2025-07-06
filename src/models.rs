@@ -278,7 +278,7 @@ impl std::fmt::Display for TimeEntry {
             if self.is_running() { "*" } else { " " },
             self.get_description().replace('\n', " "),
             match self.project.clone() {
-                Some(p) => format!(" @{}", p),
+                Some(p) => format!(" @{p}"),
                 None => "".to_string(),
             },
             if self.tags.is_empty() {
@@ -287,6 +287,6 @@ impl std::fmt::Display for TimeEntry {
                 format!("#{}", self.get_display_tags().italic())
             }
         );
-        write!(f, "{}", summary)
+        write!(f, "{summary}")
     }
 }

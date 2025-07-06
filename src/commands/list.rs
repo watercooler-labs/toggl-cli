@@ -33,7 +33,7 @@ impl ListCommand {
                         .iter()
                         .take(count.unwrap_or(usize::MAX))
                         .for_each(|time_entry| {
-                            writeln!(handle, "{}", time_entry).expect("failed to print")
+                            writeln!(handle, "{time_entry}").expect("failed to print")
                         }),
 
                     Entity::Project => entities
@@ -41,7 +41,7 @@ impl ListCommand {
                         .iter()
                         .take(count.unwrap_or(usize::MAX))
                         .for_each(|(_, projects)| {
-                            writeln!(handle, "{}", projects).expect("failed to print")
+                            writeln!(handle, "{projects}").expect("failed to print")
                         }),
                 };
             }
