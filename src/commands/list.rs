@@ -13,6 +13,7 @@ impl ListCommand {
         api_client: impl ApiClient,
         count: Option<usize>,
         entity: Option<Entity>,
+        json: Option<bool>,
     ) -> ResultWithDefaultError<()> {
         match api_client.get_entities().await {
             Err(error) => println!(
@@ -28,13 +29,25 @@ impl ListCommand {
 
                 // TODO: better error handling for writeln!
                 match entity.unwrap_or(Entity::TimeEntry) {
-                    Entity::TimeEntry => entities
-                        .time_entries
-                        .iter()
-                        .take(count.unwrap_or(usize::MAX))
-                        .for_each(|time_entry| {
-                            writeln!(handle, "{time_entry}").expect("failed to print")
-                        }),
+                    Entity::TimeEntry => {
+                        if json.unwrap_or(false) {
+                            let entries: Vec<_> = entities
+                                .time_entries
+                                .iter()
+                                .take(count.unwrap_or(usize::MAX))
+                                .collect();
+                            let json_string = serde_json::to_string_pretty(&entries).unwrap();
+                            writeln!(handle, "{json_string}").expect("failed to print");
+                        } else {
+                            entities
+                                .time_entries
+                                .iter()
+                                .take(count.unwrap_or(usize::MAX))
+                                .for_each(|time_entry| {
+                                    writeln!(handle, "{time_entry}").expect("failed to print")
+                                });
+                        }
+                    }
 
                     Entity::Project => entities
                         .projects
