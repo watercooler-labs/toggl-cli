@@ -27,6 +27,8 @@ pub enum Command {
         number: Option<usize>,
         #[structopt(subcommand)]
         entity: Option<Entity>,
+        #[structopt(short, long, help = "Output in JSON format")]
+        json: bool,
     },
     Running,
     Stop,
