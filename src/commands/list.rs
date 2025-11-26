@@ -30,23 +30,22 @@ impl ListCommand {
                 // TODO: better error handling for writeln!
                 match entity.unwrap_or(Entity::TimeEntry) {
                     Entity::TimeEntry => {
+                        let entries = entities
+                            .time_entries
+                            .iter()
+                            .take(count.unwrap_or(usize::MAX));
+
                         if json.unwrap_or(false) {
-                            let entries: Vec<_> = entities
-                                .time_entries
-                                .iter()
-                                .take(count.unwrap_or(usize::MAX))
-                                .collect();
-                            let json_string = serde_json::to_string_pretty(&entries).unwrap();
+                            let entries = entries.collect::<Vec<_>>();
+                            let json_string = serde_json::to_string_pretty(&entries)
+                                .expect("failed to serialize time entries to JSON");
                             writeln!(handle, "{json_string}").expect("failed to print");
                         } else {
-                            entities
-                                .time_entries
-                                .iter()
-                                .take(count.unwrap_or(usize::MAX))
-                                .for_each(|time_entry| {
-                                    writeln!(handle, "{time_entry}").expect("failed to print")
-                                });
+                            entries.for_each(|time_entry| {
+                                writeln!(handle, "{time_entry}").expect("failed to print")
+                            });
                         }
+
                     }
 
                     Entity::Project => entities
