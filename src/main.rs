@@ -75,9 +75,11 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 ContinueCommand::execute(get_default_api_client()?, picker).await?
             }
 
-            List { number, entity } => {
-                ListCommand::execute(get_default_api_client()?, number, entity).await?
-            }
+            List {
+                number,
+                json,
+                entity,
+            } => ListCommand::execute(get_default_api_client()?, number, json, entity).await?,
 
             Current | Running => {
                 RunningTimeEntryCommand::execute(get_default_api_client()?).await?

@@ -25,6 +25,8 @@ pub enum Command {
     List {
         #[structopt(short, long)]
         number: Option<usize>,
+        #[structopt(short, long, help = "Output in JSON format")]
+        json: bool,
         #[structopt(subcommand)]
         entity: Option<Entity>,
     },
@@ -86,8 +88,14 @@ pub enum Command {
 }
 #[derive(Debug, StructOpt)]
 pub enum Entity {
-    Project,
-    TimeEntry,
+    Project {
+        #[structopt(short, long, help = "Output in JSON format")]
+        json: bool,
+    },
+    TimeEntry {
+        #[structopt(short, long, help = "Output in JSON format")]
+        json: bool,
+    },
 }
 #[derive(Debug, StructOpt)]
 pub enum ConfigSubCommand {

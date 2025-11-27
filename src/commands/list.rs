@@ -12,6 +12,7 @@ impl ListCommand {
     pub async fn execute(
         api_client: impl ApiClient,
         count: Option<usize>,
+        json_flag: bool,
         entity: Option<Entity>,
     ) -> ResultWithDefaultError<()> {
         match api_client.get_entities().await {
@@ -27,22 +28,44 @@ impl ListCommand {
                 let mut handle = BufWriter::new(stdout);
 
                 // TODO: better error handling for writeln!
-                match entity.unwrap_or(Entity::TimeEntry) {
-                    Entity::TimeEntry => entities
-                        .time_entries
-                        .iter()
-                        .take(count.unwrap_or(usize::MAX))
-                        .for_each(|time_entry| {
-                            writeln!(handle, "{time_entry}").expect("failed to print")
-                        }),
+                match entity.unwrap_or(Entity::TimeEntry { json: false }) {
+                    Entity::TimeEntry { json: entity_json } => {
+                        let json = json_flag || entity_json;
+                        let entries = entities
+                            .time_entries
+                            .iter()
+                            .take(count.unwrap_or(usize::MAX))
+                            .collect::<Vec<_>>();
 
-                    Entity::Project => entities
-                        .projects
-                        .iter()
-                        .take(count.unwrap_or(usize::MAX))
-                        .for_each(|(_, projects)| {
-                            writeln!(handle, "{projects}").expect("failed to print")
-                        }),
+                        if json {
+                            let json_string = serde_json::to_string_pretty(&entries)
+                                .expect("failed to serialize time entries to JSON");
+                            writeln!(handle, "{json_string}").expect("failed to print");
+                        } else {
+                            entries.iter().for_each(|time_entry| {
+                                writeln!(handle, "{time_entry}").expect("failed to print")
+                            });
+                        }
+                    }
+
+                    Entity::Project { json: entity_json } => {
+                        let json = json_flag || entity_json;
+                        let projects = entities
+                            .projects
+                            .values()
+                            .take(count.unwrap_or(usize::MAX))
+                            .collect::<Vec<_>>();
+
+                        if json {
+                            let json_string = serde_json::to_string_pretty(&projects)
+                                .expect("failed to serialize projects to JSON");
+                            writeln!(handle, "{json_string}").expect("failed to print");
+                        } else {
+                            projects.iter().for_each(|project| {
+                                writeln!(handle, "{project}").expect("failed to print")
+                            });
+                        }
+                    }
                 };
             }
         }
