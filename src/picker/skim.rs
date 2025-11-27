@@ -28,11 +28,11 @@ fn get_skim_configuration(items: Vec<PickableItem>) -> (SkimOptions<'static>, Sk
 }
 
 impl SkimItem for PickableItem {
-    fn text(&self) -> Cow<str> {
+    fn text<'a>(&'a self) -> Cow<'a, str> {
         Cow::from(self.formatted.as_str())
     }
 
-    fn output(&self) -> Cow<str> {
+    fn output<'a>(&'a self) -> Cow<'a, str> {
         Cow::from(self.key.to_string())
     }
 }
