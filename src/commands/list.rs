@@ -52,8 +52,7 @@ impl ListCommand {
                         let json = json_flag || entity_json;
                         let projects = entities
                             .projects
-                            .iter()
-                            .map(|(_, project)| project)
+                            .values()
                             .take(count.unwrap_or(usize::MAX))
                             .collect::<Vec<_>>();
 
