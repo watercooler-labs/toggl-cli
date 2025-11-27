@@ -45,16 +45,22 @@ impl ListCommand {
                                 writeln!(handle, "{time_entry}").expect("failed to print")
                             });
                         }
-
                     }
 
-                    Entity::Project => entities
-                        .projects
-                        .iter()
-                        .take(count.unwrap_or(usize::MAX))
-                        .for_each(|(_, projects)| {
-                            writeln!(handle, "{projects}").expect("failed to print")
-                        }),
+                    Entity::Project => {
+                        let entries = entities.projects.iter().take(count.unwrap_or(usize::MAX));
+
+                        if json.unwrap_or(false) {
+                            let entries = entries.collect::<Vec<_>>();
+                            let json_string = serde_json::to_string_pretty(&entries)
+                                .expect("failed to serialize projects to JSON");
+                            writeln!(handle, "{json_string}").expect("failed to print");
+                        } else {
+                            entries.for_each(|(_, project)| {
+                                writeln!(handle, "{project}").expect("failed to print")
+                            });
+                        }
+                    }
                 };
             }
         }
