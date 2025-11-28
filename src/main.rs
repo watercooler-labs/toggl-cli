@@ -44,8 +44,8 @@ use commands::rename_tag::RenameTagCommand;
 use commands::running::RunningTimeEntryCommand;
 use commands::start::StartCommand;
 use commands::stop::{StopCommand, StopCommandOrigin};
-use credentials::get_storage;
 use credentials::Credentials;
+use credentials::get_storage;
 use models::ResultWithDefaultError;
 use std::io;
 use structopt::StructOpt;
@@ -171,6 +171,13 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
             Delete { id } => DeleteCommand::execute(get_default_api_client()?, id).await?,
 
             Auth { api_token } => {
+                let api_token = match api_token {
+                    Some(token) => token,
+                    None => match rpassword::prompt_password("API token: ") {
+                        Ok(token) => token,
+                        Err(error) => return Err(Box::new(error)),
+                    },
+                };
                 let credentials = Credentials { api_token };
                 let api_client = V9ApiClient::from_credentials(credentials, args.proxy)?;
                 AuthenticationCommand::execute(io::stdout(), api_client, get_storage()).await?
