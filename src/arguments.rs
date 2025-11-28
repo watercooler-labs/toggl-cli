@@ -35,9 +35,7 @@ pub enum Command {
     #[structopt(
         about = "Authenticate with the Toggl API. Find your API token at https://track.toggl.com/profile#api-token"
     )]
-    Auth {
-        api_token: String,
-    },
+    Auth,
     #[structopt(about = "Clear stored credentials")]
     Logout,
     #[structopt(
