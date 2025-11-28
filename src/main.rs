@@ -28,8 +28,8 @@ use commands::list::ListCommand;
 use commands::running::RunningTimeEntryCommand;
 use commands::start::StartCommand;
 use commands::stop::{StopCommand, StopCommandOrigin};
-use credentials::get_storage;
 use credentials::Credentials;
+use credentials::get_storage;
 use models::ResultWithDefaultError;
 use std::io;
 use structopt::StructOpt;
@@ -104,7 +104,8 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 .await?
             }
 
-            Auth { api_token } => {
+            Auth => {
+                let api_token = rpassword::prompt_password("API token: ").unwrap();
                 let credentials = Credentials { api_token };
                 let api_client = V9ApiClient::from_credentials(credentials, args.proxy)?;
                 AuthenticationCommand::execute(io::stdout(), api_client, get_storage()).await?
