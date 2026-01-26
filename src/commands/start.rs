@@ -85,6 +85,7 @@ fn interactively_create_time_entry(
 }
 
 impl StartCommand {
+    #[allow(clippy::too_many_arguments)]
     pub async fn execute(
         api_client: impl ApiClient,
         picker: Box<dyn ItemPicker>,
@@ -93,6 +94,7 @@ impl StartCommand {
         tags: Option<Vec<String>>,
         billable: bool,
         interactive: bool,
+        task: Option<String>,
     ) -> ResultWithDefaultError<()> {
         StopCommand::execute(&api_client, StopCommandOrigin::StartCommand).await?;
 
@@ -110,15 +112,61 @@ impl StartCommand {
             workspace_id
         };
 
-        let project = project_name
-            .and_then(|name| {
-                entities
-                    .projects
-                    .clone()
-                    .into_values()
-                    .find(|p| p.name == name)
-            })
-            .or(default_time_entry.project.clone());
+        // Look up project by name if provided
+        let project_from_flag = project_name.as_ref().and_then(|name| {
+            entities
+                .projects
+                .clone()
+                .into_values()
+                .find(|p| p.name == *name)
+        });
+
+        // Error if project name was provided but not found
+        if let Some(name) = &project_name {
+            if project_from_flag.is_none() {
+                return Err(Box::new(std::io::Error::other(format!(
+                    "Project \"{}\" not found",
+                    name
+                ))));
+            }
+        }
+
+        // Look up task by name if provided
+        let task_obj = task.as_ref().and_then(|task_name| {
+            entities
+                .tasks
+                .clone()
+                .into_values()
+                .find(|t| t.name == *task_name)
+        });
+
+        // Error if task name was provided but not found
+        if let Some(name) = &task {
+            if task_obj.is_none() {
+                return Err(Box::new(std::io::Error::other(format!(
+                    "Task \"{}\" not found",
+                    name
+                ))));
+            }
+        }
+
+        // Validate: if both project and task are specified, ensure task belongs to project
+        if let (Some(ref proj), Some(ref tsk)) = (&project_from_flag, &task_obj) {
+            if tsk.project.id != proj.id {
+                return Err(Box::new(std::io::Error::other(format!(
+                    "Task \"{}\" belongs to project \"{}\", but you specified project \"{}\"",
+                    tsk.name, tsk.project.name, proj.name
+                ))));
+            }
+        }
+
+        // Determine final project: use task's project if only task provided, otherwise use flag/default
+        let project = if project_from_flag.is_none() {
+            task_obj.as_ref().map(|t| t.project.clone())
+        } else {
+            project_from_flag
+        }
+        .or(default_time_entry.project.clone());
 
         let tags = tags.unwrap_or(default_time_entry.tags.clone());
 
@@ -135,6 +183,7 @@ impl StartCommand {
                 tags,
                 billable,
                 workspace_id,
+                task: task_obj,
                 ..TimeEntry::default()
             };
             if interactive {
