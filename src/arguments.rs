@@ -70,6 +70,11 @@ pub enum Command {
             help = "Space separated list of tags to associate with the time entry, e.g. 'tag1 tag2 tag3'"
         )]
         tags: Option<Vec<String>>,
+        #[structopt(
+            long,
+            help = "Exact name of the task you want the time entry to be associated with"
+        )]
+        task: Option<String>,
         #[structopt(short, long)]
         billable: bool,
     },
