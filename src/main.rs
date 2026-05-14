@@ -86,8 +86,15 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 until,
                 entity,
             } => {
-                ListCommand::execute(get_default_api_client()?, number, json, since, until, entity)
-                    .await?
+                ListCommand::execute(
+                    get_default_api_client()?,
+                    number,
+                    json,
+                    since,
+                    until,
+                    entity,
+                )
+                .await?
             }
 
             Current | Running => {
@@ -118,8 +125,10 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 description,
                 project,
                 tags,
-            } => EditCommand::execute(get_default_api_client()?, id, description, project, tags)
-                .await?,
+            } => {
+                EditCommand::execute(get_default_api_client()?, id, description, project, tags)
+                    .await?
+            }
 
             Delete { id } => DeleteCommand::execute(get_default_api_client()?, id).await?,
 

@@ -27,9 +27,15 @@ pub enum Command {
         number: Option<usize>,
         #[structopt(short, long, help = "Output in JSON format")]
         json: bool,
-        #[structopt(long, help = "Filter entries starting on or after this date (YYYY-MM-DD)")]
+        #[structopt(
+            long,
+            help = "Filter entries starting on or after this date (YYYY-MM-DD)"
+        )]
         since: Option<String>,
-        #[structopt(long, help = "Filter entries starting on or before this date (YYYY-MM-DD)")]
+        #[structopt(
+            long,
+            help = "Filter entries starting on or before this date (YYYY-MM-DD)"
+        )]
         until: Option<String>,
         #[structopt(subcommand)]
         entity: Option<Entity>,
@@ -73,7 +79,9 @@ pub enum Command {
     },
     #[structopt(about = "Edit a time entry's description, project, or tags")]
     Edit {
-        #[structopt(help = "ID of the time entry to edit (omit to edit the currently running entry)")]
+        #[structopt(
+            help = "ID of the time entry to edit (omit to edit the currently running entry)"
+        )]
         id: Option<i64>,
         #[structopt(short, long, help = "New description")]
         description: Option<String>,

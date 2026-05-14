@@ -5,10 +5,7 @@ use colored::Colorize;
 pub struct DeleteCommand;
 
 impl DeleteCommand {
-    pub async fn execute(
-        api_client: impl ApiClient,
-        id: i64,
-    ) -> ResultWithDefaultError<()> {
+    pub async fn execute(api_client: impl ApiClient, id: i64) -> ResultWithDefaultError<()> {
         let entities = api_client.get_entities().await?;
         let time_entry = entities.time_entries.iter().find(|te| te.id == id).cloned();
 
