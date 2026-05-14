@@ -15,6 +15,8 @@ use arguments::Command::Auth;
 use arguments::Command::Config;
 use arguments::Command::Continue;
 use arguments::Command::Current;
+use arguments::Command::Delete;
+use arguments::Command::Edit;
 use arguments::Command::List;
 use arguments::Command::Logout;
 use arguments::Command::Running;
@@ -24,6 +26,8 @@ use arguments::CommandLineArguments;
 use arguments::ConfigSubCommand;
 use commands::auth::AuthenticationCommand;
 use commands::cont::ContinueCommand;
+use commands::delete::DeleteCommand;
+use commands::edit::EditCommand;
 use commands::list::ListCommand;
 use commands::running::RunningTimeEntryCommand;
 use commands::start::StartCommand;
@@ -78,8 +82,20 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
             List {
                 number,
                 json,
+                since,
+                until,
                 entity,
-            } => ListCommand::execute(get_default_api_client()?, number, json, entity).await?,
+            } => {
+                ListCommand::execute(
+                    get_default_api_client()?,
+                    number,
+                    json,
+                    since,
+                    until,
+                    entity,
+                )
+                .await?
+            }
 
             Current | Running => {
                 RunningTimeEntryCommand::execute(get_default_api_client()?).await?
@@ -103,6 +119,18 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 )
                 .await?
             }
+
+            Edit {
+                id,
+                description,
+                project,
+                tags,
+            } => {
+                EditCommand::execute(get_default_api_client()?, id, description, project, tags)
+                    .await?
+            }
+
+            Delete { id } => DeleteCommand::execute(get_default_api_client()?, id).await?,
 
             Auth { api_token } => {
                 let credentials = Credentials { api_token };

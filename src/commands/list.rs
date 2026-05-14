@@ -13,8 +13,45 @@ impl ListCommand {
         api_client: impl ApiClient,
         count: Option<usize>,
         json_flag: bool,
+        since: Option<String>,
+        until: Option<String>,
         entity: Option<Entity>,
     ) -> ResultWithDefaultError<()> {
+        let is_time_entry = matches!(entity, None | Some(Entity::TimeEntry { .. }));
+        let has_date_filter = since.is_some() || until.is_some();
+
+        if is_time_entry && has_date_filter {
+            let stdout = io::stdout();
+            let mut handle = BufWriter::new(stdout);
+            let json = match &entity {
+                Some(Entity::TimeEntry { json }) => json_flag || *json,
+                _ => json_flag,
+            };
+            match api_client.get_time_entries_filtered(since, until).await {
+                Err(error) => println!(
+                    "{}\n{}",
+                    "Couldn't fetch time entries from API".red(),
+                    error
+                ),
+                Ok(entries) => {
+                    let entries = entries
+                        .iter()
+                        .take(count.unwrap_or(usize::MAX))
+                        .collect::<Vec<_>>();
+                    if json {
+                        let json_string = serde_json::to_string_pretty(&entries)
+                            .expect("failed to serialize time entries to JSON");
+                        writeln!(handle, "{json_string}").expect("failed to print");
+                    } else {
+                        entries
+                            .iter()
+                            .for_each(|te| writeln!(handle, "{te}").expect("failed to print"));
+                    }
+                }
+            }
+            return Ok(());
+        }
+
         match api_client.get_entities().await {
             Err(error) => println!(
                 "{}\n{}",

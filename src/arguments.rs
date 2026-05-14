@@ -27,6 +27,16 @@ pub enum Command {
         number: Option<usize>,
         #[structopt(short, long, help = "Output in JSON format")]
         json: bool,
+        #[structopt(
+            long,
+            help = "Filter entries starting on or after this date (YYYY-MM-DD)"
+        )]
+        since: Option<String>,
+        #[structopt(
+            long,
+            help = "Filter entries starting on or before this date (YYYY-MM-DD)"
+        )]
+        until: Option<String>,
         #[structopt(subcommand)]
         entity: Option<Entity>,
     },
@@ -66,6 +76,32 @@ pub enum Command {
     Continue {
         #[structopt(short, long)]
         interactive: bool,
+    },
+    #[structopt(about = "Edit a time entry's description, project, or tags")]
+    Edit {
+        #[structopt(
+            help = "ID of the time entry to edit (omit to edit the currently running entry)"
+        )]
+        id: Option<i64>,
+        #[structopt(short, long, help = "New description")]
+        description: Option<String>,
+        #[structopt(
+            short,
+            long,
+            help = "New project name (use empty string \"\" to remove project)"
+        )]
+        project: Option<String>,
+        #[structopt(
+            short,
+            long,
+            help = "New space-separated list of tags (use empty string \"\" to clear tags)"
+        )]
+        tags: Option<Vec<String>>,
+    },
+    #[structopt(about = "Delete a time entry by ID")]
+    Delete {
+        #[structopt(help = "ID of the time entry to delete")]
+        id: i64,
     },
     #[structopt(about = "Manage auto-tracking configuration")]
     Config {

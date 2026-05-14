@@ -32,6 +32,16 @@ pub trait ApiClient {
 
     async fn create_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<i64>;
     async fn update_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<i64>;
+    async fn get_time_entries_filtered(
+        &self,
+        since: Option<String>,
+        until: Option<String>,
+    ) -> ResultWithDefaultError<Vec<TimeEntry>>;
+    async fn delete_time_entry(
+        &self,
+        workspace_id: i64,
+        time_entry_id: i64,
+    ) -> ResultWithDefaultError<()>;
 }
 
 pub struct V9ApiClient {
@@ -40,8 +50,22 @@ pub struct V9ApiClient {
 }
 
 impl V9ApiClient {
-    async fn get_time_entries(&self) -> ResultWithDefaultError<Vec<NetworkTimeEntry>> {
-        let url = format!("{}/me/time_entries", self.base_url);
+    async fn get_time_entries(
+        &self,
+        since: Option<&str>,
+        until: Option<&str>,
+    ) -> ResultWithDefaultError<Vec<NetworkTimeEntry>> {
+        let mut url = format!("{}/me/time_entries", self.base_url);
+        let mut params: Vec<String> = Vec::new();
+        if let Some(since) = since {
+            params.push(format!("start_date={since}"));
+        }
+        if let Some(until) = until {
+            params.push(format!("end_date={until}"));
+        }
+        if !params.is_empty() {
+            url = format!("{}?{}", url, params.join("&"));
+        }
         self.get::<Vec<NetworkTimeEntry>>(url).await
     }
 
@@ -123,6 +147,19 @@ impl V9ApiClient {
             },
         }
     }
+
+    async fn delete(&self, url: String) -> ResultWithDefaultError<()> {
+        match self.http_client.delete(url).send().await {
+            Err(_) => Err(Box::new(ApiError::Network)),
+            Ok(response) => {
+                if response.status().is_success() {
+                    Ok(())
+                } else {
+                    Err(Box::new(ApiError::Deserialization))
+                }
+            }
+        }
+    }
 }
 
 #[async_trait]
@@ -148,6 +185,107 @@ impl ApiClient for V9ApiClient {
         return Ok(network_time_entry.id);
     }
 
+    async fn delete_time_entry(
+        &self,
+        workspace_id: i64,
+        time_entry_id: i64,
+    ) -> ResultWithDefaultError<()> {
+        let url = format!(
+            "{}/workspaces/{}/time_entries/{}",
+            self.base_url, workspace_id, time_entry_id
+        );
+        self.delete(url).await
+    }
+
+    async fn get_time_entries_filtered(
+        &self,
+        since: Option<String>,
+        until: Option<String>,
+    ) -> ResultWithDefaultError<Vec<TimeEntry>> {
+        // Fetch projects to resolve project names, then fetch filtered time entries.
+        let (network_entries, network_projects, network_tasks, network_clients) = tokio::join!(
+            self.get_time_entries(since.as_deref(), until.as_deref()),
+            self.get_projects(),
+            self.get_tasks(),
+            self.get_clients(),
+        );
+
+        let clients: HashMap<i64, crate::models::Client> = network_clients
+            .unwrap_or_default()
+            .into_iter()
+            .map(|c| {
+                (
+                    c.id,
+                    crate::models::Client {
+                        id: c.id,
+                        name: c.name,
+                        workspace_id: c.wid,
+                    },
+                )
+            })
+            .collect();
+
+        let projects: HashMap<i64, Project> = network_projects
+            .unwrap_or_default()
+            .into_iter()
+            .map(|p| {
+                (
+                    p.id,
+                    Project {
+                        id: p.id,
+                        name: p.name.clone(),
+                        workspace_id: p.workspace_id,
+                        client: clients.get(&p.client_id.unwrap_or(-1)).cloned(),
+                        is_private: p.is_private,
+                        active: p.active,
+                        at: p.at,
+                        created_at: p.created_at,
+                        color: p.color,
+                        billable: p.billable,
+                    },
+                )
+            })
+            .collect();
+
+        let tasks: HashMap<i64, Task> = network_tasks
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|t| {
+                projects.get(&t.project_id).map(|project| {
+                    (
+                        t.id,
+                        Task {
+                            id: t.id,
+                            name: t.name,
+                            project: project.clone(),
+                            workspace_id: t.workspace_id,
+                        },
+                    )
+                })
+            })
+            .collect();
+
+        let entries = network_entries
+            .unwrap_or_default()
+            .into_iter()
+            .map(|te| TimeEntry {
+                id: te.id,
+                description: te.description,
+                start: te.start,
+                stop: te.stop,
+                duration: te.duration,
+                billable: te.billable,
+                workspace_id: te.workspace_id,
+                tags: te.tags.unwrap_or_default(),
+                project: projects.get(&te.project_id.unwrap_or(-1)).cloned(),
+                task: tasks.get(&te.task_id.unwrap_or(-1)).cloned(),
+                ..Default::default()
+            })
+            .collect();
+
+        Ok(entries)
+    }
+
     async fn get_entities(&self) -> ResultWithDefaultError<Entities> {
         let (
             network_time_entries,
@@ -156,7 +294,7 @@ impl ApiClient for V9ApiClient {
             network_clients,
             network_workspaces,
         ) = tokio::join!(
-            self.get_time_entries(),
+            self.get_time_entries(None, None),
             self.get_projects(),
             self.get_tasks(),
             self.get_clients(),
