@@ -17,12 +17,14 @@ use arguments::Command::Continue;
 use arguments::Command::CreateProject;
 use arguments::Command::CreateTag;
 use arguments::Command::Current;
+use arguments::Command::Delete;
 use arguments::Command::DeleteProject;
 use arguments::Command::DeleteTag;
-use arguments::Command::RenameProject;
-use arguments::Command::RenameTag;
+use arguments::Command::Edit;
 use arguments::Command::List;
 use arguments::Command::Logout;
+use arguments::Command::RenameProject;
+use arguments::Command::RenameTag;
 use arguments::Command::Running;
 use arguments::Command::Start;
 use arguments::Command::Stop;
@@ -32,11 +34,13 @@ use commands::auth::AuthenticationCommand;
 use commands::cont::ContinueCommand;
 use commands::create_project::CreateProjectCommand;
 use commands::create_tag::CreateTagCommand;
+use commands::delete::DeleteCommand;
 use commands::delete_project::DeleteProjectCommand;
 use commands::delete_tag::DeleteTagCommand;
+use commands::edit::EditCommand;
+use commands::list::ListCommand;
 use commands::rename_project::RenameProjectCommand;
 use commands::rename_tag::RenameTagCommand;
-use commands::list::ListCommand;
 use commands::running::RunningTimeEntryCommand;
 use commands::start::StartCommand;
 use commands::stop::{StopCommand, StopCommandOrigin};
@@ -90,8 +94,20 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
             List {
                 number,
                 json,
+                since,
+                until,
                 entity,
-            } => ListCommand::execute(get_default_api_client()?, number, json, entity).await?,
+            } => {
+                ListCommand::execute(
+                    get_default_api_client()?,
+                    number,
+                    json,
+                    since,
+                    until,
+                    entity,
+                )
+                .await?
+            }
 
             Current | Running => {
                 RunningTimeEntryCommand::execute(get_default_api_client()?).await?
@@ -124,6 +140,10 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 DeleteProjectCommand::execute(get_default_api_client()?, name).await?
             }
 
+            RenameProject { old_name, new_name } => {
+                RenameProjectCommand::execute(get_default_api_client()?, old_name, new_name).await?
+            }
+
             CreateTag { name } => {
                 CreateTagCommand::execute(get_default_api_client()?, name).await?
             }
@@ -136,9 +156,17 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 RenameTagCommand::execute(get_default_api_client()?, old_name, new_name).await?
             }
 
-            RenameProject { old_name, new_name } => {
-                RenameProjectCommand::execute(get_default_api_client()?, old_name, new_name).await?
+            Edit {
+                id,
+                description,
+                project,
+                tags,
+            } => {
+                EditCommand::execute(get_default_api_client()?, id, description, project, tags)
+                    .await?
             }
+
+            Delete { id } => DeleteCommand::execute(get_default_api_client()?, id).await?,
 
             Auth { api_token } => {
                 let credentials = Credentials { api_token };

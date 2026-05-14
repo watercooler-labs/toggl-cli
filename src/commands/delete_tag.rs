@@ -5,10 +5,7 @@ use colored::Colorize;
 pub struct DeleteTagCommand;
 
 impl DeleteTagCommand {
-    pub async fn execute(
-        api_client: impl ApiClient,
-        name: String,
-    ) -> ResultWithDefaultError<()> {
+    pub async fn execute(api_client: impl ApiClient, name: String) -> ResultWithDefaultError<()> {
         let workspace_id = api_client.get_user().await?.default_workspace_id;
         let tags = api_client.get_tags(workspace_id).await?;
 
