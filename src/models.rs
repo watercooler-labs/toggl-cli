@@ -101,8 +101,13 @@ lazy_static! {
 }
 
 impl Project {
-    /// Gets the closest plain color to the TrueColor
-    pub fn name_in_closest_terminal_color(&self, red: u8, green: u8, blue: u8) -> ColoredString {
+    fn text_in_closest_terminal_color(
+        &self,
+        text: &str,
+        red: u8,
+        green: u8,
+        blue: u8,
+    ) -> ColoredString {
         let colors = vec![
             (0, 0, 0),       //Black
             (205, 0, 0),     //Red
@@ -140,23 +145,46 @@ impl Project {
             .1;
 
         match index {
-            0 => self.name.black(),
-            1 => self.name.red(),
-            2 => self.name.green(),
-            3 => self.name.yellow(),
-            4 => self.name.blue(),
-            5 => self.name.magenta(),
-            6 => self.name.cyan(),
-            7 => self.name.white(),
-            8 => self.name.bright_black(),
-            9 => self.name.bright_red(),
-            10 => self.name.bright_green(),
-            11 => self.name.bright_yellow(),
-            12 => self.name.bright_blue(),
-            13 => self.name.bright_magenta(),
-            14 => self.name.bright_cyan(),
-            15 => self.name.bright_white(),
-            _ => self.name.white().clear(),
+            0 => text.black(),
+            1 => text.red(),
+            2 => text.green(),
+            3 => text.yellow(),
+            4 => text.blue(),
+            5 => text.magenta(),
+            6 => text.cyan(),
+            7 => text.white(),
+            8 => text.bright_black(),
+            9 => text.bright_red(),
+            10 => text.bright_green(),
+            11 => text.bright_yellow(),
+            12 => text.bright_blue(),
+            13 => text.bright_magenta(),
+            14 => text.bright_cyan(),
+            15 => text.bright_white(),
+            _ => text.white().clear(),
+        }
+    }
+
+    /// Gets the closest plain color to the TrueColor
+    pub fn name_in_closest_terminal_color(&self, red: u8, green: u8, blue: u8) -> ColoredString {
+        self.text_in_closest_terminal_color(&self.name, red, green, blue)
+    }
+
+    pub fn name_like_project_color(&self, text: &str) -> ColoredString {
+        match Rgb::from_hex_str(self.color.as_str()) {
+            Ok(color) => {
+                let red = color.get_red().round() as u8;
+                let green = color.get_green().round() as u8;
+                let blue = color.get_blue().round() as u8;
+
+                if HAS_TRUECOLOR_SUPPORT.to_owned() {
+                    text.truecolor(red, green, blue).bold()
+                } else {
+                    self.text_in_closest_terminal_color(text, red, green, blue)
+                        .bold()
+                }
+            }
+            Err(_) => text.bold(),
         }
     }
 }
@@ -277,7 +305,7 @@ impl Default for TimeEntry {
 impl std::fmt::Display for TimeEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let summary = format!(
-            //{$/space} [{duration}]{running indicator/space} - {description/No Description}{@project/empty string} {#tags/empty string}
+            //{$/space} [{duration}]{running indicator/space} - {description/No Description}{@project/empty string}{(Task: ...)/empty string} {#tags/empty string}
             "{} [{}]{} –  {}{} {}",
             if self.billable {
                 "$".green().bold().to_string()
@@ -291,9 +319,21 @@ impl std::fmt::Display for TimeEntry {
             },
             if self.is_running() { "*" } else { " " },
             self.get_description().replace('\n', " "),
-            match self.project.clone() {
-                Some(p) => format!(" @{p}"),
-                None => "".to_string(),
+            match (self.project.clone(), self.task.clone()) {
+                (Some(p), Some(t)) => {
+                    format!(
+                        " @{}",
+                        p.name_like_project_color(&format!("{}: {}", p.name, t.name))
+                    )
+                }
+                (Some(p), None) => format!(" @{p}"),
+                (None, Some(t)) => {
+                    format!(
+                        " {}",
+                        t.project.name_like_project_color(&format!(": {}", t.name))
+                    )
+                }
+                (None, None) => "".to_string(),
             },
             if self.tags.is_empty() {
                 "".to_string()
