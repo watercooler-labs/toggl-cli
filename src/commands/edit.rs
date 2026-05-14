@@ -24,11 +24,15 @@ impl EditCommand {
             Some(entry) => {
                 let project = match project_name.as_deref() {
                     Some("") => None,
-                    Some(name) => entities
-                        .projects
-                        .into_values()
-                        .find(|p| p.name == name)
-                        .or(entry.project.clone()),
+                    Some(name) => match entities.projects.into_values().find(|p| p.name == name) {
+                        Some(project) => Some(project),
+                        None => {
+                            return Err(Box::new(std::io::Error::other(format!(
+                                "Project \"{}\" not found",
+                                name
+                            ))));
+                        }
+                    },
                     None => entry.project.clone(),
                 };
 
