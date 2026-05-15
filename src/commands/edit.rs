@@ -2,17 +2,21 @@ use crate::api::client::ApiClient;
 use crate::constants::DEFAULT_ENTITY_ID;
 use crate::models::{Entities, ResultWithDefaultError, TimeEntry};
 use crate::parcel::Parcel;
+use chrono::{DateTime, Utc};
 use colored::Colorize;
 
 pub struct EditCommand;
 
 impl EditCommand {
+    #[allow(clippy::too_many_arguments)]
     pub async fn execute(
         api_client: impl ApiClient,
         id: Option<i64>,
         description: Option<String>,
         project_name: Option<String>,
         tags: Option<Vec<String>>,
+        start_time: Option<String>,
+        stop_time: Option<String>,
     ) -> ResultWithDefaultError<()> {
         let entities = api_client.get_entities().await?;
         let entry = match select_entry(&entities, id) {
@@ -23,10 +27,22 @@ impl EditCommand {
             }
         };
 
-        let has_flag_edits = description.is_some() || project_name.is_some() || tags.is_some();
+        let has_flag_edits = description.is_some()
+            || project_name.is_some()
+            || tags.is_some()
+            || start_time.is_some()
+            || stop_time.is_some();
 
         let updated = if has_flag_edits {
-            apply_flag_edits(&entities, entry, description, project_name, tags)?
+            apply_flag_edits(
+                &entities,
+                entry,
+                description,
+                project_name,
+                tags,
+                start_time,
+                stop_time,
+            )?
         } else {
             apply_editor_edits(&entities, entry)?
         };
@@ -52,12 +68,25 @@ fn select_entry(entities: &Entities, id: Option<i64>) -> Option<TimeEntry> {
     })
 }
 
+fn parse_timestamp(field: &str, value: &str) -> ResultWithDefaultError<DateTime<Utc>> {
+    DateTime::parse_from_rfc3339(value)
+        .map(|dt| dt.with_timezone(&Utc))
+        .map_err(|e| -> Box<dyn std::error::Error + Send> {
+            Box::new(std::io::Error::other(format!(
+                "{field} \"{value}\" is not a valid RFC3339 timestamp: {e}"
+            )))
+        })
+}
+
+#[allow(clippy::too_many_arguments)]
 fn apply_flag_edits(
     entities: &Entities,
     entry: TimeEntry,
     description: Option<String>,
     project_name: Option<String>,
     tags: Option<Vec<String>>,
+    start_time: Option<String>,
+    stop_time: Option<String>,
 ) -> ResultWithDefaultError<TimeEntry> {
     let project = match project_name.as_deref() {
         Some("") => None,
@@ -78,10 +107,29 @@ fn apply_flag_edits(
         None => entry.tags.clone(),
     };
 
+    let start = match start_time.as_deref() {
+        Some(value) => parse_timestamp("start-time", value)?,
+        None => entry.start,
+    };
+
+    let stop = match stop_time.as_deref() {
+        Some("") => None,
+        Some(value) => Some(parse_timestamp("stop-time", value)?),
+        None => entry.stop,
+    };
+
+    let duration = match stop {
+        Some(stop) => (stop - start).num_seconds(),
+        None => -start.timestamp(),
+    };
+
     Ok(TimeEntry {
         description: description.unwrap_or(entry.description.clone()),
         project,
         tags,
+        start,
+        stop,
+        duration,
         ..entry
     })
 }
