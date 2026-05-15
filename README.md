@@ -71,7 +71,7 @@ Run the `help` command to see a list of available commands.
 
 ```shell
 $ toggl help
-toggl 0.5.0
+toggl 0.5.1
 Toggl command line app.
 
 USAGE:
@@ -97,7 +97,7 @@ SUBCOMMANDS:
     delete            Delete a time entry by ID
     delete-project    Delete a project from your workspace by name
     delete-tag        Delete a tag from your workspace by name
-    edit              Edit a time entry's description, project, or tags
+    edit              Edit a time entry, opens it in $EDITOR when no edit flags are given
     help              Prints this message or the help of the given subcommand(s)
     list
     logout            Clear stored credentials
@@ -113,7 +113,7 @@ You can also run the `help` command on a specific subcommand.
 
 ```shell
 $ toggl help start
-toggl-start 0.5.0
+toggl-start 0.5.1
 Start a new time entry, call with no arguments to start in interactive mode
 
 USAGE:
