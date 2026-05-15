@@ -119,6 +119,7 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 description,
                 project,
                 tags,
+                task,
             } => {
                 StartCommand::execute(
                     get_default_api_client()?,
@@ -128,6 +129,7 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                     tags,
                     billable,
                     interactive,
+                    task,
                 )
                 .await?
             }

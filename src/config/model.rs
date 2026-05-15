@@ -536,11 +536,10 @@ impl TrackConfig {
         let project_id = project.clone().map(|p| p.id);
 
         let task = config.task.clone().and_then(|name| {
-            entities
-                .tasks
-                .clone()
-                .into_values()
-                .find(|t| t.name == name && t.project.id == project_id.unwrap())
+            entities.tasks.clone().into_values().find(|t| {
+                // Match task name and ensure it belongs to the configured project (if any)
+                t.name == name && project_id.is_none_or(|pid| t.project.id == pid)
+            })
         });
 
         let workspace_id = config.workspace.as_ref().map_or(
