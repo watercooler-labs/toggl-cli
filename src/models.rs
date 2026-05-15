@@ -425,7 +425,19 @@ impl Parcel for TimeEntry {
                 "edited buffer is not valid UTF-8: {e}"
             )))
         })?;
-        let mut entry = base.clone();
+        let mut entry = TimeEntry {
+            description: String::new(),
+            start: base.start,
+            stop: None,
+            billable: false,
+            tags: Vec::new(),
+            project: None,
+            task: None,
+            id: base.id,
+            duration: base.duration,
+            workspace_id: base.workspace_id,
+            created_with: base.created_with.clone(),
+        };
         for (line_no, raw) in text.lines().enumerate() {
             let line = raw.trim_end();
             if line.is_empty() {
