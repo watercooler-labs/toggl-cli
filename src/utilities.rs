@@ -52,14 +52,29 @@ pub fn read_from_stdin_with_constraints(text: &str, valid_values: &[String]) -> 
 
 pub fn open_path_in_editor<P>(path: P) -> ResultWithDefaultError<()>
 where
-    P: AsRef<Path> + std::convert::AsRef<std::ffi::OsStr>,
+    P: AsRef<Path>,
 {
-    let editor = std::env::var("EDITOR").unwrap_or_else(|_| "vim".to_string());
-    let mut child = std::process::Command::new(editor)
-        .arg(path)
+    let editor = std::env::var("VISUAL")
+        .or_else(|_| std::env::var("EDITOR"))
+        .unwrap_or_else(|_| "vim".to_string());
+    let mut child = std::process::Command::new(&editor)
+        .arg(path.as_ref())
         .spawn()
-        .expect("Failed to spawn editor");
-    child.wait().expect("Failed to wait for editor");
+        .map_err(|e| -> Box<dyn std::error::Error + Send> {
+            Box::new(io::Error::other(format!(
+                "Failed to spawn editor \"{editor}\": {e}"
+            )))
+        })?;
+    let status = child
+        .wait()
+        .map_err(|e| -> Box<dyn std::error::Error + Send> {
+            Box::new(io::Error::other(format!("Editor wait failed: {e}")))
+        })?;
+    if !status.success() {
+        return Err(Box::new(io::Error::other(format!(
+            "Editor \"{editor}\" exited with status {status}"
+        ))));
+    }
     Ok(())
 }
 

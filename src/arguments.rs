@@ -124,7 +124,7 @@ pub enum Command {
         #[structopt(help = "New name for the tag")]
         new_name: String,
     },
-    #[structopt(about = "Edit a time entry's description, project, or tags")]
+    #[structopt(about = "Edit a time entry, opens it in $EDITOR when no edit flags are given")]
     Edit {
         #[structopt(
             help = "ID of the time entry to edit (omit to edit the currently running entry)"
@@ -144,6 +144,16 @@ pub enum Command {
             help = "New space-separated list of tags (use empty string \"\" to clear tags)"
         )]
         tags: Option<Vec<String>>,
+        #[structopt(
+            long,
+            help = "New start time as an RFC3339 timestamp, e.g. 2026-05-11T07:39:45Z"
+        )]
+        start_time: Option<String>,
+        #[structopt(
+            long,
+            help = "New stop time as an RFC3339 timestamp (use empty string \"\" to mark the entry running again)"
+        )]
+        stop_time: Option<String>,
     },
     #[structopt(about = "Delete a time entry by ID")]
     Delete {

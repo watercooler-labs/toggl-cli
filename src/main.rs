@@ -6,6 +6,7 @@ mod constants;
 mod credentials;
 mod error;
 mod models;
+mod parcel;
 mod picker;
 mod utilities;
 
@@ -163,9 +164,19 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 description,
                 project,
                 tags,
+                start_time,
+                stop_time,
             } => {
-                EditCommand::execute(get_default_api_client()?, id, description, project, tags)
-                    .await?
+                EditCommand::execute(
+                    get_default_api_client()?,
+                    id,
+                    description,
+                    project,
+                    tags,
+                    start_time,
+                    stop_time,
+                )
+                .await?
             }
 
             Delete { id } => DeleteCommand::execute(get_default_api_client()?, id).await?,

@@ -46,6 +46,7 @@ async-trait = "0.1.68"
 
 # Models
 chrono = { version = "0.4.24", features = ["serde"] }
+tempfile = "3"
 
 # For token reading
 rpassword = "7.4.0"
