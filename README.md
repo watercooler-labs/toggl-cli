@@ -71,7 +71,7 @@ Run the `help` command to see a list of available commands.
 
 ```shell
 $ toggl help
-toggl 0.4.11
+toggl 0.5.0
 Toggl command line app.
 
 USAGE:
@@ -87,15 +87,24 @@ OPTIONS:
         --proxy <proxy>    Use custom proxy
 
 SUBCOMMANDS:
-    auth        Authenticate with the Toggl API. Find your API token at https://track.toggl.com/profile#api-token
-    config      Manage auto-tracking configuration
+    auth              Authenticate with the Toggl API. Find your API token at https://track.toggl.com/profile#api-
+                      token
+    config            Manage auto-tracking configuration
     continue
+    create-project    Create a new project in your workspace
+    create-tag        Create a new tag in your workspace
     current
-    help        Prints this message or the help of the given subcommand(s)
+    delete            Delete a time entry by ID
+    delete-project    Delete a project from your workspace by name
+    delete-tag        Delete a tag from your workspace by name
+    edit              Edit a time entry's description, project, or tags
+    help              Prints this message or the help of the given subcommand(s)
     list
-    logout      Clear stored credentials
+    logout            Clear stored credentials
+    rename-project    Rename a project in your workspace
+    rename-tag        Rename a tag in your workspace
     running
-    start       Start a new time entry, call with no arguments to start in interactive mode
+    start             Start a new time entry, call with no arguments to start in interactive mode
     stop
 
 ```
@@ -104,7 +113,7 @@ You can also run the `help` command on a specific subcommand.
 
 ```shell
 $ toggl help start
-toggl-start 0.4.11
+toggl-start 0.5.0
 Start a new time entry, call with no arguments to start in interactive mode
 
 USAGE:
@@ -119,6 +128,7 @@ FLAGS:
 OPTIONS:
     -p, --project <project>    Exact name of the project you want the time entry to be associated with
     -t, --tags <tags>...       Space separated list of tags to associate with the time entry, e.g. 'tag1 tag2 tag3'
+        --task <task>          Exact name of the task you want the time entry to be associated with
 
 ARGS:
     <description>    Description of the time entry
