@@ -1,6 +1,6 @@
 use std::{cmp, env};
 
-use crate::constants;
+use crate::{constants, parcel::Parcel};
 use std::collections::HashMap;
 
 use chrono::{DateTime, Duration, Utc};
@@ -44,6 +44,22 @@ impl Entities {
             .iter()
             .find(|w| w.name == name)
             .map(|w| w.id)
+    }
+
+    pub fn project_for_name(&self, workspace_id: i64, name: &str) -> Option<Project> {
+        self.projects
+            .values()
+            .find(|p| p.workspace_id == workspace_id && p.name == name)
+            .cloned()
+    }
+
+    pub fn task_for_name(&self, workspace_id: i64, project_id: i64, name: &str) -> Option<Task> {
+        self.tasks
+            .values()
+            .find(|t| {
+                t.workspace_id == workspace_id && t.project.id == project_id && t.name == name
+            })
+            .cloned()
     }
 }
 
@@ -344,4 +360,148 @@ impl std::fmt::Display for TimeEntry {
         );
         write!(f, "{summary}")
     }
+}
+
+impl Default for Project {
+    fn default() -> Self {
+        Self {
+            id: constants::DEFAULT_ENTITY_ID,
+            name: constants::NO_PROJECT.to_string(),
+            workspace_id: constants::DEFAULT_ENTITY_ID,
+            client: None,
+            is_private: false,
+            active: true,
+            at: Utc::now(),
+            created_at: Utc::now(),
+            color: "0".to_string(),
+            billable: None,
+        }
+    }
+}
+
+impl Default for Task {
+    fn default() -> Self {
+        Self {
+            id: constants::DEFAULT_ENTITY_ID,
+            name: constants::NO_TASK.to_string(),
+            workspace_id: constants::DEFAULT_ENTITY_ID,
+            project: Project::default(),
+        }
+    }
+}
+
+const PARCEL_DESCRIPTION: &str = "Description";
+const PARCEL_START: &str = "Start";
+const PARCEL_STOP: &str = "Stop";
+const PARCEL_BILLABLE: &str = "Billable";
+const PARCEL_TAGS: &str = "Tags";
+const PARCEL_PROJECT: &str = "Project";
+const PARCEL_TASK: &str = "Task";
+
+impl Parcel for TimeEntry {
+    fn serialize(&self) -> Vec<u8> {
+        let mut out = String::new();
+        out.push_str(&format!("{PARCEL_DESCRIPTION}: {}\n", self.description));
+        out.push_str(&format!("{PARCEL_START}: {}\n", self.start));
+        if let Some(stop) = self.stop {
+            out.push_str(&format!("{PARCEL_STOP}: {stop}\n"));
+        }
+        out.push_str(&format!("{PARCEL_BILLABLE}: {}\n", self.billable));
+        out.push_str(&format!("{PARCEL_TAGS}: {}\n", self.tags.join(", ")));
+        out.push_str(&format!(
+            "{PARCEL_PROJECT}: {}\n",
+            self.project.as_ref().map(|p| p.name.as_str()).unwrap_or("")
+        ));
+        out.push_str(&format!(
+            "{PARCEL_TASK}: {}\n",
+            self.task.as_ref().map(|t| t.name.as_str()).unwrap_or("")
+        ));
+        out.into_bytes()
+    }
+
+    fn deserialize(data: Vec<u8>, base: &Self) -> ResultWithDefaultError<Self> {
+        let text = String::from_utf8(data).map_err(|e| -> Box<dyn std::error::Error + Send> {
+            Box::new(std::io::Error::other(format!(
+                "edited buffer is not valid UTF-8: {e}"
+            )))
+        })?;
+        let mut entry = base.clone();
+        for (line_no, raw) in text.lines().enumerate() {
+            let line = raw.trim_end();
+            if line.is_empty() {
+                continue;
+            }
+            let Some((key, value)) = line.split_once(':') else {
+                continue;
+            };
+            let key = key.trim();
+            let value = value.trim();
+            match key {
+                PARCEL_DESCRIPTION => entry.description = value.to_string(),
+                PARCEL_START => entry.start = parse_field(PARCEL_START, value, line_no)?,
+                PARCEL_STOP => {
+                    entry.stop = if value.is_empty() {
+                        None
+                    } else {
+                        Some(parse_field(PARCEL_STOP, value, line_no)?)
+                    };
+                }
+                PARCEL_BILLABLE => entry.billable = parse_field(PARCEL_BILLABLE, value, line_no)?,
+                PARCEL_TAGS => {
+                    entry.tags = if value.is_empty() {
+                        Vec::new()
+                    } else {
+                        value
+                            .split(',')
+                            .map(|s| s.trim().to_string())
+                            .filter(|s| !s.is_empty())
+                            .collect()
+                    };
+                }
+                PARCEL_PROJECT => {
+                    entry.project = if value.is_empty() {
+                        None
+                    } else {
+                        Some(Project {
+                            name: value.to_string(),
+                            workspace_id: entry.workspace_id,
+                            ..Project::default()
+                        })
+                    };
+                }
+                PARCEL_TASK => {
+                    entry.task = if value.is_empty() {
+                        None
+                    } else {
+                        Some(Task {
+                            name: value.to_string(),
+                            workspace_id: entry.workspace_id,
+                            project: entry.project.clone().unwrap_or_default(),
+                            ..Task::default()
+                        })
+                    };
+                }
+                _ => {}
+            }
+        }
+        Ok(entry)
+    }
+}
+
+fn parse_field<T: std::str::FromStr>(
+    field: &str,
+    value: &str,
+    line_no: usize,
+) -> ResultWithDefaultError<T>
+where
+    T::Err: std::fmt::Display,
+{
+    value
+        .parse::<T>()
+        .map_err(|e| -> Box<dyn std::error::Error + Send> {
+            Box::new(std::io::Error::other(format!(
+                "line {}: invalid {field} \"{value}\": {e}",
+                line_no + 1
+            )))
+        })
 }

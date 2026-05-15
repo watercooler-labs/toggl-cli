@@ -6,6 +6,7 @@ mod constants;
 mod credentials;
 mod error;
 mod models;
+mod parcel;
 mod picker;
 mod utilities;
 
