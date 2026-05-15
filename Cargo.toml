@@ -47,6 +47,9 @@ async-trait = "0.1.68"
 # Models
 chrono = { version = "0.4.24", features = ["serde"] }
 
+# For token reading
+rpassword = "7.4.0"
+
 [target.'cfg(unix)'.dependencies]
 skim = "0.10.4"
 
