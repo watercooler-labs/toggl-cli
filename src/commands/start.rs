@@ -171,18 +171,14 @@ impl StartCommand {
         }
         .or(default_time_entry.project.clone());
 
-        // Validate: if both task and project are set, ensure task belongs to project
-        // If they don't match, drop the task (safer than erroring)
-        let task_obj = if let (Some(ref proj), Some(ref tsk)) = (&project, &task_obj) {
-            if tsk.project.id == proj.id {
-                Some(tsk.clone())
-            } else {
-                // Task doesn't belong to the final project, drop it
-                None
+        if let (Some(ref proj), Some(ref tsk)) = (&project, &task_obj) {
+            if tsk.project.id != proj.id {
+                return Err(Box::new(std::io::Error::other(format!(
+                    "Task \"{}\" belongs to project \"{}\", but project \"{}\" was selected",
+                    tsk.name, tsk.project.name, proj.name
+                ))));
             }
-        } else {
-            task_obj
-        };
+        }
 
         let tags = tags.unwrap_or(default_time_entry.tags.clone());
 

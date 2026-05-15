@@ -329,8 +329,9 @@ impl std::fmt::Display for TimeEntry {
                 (Some(p), None) => format!(" @{p}"),
                 (None, Some(t)) => {
                     format!(
-                        " {}",
-                        t.project.name_like_project_color(&format!(": {}", t.name))
+                        " @{}",
+                        t.project
+                            .name_like_project_color(&format!("{}: {}", t.project.name, t.name))
                     )
                 }
                 (None, None) => "".to_string(),
