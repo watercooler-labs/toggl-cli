@@ -77,6 +77,47 @@ pub enum Command {
         #[structopt(short, long)]
         interactive: bool,
     },
+    #[structopt(about = "Create a new project in your workspace")]
+    CreateProject {
+        #[structopt(help = "Name of the project to create")]
+        name: String,
+        #[structopt(
+            short,
+            long,
+            help = "Hex color for the project (e.g. #06aaf5)",
+            default_value = "#06aaf5"
+        )]
+        color: String,
+    },
+    #[structopt(about = "Delete a project from your workspace by name")]
+    DeleteProject {
+        #[structopt(help = "Name of the project to delete")]
+        name: String,
+    },
+    #[structopt(about = "Rename a project in your workspace")]
+    RenameProject {
+        #[structopt(help = "Current name of the project")]
+        old_name: String,
+        #[structopt(help = "New name for the project")]
+        new_name: String,
+    },
+    #[structopt(about = "Create a new tag in your workspace")]
+    CreateTag {
+        #[structopt(help = "Name of the tag to create")]
+        name: String,
+    },
+    #[structopt(about = "Delete a tag from your workspace by name")]
+    DeleteTag {
+        #[structopt(help = "Name of the tag to delete")]
+        name: String,
+    },
+    #[structopt(about = "Rename a tag in your workspace")]
+    RenameTag {
+        #[structopt(help = "Current name of the tag")]
+        old_name: String,
+        #[structopt(help = "New name for the tag")]
+        new_name: String,
+    },
     #[structopt(about = "Edit a time entry's description, project, or tags")]
     Edit {
         #[structopt(
@@ -129,6 +170,10 @@ pub enum Entity {
         json: bool,
     },
     TimeEntry {
+        #[structopt(short, long, help = "Output in JSON format")]
+        json: bool,
+    },
+    Tag {
         #[structopt(short, long, help = "Output in JSON format")]
         json: bool,
     },

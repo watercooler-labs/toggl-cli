@@ -14,11 +14,17 @@ use api::client::V9ApiClient;
 use arguments::Command::Auth;
 use arguments::Command::Config;
 use arguments::Command::Continue;
+use arguments::Command::CreateProject;
+use arguments::Command::CreateTag;
 use arguments::Command::Current;
 use arguments::Command::Delete;
+use arguments::Command::DeleteProject;
+use arguments::Command::DeleteTag;
 use arguments::Command::Edit;
 use arguments::Command::List;
 use arguments::Command::Logout;
+use arguments::Command::RenameProject;
+use arguments::Command::RenameTag;
 use arguments::Command::Running;
 use arguments::Command::Start;
 use arguments::Command::Stop;
@@ -26,9 +32,15 @@ use arguments::CommandLineArguments;
 use arguments::ConfigSubCommand;
 use commands::auth::AuthenticationCommand;
 use commands::cont::ContinueCommand;
+use commands::create_project::CreateProjectCommand;
+use commands::create_tag::CreateTagCommand;
 use commands::delete::DeleteCommand;
+use commands::delete_project::DeleteProjectCommand;
+use commands::delete_tag::DeleteTagCommand;
 use commands::edit::EditCommand;
 use commands::list::ListCommand;
+use commands::rename_project::RenameProjectCommand;
+use commands::rename_tag::RenameTagCommand;
 use commands::running::RunningTimeEntryCommand;
 use commands::start::StartCommand;
 use commands::stop::{StopCommand, StopCommandOrigin};
@@ -118,6 +130,30 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                     interactive,
                 )
                 .await?
+            }
+
+            CreateProject { name, color } => {
+                CreateProjectCommand::execute(get_default_api_client()?, name, color).await?
+            }
+
+            DeleteProject { name } => {
+                DeleteProjectCommand::execute(get_default_api_client()?, name).await?
+            }
+
+            RenameProject { old_name, new_name } => {
+                RenameProjectCommand::execute(get_default_api_client()?, old_name, new_name).await?
+            }
+
+            CreateTag { name } => {
+                CreateTagCommand::execute(get_default_api_client()?, name).await?
+            }
+
+            DeleteTag { name } => {
+                DeleteTagCommand::execute(get_default_api_client()?, name).await?
+            }
+
+            RenameTag { old_name, new_name } => {
+                RenameTagCommand::execute(get_default_api_client()?, old_name, new_name).await?
             }
 
             Edit {

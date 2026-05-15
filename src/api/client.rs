@@ -5,6 +5,7 @@ use crate::error;
 use crate::models;
 use crate::models::Entities;
 use crate::models::Project;
+use crate::models::Tag;
 use crate::models::Task;
 use crate::models::TimeEntry;
 use crate::models::Workspace;
@@ -19,7 +20,12 @@ use reqwest::{header, RequestBuilder};
 use serde::{de, Serialize};
 
 use super::models::NetworkClient;
+use super::models::NetworkCreateProject;
+use super::models::NetworkCreateTag;
 use super::models::NetworkProject;
+use super::models::NetworkRenameProject;
+use super::models::NetworkRenameTag;
+use super::models::NetworkTag;
 use super::models::NetworkTask;
 use super::models::NetworkTimeEntry;
 use super::models::NetworkWorkspace;
@@ -42,6 +48,39 @@ pub trait ApiClient {
         workspace_id: i64,
         time_entry_id: i64,
     ) -> ResultWithDefaultError<()>;
+
+    async fn create_project(
+        &self,
+        workspace_id: i64,
+        name: String,
+        color: String,
+    ) -> ResultWithDefaultError<Project>;
+
+    async fn delete_project(
+        &self,
+        workspace_id: i64,
+        project_id: i64,
+    ) -> ResultWithDefaultError<()>;
+
+    async fn rename_project(
+        &self,
+        workspace_id: i64,
+        project_id: i64,
+        new_name: String,
+    ) -> ResultWithDefaultError<Project>;
+
+    async fn get_tags(&self, workspace_id: i64) -> ResultWithDefaultError<Vec<Tag>>;
+
+    async fn create_tag(&self, workspace_id: i64, name: String) -> ResultWithDefaultError<Tag>;
+
+    async fn delete_tag(&self, workspace_id: i64, tag_id: i64) -> ResultWithDefaultError<()>;
+
+    async fn rename_tag(
+        &self,
+        workspace_id: i64,
+        tag_id: i64,
+        new_name: String,
+    ) -> ResultWithDefaultError<Tag>;
 }
 
 pub struct V9ApiClient {
@@ -87,6 +126,14 @@ impl V9ApiClient {
     async fn get_workspaces(&self) -> ResultWithDefaultError<Vec<NetworkWorkspace>> {
         let url = format!("{}/me/workspaces", self.base_url);
         self.get::<Vec<NetworkWorkspace>>(url).await
+    }
+
+    async fn get_workspace_tags(
+        &self,
+        workspace_id: i64,
+    ) -> ResultWithDefaultError<Vec<NetworkTag>> {
+        let url = format!("{}/workspaces/{}/tags", self.base_url, workspace_id);
+        self.get::<Vec<NetworkTag>>(url).await
     }
 
     pub fn from_credentials(
@@ -197,12 +244,137 @@ impl ApiClient for V9ApiClient {
         self.delete(url).await
     }
 
+    async fn create_project(
+        &self,
+        workspace_id: i64,
+        name: String,
+        color: String,
+    ) -> ResultWithDefaultError<Project> {
+        let url = format!("{}/workspaces/{}/projects", self.base_url, workspace_id);
+        let body = NetworkCreateProject {
+            name,
+            workspace_id,
+            color,
+            is_private: false,
+            active: true,
+        };
+        let network_project = self
+            .post::<NetworkProject, NetworkCreateProject>(url, &body)
+            .await?;
+        Ok(Project {
+            id: network_project.id,
+            name: network_project.name,
+            workspace_id: network_project.workspace_id,
+            client: None,
+            is_private: network_project.is_private,
+            active: network_project.active,
+            at: network_project.at,
+            created_at: network_project.created_at,
+            color: network_project.color,
+            billable: network_project.billable,
+        })
+    }
+
+    async fn delete_project(
+        &self,
+        workspace_id: i64,
+        project_id: i64,
+    ) -> ResultWithDefaultError<()> {
+        let url = format!(
+            "{}/workspaces/{}/projects/{}",
+            self.base_url, workspace_id, project_id
+        );
+        self.delete(url).await
+    }
+
+    async fn rename_project(
+        &self,
+        workspace_id: i64,
+        project_id: i64,
+        new_name: String,
+    ) -> ResultWithDefaultError<Project> {
+        let url = format!(
+            "{}/workspaces/{}/projects/{}",
+            self.base_url, workspace_id, project_id
+        );
+        let body = NetworkRenameProject { name: new_name };
+        let network_project = self
+            .put::<NetworkProject, NetworkRenameProject>(url, &body)
+            .await?;
+        Ok(Project {
+            id: network_project.id,
+            name: network_project.name,
+            workspace_id: network_project.workspace_id,
+            client: None,
+            is_private: network_project.is_private,
+            active: network_project.active,
+            at: network_project.at,
+            created_at: network_project.created_at,
+            color: network_project.color,
+            billable: network_project.billable,
+        })
+    }
+
+    async fn get_tags(&self, workspace_id: i64) -> ResultWithDefaultError<Vec<Tag>> {
+        let network_tags = self.get_workspace_tags(workspace_id).await?;
+        Ok(network_tags
+            .into_iter()
+            .map(|t| Tag {
+                id: t.id,
+                name: t.name,
+                workspace_id: t.workspace_id,
+            })
+            .collect())
+    }
+
+    async fn create_tag(&self, workspace_id: i64, name: String) -> ResultWithDefaultError<Tag> {
+        let url = format!("{}/workspaces/{}/tags", self.base_url, workspace_id);
+        let body = NetworkCreateTag { name, workspace_id };
+        let network_tag = self
+            .post::<NetworkTag, NetworkCreateTag>(url, &body)
+            .await?;
+        Ok(Tag {
+            id: network_tag.id,
+            name: network_tag.name,
+            workspace_id: network_tag.workspace_id,
+        })
+    }
+
+    async fn delete_tag(&self, workspace_id: i64, tag_id: i64) -> ResultWithDefaultError<()> {
+        let url = format!(
+            "{}/workspaces/{}/tags/{}",
+            self.base_url, workspace_id, tag_id
+        );
+        self.delete(url).await
+    }
+
+    async fn rename_tag(
+        &self,
+        workspace_id: i64,
+        tag_id: i64,
+        new_name: String,
+    ) -> ResultWithDefaultError<Tag> {
+        let url = format!(
+            "{}/workspaces/{}/tags/{}",
+            self.base_url, workspace_id, tag_id
+        );
+        let body = NetworkRenameTag {
+            name: new_name,
+            workspace_id,
+        };
+        let network_tag = self.put::<NetworkTag, NetworkRenameTag>(url, &body).await?;
+        Ok(Tag {
+            id: network_tag.id,
+            name: network_tag.name,
+            workspace_id: network_tag.workspace_id,
+        })
+    }
+
     async fn get_time_entries_filtered(
         &self,
         since: Option<String>,
         until: Option<String>,
     ) -> ResultWithDefaultError<Vec<TimeEntry>> {
-        // Fetch projects to resolve project names, then fetch filtered time entries.
         let (network_entries, network_projects, network_tasks, network_clients) = tokio::join!(
             self.get_time_entries(since.as_deref(), until.as_deref()),
             self.get_projects(),
@@ -388,6 +560,7 @@ impl ApiClient for V9ApiClient {
             tasks,
             clients,
             workspaces,
+            tags: Vec::new(),
         })
     }
 }

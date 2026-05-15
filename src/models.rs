@@ -12,12 +12,26 @@ use serde::{Deserialize, Serialize};
 pub type ResultWithDefaultError<T> = Result<T, Box<dyn std::error::Error + Send>>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Tag {
+    pub id: i64,
+    pub name: String,
+    pub workspace_id: i64,
+}
+
+impl std::fmt::Display for Tag {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Entities {
     pub time_entries: Vec<TimeEntry>,
     pub projects: HashMap<i64, Project>,
     pub tasks: HashMap<i64, Task>,
     pub clients: HashMap<i64, Client>,
     pub workspaces: Vec<Workspace>,
+    pub tags: Vec<Tag>,
 }
 
 impl Entities {

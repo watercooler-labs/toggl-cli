@@ -55,6 +55,39 @@ pub struct NetworkWorkspace {
     pub admin: bool,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct NetworkTag {
+    pub id: i64,
+    pub name: String,
+    pub workspace_id: i64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct NetworkCreateProject {
+    pub name: String,
+    pub workspace_id: i64,
+    pub color: String,
+    pub is_private: bool,
+    pub active: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct NetworkCreateTag {
+    pub name: String,
+    pub workspace_id: i64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct NetworkRenameTag {
+    pub name: String,
+    pub workspace_id: i64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct NetworkRenameProject {
+    pub name: String,
+}
+
 impl From<TimeEntry> for NetworkTimeEntry {
     fn from(value: TimeEntry) -> Self {
         NetworkTimeEntry {
