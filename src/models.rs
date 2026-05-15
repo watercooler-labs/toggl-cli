@@ -496,6 +496,10 @@ impl Parcel for TimeEntry {
                 _ => {}
             }
         }
+        entry.duration = match entry.stop {
+            Some(stop) => (stop - entry.start).num_seconds(),
+            None => -entry.start.timestamp(),
+        };
         Ok(entry)
     }
 }
