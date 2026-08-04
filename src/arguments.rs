@@ -193,6 +193,12 @@ pub enum Entity {
         #[structopt(short, long, help = "Output in JSON format")]
         json: bool,
     },
+    Task {
+        #[structopt(short, long, help = "Output in JSON format")]
+        json: bool,
+        #[structopt(short, long, help = "Only list tasks belonging to this project")]
+        project: Option<String>,
+    },
 }
 #[derive(Debug, StructOpt)]
 pub enum ConfigSubCommand {

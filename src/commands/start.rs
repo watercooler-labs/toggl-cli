@@ -133,19 +133,51 @@ impl StartCommand {
 
         // Look up task by name if provided
         let task_obj = task.as_ref().and_then(|task_name| {
-            entities
+            let mut matches = entities
                 .tasks
                 .clone()
                 .into_values()
-                .find(|t| t.name == *task_name)
+                .filter(|t| t.name == *task_name);
+            match &project_from_flag {
+                // Task names are only unique within a project, so scope the
+                // lookup to the requested project when we have one.
+                Some(project) => matches.find(|t| t.project.id == project.id),
+                None => matches.next(),
+            }
         });
 
-        // Error if task name was provided but not found
+        // Error if task name was provided but not found. A misspelt task is the common
+        // case, so name the candidates instead of leaving the caller to go looking.
         if let Some(name) = &task {
             if task_obj.is_none() {
+                let mut available = entities
+                    .tasks
+                    .values()
+                    .filter(|t| match &project_from_flag {
+                        Some(project) => t.project.id == project.id,
+                        None => true,
+                    })
+                    .map(|t| match &project_from_flag {
+                        Some(_) => t.name.clone(),
+                        None => format!("{} @{}", t.name, t.project.name),
+                    })
+                    .collect::<Vec<_>>();
+                available.sort();
+
+                let hint = match (available.is_empty(), &project_from_flag) {
+                    (true, Some(project)) => {
+                        format!("\nProject \"{}\" has no tasks", project.name)
+                    }
+                    (true, None) => String::new(),
+                    (false, Some(project)) => {
+                        format!("\nTasks in \"{}\": {}", project.name, available.join(", "))
+                    }
+                    (false, None) => format!("\nAvailable tasks: {}", available.join(", ")),
+                };
+
                 return Err(Box::new(std::io::Error::other(format!(
-                    "Task \"{}\" not found",
-                    name
+                    "Task \"{}\" not found{}",
+                    name, hint
                 ))));
             }
         }

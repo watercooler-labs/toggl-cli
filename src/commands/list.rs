@@ -129,6 +129,41 @@ impl ListCommand {
                         }
                     }
 
+                    Entity::Task {
+                        json: entity_json,
+                        project: project_name,
+                    } => {
+                        let json = json_flag || entity_json;
+                        let mut tasks = entities
+                            .tasks
+                            .values()
+                            .filter(|task| match &project_name {
+                                Some(name) => task.project.name == *name,
+                                None => true,
+                            })
+                            .collect::<Vec<_>>();
+                        tasks.sort_by(|a, b| a.name.cmp(&b.name));
+                        let tasks = tasks
+                            .into_iter()
+                            .take(count.unwrap_or(usize::MAX))
+                            .collect::<Vec<_>>();
+
+                        if json {
+                            let json_string = serde_json::to_string_pretty(&tasks)
+                                .expect("failed to serialize tasks to JSON");
+                            writeln!(handle, "{json_string}").expect("failed to print");
+                        } else {
+                            // The project is redundant when the list is already scoped to one.
+                            tasks.iter().for_each(|task| match &project_name {
+                                Some(_) => {
+                                    writeln!(handle, "{}", task.name).expect("failed to print")
+                                }
+                                None => writeln!(handle, "{} @{}", task.name, task.project.name)
+                                    .expect("failed to print"),
+                            });
+                        }
+                    }
+
                     // Already handled above, but needed for exhaustive match
                     Entity::Tag { .. } => unreachable!(),
                 };
