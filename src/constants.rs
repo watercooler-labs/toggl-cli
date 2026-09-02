@@ -37,5 +37,10 @@ pub const NOT_A_DIRECTORY_ERROR: &str = "Not a directory";
 pub const SIMPLE_HOME_PATH: &str = "~/Library/Application Support";
 #[cfg(windows)]
 pub const SIMPLE_HOME_PATH: &str = "%localappdata%";
-#[cfg(target_os = "linux")]
+#[cfg(not(any(
+    target_os = "windows",
+    target_os = "macos",
+    target_os = "ios",
+    target_arch = "wasm32"
+)))]
 pub const SIMPLE_HOME_PATH: &str = "~/.config";
