@@ -13,6 +13,7 @@ mod utilities;
 use api::client::ApiClient;
 use api::client::V9ApiClient;
 use arguments::Command::Auth;
+use arguments::Command::Completions;
 use arguments::Command::Config;
 use arguments::Command::Continue;
 use arguments::Command::CreateProject;
@@ -216,6 +217,13 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 },
                 None => config::manage::ConfigManageCommand::execute(delete, edit, path).await?,
             },
+            Completions { shell } => {
+                CommandLineArguments::clap().gen_completions_to(
+                    env!("CARGO_PKG_NAME"),
+                    shell,
+                    &mut io::stdout(),
+                );
+            }
         },
     }
 
