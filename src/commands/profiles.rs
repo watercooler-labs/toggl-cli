@@ -3,13 +3,22 @@ use crate::credentials;
 use crate::credentials::DEFAULT_PROFILE;
 use crate::models::ResultWithDefaultError;
 use colored::Colorize;
+use serde::Serialize;
 use tokio::task::JoinHandle;
+
+#[derive(Serialize)]
+struct ProfileInfo {
+    name: String,
+    email: Option<String>,
+    active: bool,
+}
 
 pub struct ProfilesListCommand;
 
 impl ProfilesListCommand {
     pub async fn execute(
         active_profile: Option<&str>,
+        json_flag: bool,
         proxy: Option<String>,
     ) -> ResultWithDefaultError<()> {
         // The `default` profile may exist in the keyring without being
@@ -39,20 +48,37 @@ impl ProfilesListCommand {
             }
         }
 
+        let mut entries: Vec<ProfileInfo> = vec![];
         for (profile_name, handle) in handles {
             let email = handle.await.unwrap_or(None);
-            let is_active = profile_name == active;
-            let marker = if is_active { "*" } else { " " };
-            let status = if is_active {
+            entries.push(ProfileInfo {
+                active: profile_name == active,
+                email,
+                name: profile_name,
+            });
+        }
+
+        if json_flag {
+            // Matches the JSON printing convention of the other list
+            // entities in list.rs.
+            let json_string = serde_json::to_string_pretty(&entries)
+                .expect("failed to serialize profiles to JSON");
+            println!("{json_string}");
+            return Ok(());
+        }
+
+        for entry in entries {
+            let marker = if entry.active { "*" } else { " " };
+            let status = if entry.active {
                 " (active)".blue().to_string()
             } else {
                 String::new()
             };
-            let user_info = match email {
+            let user_info = match entry.email {
                 Some(email) => email.green().to_string(),
                 None => "(not authenticated)".yellow().to_string(),
             };
-            println!("{marker} {profile_name:<10} {user_info}{status}");
+            println!("{marker} {:<10} {user_info}{status}", entry.name);
         }
 
         Ok(())

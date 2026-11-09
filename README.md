@@ -137,6 +137,24 @@ The `*` marker indicates the currently active profile based on your
 The `default` profile is always listed, even if it was never registered
 with `toggl auth --profile`.
 
+For scripting, pass `--json` to get machine-readable output:
+
+```shell
+$ toggl list profile --json
+[
+  {
+    "name": "default",
+    "email": "user@example.com",
+    "active": false
+  },
+  {
+    "name": "work",
+    "email": "user@company.com",
+    "active": true
+  }
+]
+```
+
 Note: `toggl list profile` ignores the date filters (`--since`,
 `--until`) and the `-n` limit, which apply only to projects, tags, and
 time entries.

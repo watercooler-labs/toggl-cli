@@ -133,7 +133,7 @@ impl ListCommand {
                     Entity::Tag { .. } => unreachable!(),
 
                     // Handled separately in main.rs before reaching ListCommand
-                    Entity::Profile => unreachable!(),
+                    Entity::Profile { .. } => unreachable!(),
                 };
             }
         }

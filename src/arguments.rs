@@ -197,7 +197,10 @@ pub enum Entity {
         json: bool,
     },
     #[structopt(about = "List all stored profiles")]
-    Profile,
+    Profile {
+        #[structopt(short, long, help = "Output in JSON format")]
+        json: bool,
+    },
 }
 #[derive(Debug, StructOpt)]
 pub enum ConfigSubCommand {

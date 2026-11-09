@@ -101,9 +101,13 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 until,
                 entity,
             } => {
-                if matches!(entity, Some(arguments::Entity::Profile)) {
-                    ProfilesListCommand::execute(resolved_profile.as_deref(), args.proxy.clone())
-                        .await?;
+                if let Some(arguments::Entity::Profile { json: entity_json }) = &entity {
+                    ProfilesListCommand::execute(
+                        resolved_profile.as_deref(),
+                        json || *entity_json,
+                        args.proxy.clone(),
+                    )
+                    .await?;
                 } else {
                     ListCommand::execute(
                         get_default_api_client()?,
