@@ -102,11 +102,8 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 entity,
             } => {
                 if matches!(entity, Some(arguments::Entity::Profile)) {
-                    ProfilesListCommand::execute(
-                        resolved_profile.as_deref(),
-                        args.proxy.clone(),
-                    )
-                    .await?;
+                    ProfilesListCommand::execute(resolved_profile.as_deref(), args.proxy.clone())
+                        .await?;
                 } else {
                     ListCommand::execute(
                         get_default_api_client()?,
@@ -207,14 +204,20 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                     get_storage(resolved_profile.as_deref()),
                 )
                 .await?;
-                credentials::add_profile(resolved_profile.as_deref().unwrap_or("default"));
+                credentials::add_profile(
+                    resolved_profile
+                        .as_deref()
+                        .unwrap_or(credentials::DEFAULT_PROFILE),
+                )?
             }
 
             Logout => {
                 let storage = get_storage(resolved_profile.as_deref());
                 storage.clear()?;
-                let profile_name = resolved_profile.as_deref().unwrap_or("default");
-                credentials::remove_profile(profile_name);
+                let profile_name = resolved_profile
+                    .as_deref()
+                    .unwrap_or(credentials::DEFAULT_PROFILE);
+                credentials::remove_profile(profile_name)?;
                 println!("Successfully logged out from profile: {}", profile_name);
             }
 
@@ -241,17 +244,25 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
 }
 
 fn resolve_profile(cli_profile: Option<&str>) -> Option<String> {
-    if let Some(profile) = cli_profile {
-        return Some(profile.to_string());
-    }
-    if let Ok(profile) = std::env::var("TOGGL_PROFILE") {
-        return Some(profile);
-    }
-    config::locate::locate_config_path()
+    let env_profile = std::env::var("TOGGL_PROFILE").ok();
+    let config_profile = config::locate::locate_config_path()
         .ok()
         .and_then(|path| config::parser::get_config_from_file(path).ok())
         .and_then(|track_config| track_config.get_active_config().ok().cloned())
-        .and_then(|branch_config| branch_config.profile)
+        .and_then(|branch_config| branch_config.profile);
+    resolve_profile_from(cli_profile.map(str::to_string), env_profile, config_profile)
+}
+
+fn resolve_profile_from(
+    cli_profile: Option<String>,
+    env_profile: Option<String>,
+    config_profile: Option<String>,
+) -> Option<String> {
+    [cli_profile, env_profile, config_profile]
+        .into_iter()
+        .flatten()
+        .find(|profile| !profile.trim().is_empty())
+        .map(|profile| profile.trim().to_string())
 }
 
 fn get_api_client(
@@ -262,5 +273,34 @@ fn get_api_client(
     match credentials_storage.read() {
         Ok(credentials) => V9ApiClient::from_credentials(credentials, proxy),
         Err(err) => Err(err),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cli_profile_takes_priority_over_environment_and_config() {
+        assert_eq!(
+            resolve_profile_from(
+                Some("cli".to_string()),
+                Some("env".to_string()),
+                Some("config".to_string())
+            ),
+            Some("cli".to_string())
+        );
+    }
+
+    #[test]
+    fn empty_profile_values_are_ignored() {
+        assert_eq!(
+            resolve_profile_from(None, Some(String::new()), Some("   ".to_string())),
+            None
+        );
+        assert_eq!(
+            resolve_profile_from(None, Some(" work ".to_string()), None),
+            Some("work".to_string())
+        );
     }
 }

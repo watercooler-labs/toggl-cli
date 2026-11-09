@@ -67,7 +67,8 @@ The API token is stored securely in your Operating System's keychain using the [
 
 ### Profiles
 
-If you have multiple Toggl accounts (e.g. work and personal), you can store separate tokens under named profiles.
+If you have multiple Toggl accounts (e.g. work and personal), you can
+store separate tokens under named profiles.
 
 ```shell
 toggl auth --profile work
@@ -76,26 +77,28 @@ toggl auth --profile personal
 
 Select a profile in three ways (listed in priority order):
 
-1. **CLI flag** — applies to a single command:
+1. **CLI flag**: applies to a single command:
    ```shell
    toggl --profile work start
    toggl --profile personal list
    ```
 
-2. **Environment variable** — applies to all commands in the session:
+2. **Environment variable**: applies to all commands in the session:
    ```shell
    export TOGGL_PROFILE=work
    toggl start
    ```
 
-3. **TOML config** — applies per-directory/branch via your auto-tracking config:
+3. **TOML config**: applies per-directory/branch via your auto-tracking
+   config:
    ```toml
    ['*']
    profile = "work"
    project = "{{current_dir}}"
    ```
 
-If no profile is specified, the CLI uses the `default` profile, which is fully backwards compatible with existing setups.
+If no profile is specified, the CLI uses the `default` profile, which is
+fully backwards compatible with existing setups.
 
 **Priority order:**
 1. Explicit `--profile` flag → always uses keyring (ignores `TOGGL_API_TOKEN`)
@@ -104,7 +107,9 @@ If no profile is specified, the CLI uses the `default` profile, which is fully b
 4. `TOGGL_API_TOKEN` environment variable → uses the token directly (no keyring)
 5. Keyring `default` profile → fallback
 
-This means if you set `TOGGL_API_TOKEN`, it will be used for all commands **unless** you explicitly specify `--profile`. This allows you to override the env var when needed:
+This means if you set `TOGGL_API_TOKEN`, it will be used for all commands
+**unless** you explicitly specify `--profile`. This allows you to
+override the env var when needed:
 
 ```shell
 export TOGGL_API_TOKEN=xxx  # Used by default
@@ -127,7 +132,14 @@ $ toggl list profile
   personal   user@personal.com
 ```
 
-The `*` marker indicates the currently active profile based on your `--profile` flag, `TOGGL_PROFILE` environment variable, or TOML config.
+The `*` marker indicates the currently active profile based on your
+`--profile` flag, `TOGGL_PROFILE` environment variable, or TOML config.
+The `default` profile is always listed, even if it was never registered
+with `toggl auth --profile`.
+
+Note: `toggl list profile` ignores the date filters (`--since`,
+`--until`) and the `-n` limit, which apply only to projects, tags, and
+time entries.
 
 ### Commands
 

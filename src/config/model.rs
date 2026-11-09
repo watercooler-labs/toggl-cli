@@ -94,7 +94,15 @@ const TAGS: &str = "tags";
 const BILLABLE: &str = "billable";
 const PROFILE: &str = "profile";
 
-const FIELDS: &[&str] = &[WORKSPACE, DESCRIPTION, PROJECT, TASK, TAGS, BILLABLE, PROFILE];
+const FIELDS: &[&str] = &[
+    WORKSPACE,
+    DESCRIPTION,
+    PROJECT,
+    TASK,
+    TAGS,
+    BILLABLE,
+    PROFILE,
+];
 
 impl<'de> Deserialize<'de> for BranchConfig {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
