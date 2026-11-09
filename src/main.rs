@@ -40,6 +40,7 @@ use commands::delete_project::DeleteProjectCommand;
 use commands::delete_tag::DeleteTagCommand;
 use commands::edit::EditCommand;
 use commands::list::ListCommand;
+use commands::profiles::ProfilesListCommand;
 use commands::rename_project::RenameProjectCommand;
 use commands::rename_tag::RenameTagCommand;
 use commands::running::RunningTimeEntryCommand;
@@ -68,7 +69,6 @@ async fn main() -> ResultWithDefaultError<()> {
 
 async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultError<()> {
     let command = args.cmd;
-    let get_default_api_client = || get_api_client(args.proxy.clone());
     let picker = picker::get_picker(args.fzf);
     if let Some(directory) = args.directory {
         if !directory.exists() {
@@ -79,6 +79,8 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
         }
         std::env::set_current_dir(directory).expect("Couldn't set current directory");
     }
+    let resolved_profile = resolve_profile(args.profile.as_deref());
+    let get_default_api_client = || get_api_client(args.proxy.clone(), resolved_profile.as_deref());
     match command {
         None => RunningTimeEntryCommand::execute(get_default_api_client()?).await?,
         Some(subcommand) => match subcommand {
@@ -99,15 +101,23 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 until,
                 entity,
             } => {
-                ListCommand::execute(
-                    get_default_api_client()?,
-                    number,
-                    json,
-                    since,
-                    until,
-                    entity,
-                )
-                .await?
+                if matches!(entity, Some(arguments::Entity::Profile)) {
+                    ProfilesListCommand::execute(
+                        resolved_profile.as_deref(),
+                        args.proxy.clone(),
+                    )
+                    .await?;
+                } else {
+                    ListCommand::execute(
+                        get_default_api_client()?,
+                        number,
+                        json,
+                        since,
+                        until,
+                        entity,
+                    )
+                    .await?
+                }
             }
 
             Current | Running => {
@@ -191,13 +201,21 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 };
                 let credentials = Credentials { api_token };
                 let api_client = V9ApiClient::from_credentials(credentials, args.proxy)?;
-                AuthenticationCommand::execute(io::stdout(), api_client, get_storage()).await?
+                AuthenticationCommand::execute(
+                    io::stdout(),
+                    api_client,
+                    get_storage(resolved_profile.as_deref()),
+                )
+                .await?;
+                credentials::add_profile(resolved_profile.as_deref().unwrap_or("default"));
             }
 
             Logout => {
-                let storage = get_storage();
+                let storage = get_storage(resolved_profile.as_deref());
                 storage.clear()?;
-                println!("Successfully logged out.");
+                let profile_name = resolved_profile.as_deref().unwrap_or("default");
+                credentials::remove_profile(profile_name);
+                println!("Successfully logged out from profile: {}", profile_name);
             }
 
             Config {
@@ -222,8 +240,25 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
     Ok(())
 }
 
-fn get_api_client(proxy: Option<String>) -> ResultWithDefaultError<impl ApiClient> {
-    let credentials_storage = get_storage();
+fn resolve_profile(cli_profile: Option<&str>) -> Option<String> {
+    if let Some(profile) = cli_profile {
+        return Some(profile.to_string());
+    }
+    if let Ok(profile) = std::env::var("TOGGL_PROFILE") {
+        return Some(profile);
+    }
+    config::locate::locate_config_path()
+        .ok()
+        .and_then(|path| config::parser::get_config_from_file(path).ok())
+        .and_then(|track_config| track_config.get_active_config().ok().cloned())
+        .and_then(|branch_config| branch_config.profile)
+}
+
+fn get_api_client(
+    proxy: Option<String>,
+    profile: Option<&str>,
+) -> ResultWithDefaultError<impl ApiClient> {
+    let credentials_storage = get_storage(profile);
     match credentials_storage.read() {
         Ok(credentials) => V9ApiClient::from_credentials(credentials, proxy),
         Err(err) => Err(err),

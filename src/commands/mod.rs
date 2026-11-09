@@ -7,6 +7,7 @@ pub mod delete_project;
 pub mod delete_tag;
 pub mod edit;
 pub mod list;
+pub mod profiles;
 pub mod rename_project;
 pub mod rename_tag;
 pub mod running;

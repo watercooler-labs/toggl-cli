@@ -10,7 +10,7 @@ use crate::models::{Entities, ResultWithDefaultError, TimeEntry};
 use crate::utilities;
 
 /// BranchConfig optionally determines workspace, description, project, task,
-/// tags, and billable status of a time entry.
+/// tags, billable status, and API token profile of a time entry.
 /// The fields are optional, and if not specified, the default values will be
 /// used. The string fields support templating, which will be replaced with live
 /// values on deserialization.
@@ -31,9 +31,13 @@ use crate::utilities;
 /// The variables can also be used in the middle of a string,
 /// e.g. `Working on {{branch}} for {{base_dir}}`.
 ///
+/// The `profile` field selects which stored API token to use (set up via
+/// `toggl auth --profile <name>`). If omitted, the `default` profile is used.
+///
 /// Given the following configuration:
 /// ```toml
 /// ['my-.+']
+/// profile = "work"
 /// workspace = "Default"
 /// description = "Working on {{branch}} for {{base_dir}}"
 /// project = "Default"
@@ -54,7 +58,7 @@ use crate::utilities;
 /// 2023
 /// ```
 ///
-/// the following time entry will be created:
+/// the following time entry will be created using the "work" API token:
 /// ```json
 /// {
 ///  "workspace": "Default",
@@ -73,6 +77,7 @@ pub struct BranchConfig {
     pub task: Option<String>,
     pub tags: Option<Vec<String>>,
     pub billable: bool,
+    pub profile: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -87,8 +92,9 @@ const PROJECT: &str = "project";
 const TASK: &str = "task";
 const TAGS: &str = "tags";
 const BILLABLE: &str = "billable";
+const PROFILE: &str = "profile";
 
-const FIELDS: &[&str] = &[WORKSPACE, DESCRIPTION, PROJECT, TASK, TAGS, BILLABLE];
+const FIELDS: &[&str] = &[WORKSPACE, DESCRIPTION, PROJECT, TASK, TAGS, BILLABLE, PROFILE];
 
 impl<'de> Deserialize<'de> for BranchConfig {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -118,6 +124,7 @@ impl<'de> Deserialize<'de> for BranchConfig {
                 let mut task: Option<String> = None;
                 let mut tags: Option<Vec<String>> = None;
                 let mut billable: Option<bool> = None;
+                let mut profile: Option<String> = None;
                 while let Some(key) = map.next_key::<String>()? {
                     match key.as_str() {
                         WORKSPACE => {
@@ -140,6 +147,9 @@ impl<'de> Deserialize<'de> for BranchConfig {
                         BILLABLE => {
                             billable = Some(map.next_value()?);
                         }
+                        PROFILE => {
+                            profile = map.next_value()?;
+                        }
                         _ => {
                             return Err(de::Error::unknown_field(&key, FIELDS));
                         }
@@ -152,6 +162,7 @@ impl<'de> Deserialize<'de> for BranchConfig {
                     task,
                     tags,
                     billable: billable.unwrap_or(false),
+                    profile,
                 })
             }
         }
@@ -171,7 +182,7 @@ impl<'de> Deserialize<'de> for BranchConfig {
 impl std::fmt::Display for BranchConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let summary = format!(
-            "{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}\n",
+            "{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}\n",
             WORKSPACE.green(),
             self.workspace
                 .as_ref()
@@ -196,6 +207,10 @@ impl std::fmt::Display for BranchConfig {
                 .unwrap_or("[]".yellow().to_string()),
             BILLABLE.green(),
             self.billable,
+            PROFILE.green(),
+            self.profile
+                .as_ref()
+                .unwrap_or(&"default".purple().to_string()),
         );
         write!(f, "{summary}")
     }

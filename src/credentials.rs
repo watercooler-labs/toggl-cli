@@ -6,6 +6,8 @@ use keyring::Entry;
 #[cfg(test)]
 use mockall::automock;
 use models::ResultWithDefaultError;
+use std::fs;
+use std::path::PathBuf;
 
 pub struct Credentials {
     pub api_token: String,
@@ -85,12 +87,73 @@ impl CredentialsStorage for EnvironmentStorage {
     }
 }
 
-pub fn get_storage() -> Box<dyn CredentialsStorage> {
-    if let Ok(api_token) = std::env::var("TOGGL_API_TOKEN") {
-        return Box::new(EnvironmentStorage::new(api_token));
+pub fn get_storage(profile: Option<&str>) -> Box<dyn CredentialsStorage> {
+    if profile.is_none() {
+        if let Ok(api_token) = std::env::var("TOGGL_API_TOKEN") {
+            return Box::new(EnvironmentStorage::new(api_token));
+        }
     }
 
-    let keyring = Entry::new("togglcli", "default")
+    let username = profile.unwrap_or("default");
+    let keyring = Entry::new("togglcli", username)
         .unwrap_or_else(|err| panic!("Couldn't create credentials_storage: {err}"));
     Box::new(KeyringStorage::new(keyring))
+}
+
+fn get_profiles_path() -> PathBuf {
+    directories::ProjectDirs::from("studio.watercooler", "labs", "toggl-cli")
+        .unwrap()
+        .config_local_dir()
+        .join("profiles.json")
+}
+
+pub fn list_profiles() -> Vec<String> {
+    let path = get_profiles_path();
+    if !path.exists() {
+        return vec![];
+    }
+    
+    match fs::read_to_string(&path) {
+        Ok(content) => serde_json::from_str(&content).unwrap_or_else(|e| {
+            eprintln!("Warning: failed to parse profiles.json: {}", e);
+            vec![]
+        }),
+        Err(e) => {
+            eprintln!("Warning: failed to read profiles.json: {}", e);
+            vec![]
+        }
+    }
+}
+
+pub fn add_profile(name: &str) {
+    let mut profiles = list_profiles();
+    if !profiles.contains(&name.to_string()) {
+        profiles.push(name.to_string());
+        profiles.sort();
+        let path = get_profiles_path();
+        if let Some(parent) = path.parent() {
+            if let Err(e) = fs::create_dir_all(parent) {
+                eprintln!("Warning: failed to create config directory: {}", e);
+                return;
+            }
+        }
+        if let Err(e) = fs::write(&path, serde_json::to_string_pretty(&profiles).unwrap_or_default()) {
+            eprintln!("Warning: failed to save profiles: {}", e);
+        }
+    }
+}
+
+pub fn remove_profile(name: &str) {
+    let mut profiles = list_profiles();
+    profiles.retain(|p| p != name);
+    let path = get_profiles_path();
+    if let Some(parent) = path.parent() {
+        if let Err(e) = fs::create_dir_all(parent) {
+            eprintln!("Warning: failed to create config directory: {}", e);
+            return;
+        }
+    }
+    if let Err(e) = fs::write(&path, serde_json::to_string_pretty(&profiles).unwrap_or_default()) {
+        eprintln!("Warning: failed to save profiles: {}", e);
+    }
 }
