@@ -16,6 +16,9 @@ pub struct CommandLineArguments {
 
     #[structopt(long, help = "Use fzf instead of the default picker")]
     pub fzf: bool,
+
+    #[structopt(long, help = "Profile name for API token (e.g. 'work', 'personal')")]
+    pub profile: Option<String>,
 }
 
 #[derive(Debug, StructOpt)]
@@ -190,6 +193,11 @@ pub enum Entity {
         json: bool,
     },
     Tag {
+        #[structopt(short, long, help = "Output in JSON format")]
+        json: bool,
+    },
+    #[structopt(about = "List all stored profiles")]
+    Profile {
         #[structopt(short, long, help = "Output in JSON format")]
         json: bool,
     },

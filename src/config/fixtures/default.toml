@@ -7,6 +7,11 @@
 # ['*'] It also applies if current folder is not tracked under source control
 ['*']
 
+# Profile (optional, default="default")
+# Name of the stored API token profile to use for this config.
+# Set up profiles with: toggl auth --profile <name>
+# profile = "work"
+
 # Workspace (optional, default=null)
 # in this context would resolve to the user's default workspace
 # https://support.toggl.com/en/articles/2452474-introduction-to-workspaces#switching-and-creating-workspaces
