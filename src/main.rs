@@ -59,11 +59,10 @@ async fn main() -> ResultWithDefaultError<()> {
     match execute_subcommand(parsed_args).await {
         Ok(()) => Ok(()),
         Err(error) => {
-            // We are catching the error and pretty printing it instead of letting the
-            // program error. Since we are not meant to be used other programs, I think
-            // it's fine to always return a 0 error code, but we might wanna revisit this.
-            print!("{error}");
-            Ok(())
+            // Errors go to stderr and the process exits nonzero so callers
+            // can rely on the exit code and pipe stdout safely.
+            eprint!("{error}");
+            std::process::exit(1);
         }
     }
 }
@@ -89,8 +88,22 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                     .await?;
             }
 
-            Api { path } => {
-                ApiCommand::execute(get_default_api_client()?, &path).await?
+            Api {
+                path,
+                method,
+                raw_field,
+                field,
+                input,
+            } => {
+                ApiCommand::execute(
+                    get_default_api_client()?,
+                    &path,
+                    &method,
+                    &raw_field,
+                    &field,
+                    input,
+                )
+                .await?
             }
 
             Continue { interactive } => {
