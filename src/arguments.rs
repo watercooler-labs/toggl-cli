@@ -43,6 +43,15 @@ pub enum Command {
     Running,
     Stop,
     #[structopt(
+        about = "Issue a raw GET request against the Toggl v9 API and print the JSON response"
+    )]
+    Api {
+        #[structopt(
+            help = "API path, e.g. /me/time_entries/current"
+        )]
+        path: String,
+    },
+    #[structopt(
         about = "Authenticate with the Toggl API. Find your API token at https://track.toggl.com/profile#api-token"
     )]
     Auth {

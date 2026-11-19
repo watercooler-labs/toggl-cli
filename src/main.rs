@@ -12,6 +12,7 @@ mod utilities;
 
 use api::client::ApiClient;
 use api::client::V9ApiClient;
+use arguments::Command::Api;
 use arguments::Command::Auth;
 use arguments::Command::Config;
 use arguments::Command::Continue;
@@ -31,6 +32,7 @@ use arguments::Command::Start;
 use arguments::Command::Stop;
 use arguments::CommandLineArguments;
 use arguments::ConfigSubCommand;
+use commands::api::ApiCommand;
 use commands::auth::AuthenticationCommand;
 use commands::cont::ContinueCommand;
 use commands::create_project::CreateProjectCommand;
@@ -85,6 +87,10 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
             Stop => {
                 StopCommand::execute(&get_default_api_client()?, StopCommandOrigin::CommandLine)
                     .await?;
+            }
+
+            Api { path } => {
+                ApiCommand::execute(get_default_api_client()?, &path).await?
             }
 
             Continue { interactive } => {

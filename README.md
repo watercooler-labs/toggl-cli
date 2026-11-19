@@ -87,6 +87,8 @@ OPTIONS:
         --proxy <proxy>    Use custom proxy
 
 SUBCOMMANDS:
+    api               Issue a raw GET request against the Toggl v9 API and
+                      print the JSON response
     auth              Authenticate with the Toggl API. Find your API token at https://track.toggl.com/profile#api-
                       token
     config            Manage auto-tracking configuration
@@ -133,6 +135,38 @@ OPTIONS:
 ARGS:
     <description>    Description of the time entry
 
+```
+
+### Raw API access
+
+For debugging and exploration, the `api` command issues a raw GET request
+against the [v9 API](https://engineering.toggl.com/docs/api/time_entries)
+using your stored credentials and prints the JSON response. It is read-only:
+it does not accept request bodies.
+
+```shell
+# The currently running time entry, exactly as the API returns it
+$ toggl api /me/time_entries/current
+
+# Compose with jq for ad-hoc queries
+$ toggl api /me/projects | jq '.[].name'
+
+# Error responses include the HTTP status and the response body
+$ toggl api /nonexistent/endpoint
+API returned non-JSON response (HTTP 404 Not Found): 404 page not found
+```
+
+The path is passed through untouched, so this is a good way to inspect
+fields that the CLI's model layer does not surface (for example `duronly`
+or `at` on a time entry), or to check the live schema before adding a new
+endpoint to the client. Some useful paths:
+
+```shell
+toggl api /me                         # your user profile
+toggl api /me/time_entries            # time entries
+toggl api /me/time_entries/current    # the running entry
+toggl api /me/projects                # your projects
+toggl api /me/workspaces              # your workspaces
 ```
 
 ## Testing

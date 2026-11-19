@@ -18,6 +18,7 @@ use models::{ResultWithDefaultError, User};
 use reqwest::Client;
 use reqwest::{header, RequestBuilder};
 use serde::{de, Serialize};
+use serde_json::Value;
 
 use super::models::NetworkClient;
 use super::models::NetworkCreateProject;
@@ -34,6 +35,10 @@ use super::models::NetworkWorkspace;
 #[async_trait]
 pub trait ApiClient {
     async fn get_user(&self) -> ResultWithDefaultError<User>;
+
+    /// Issues a raw GET request against the v9 API and returns the JSON
+    /// response, without mapping it into domain models. Used for debugging.
+    async fn get_raw(&self, path: &str) -> ResultWithDefaultError<Value>;
     async fn get_entities(&self) -> ResultWithDefaultError<Entities>;
 
     async fn create_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<i64>;
@@ -169,6 +174,26 @@ impl V9ApiClient {
         V9ApiClient::send::<T>(self.http_client.get(url)).await
     }
 
+    async fn get_raw_request(&self, path: &str) -> ResultWithDefaultError<Value> {
+        let url = format!("{}{}", self.base_url, path);
+        let response = match self.http_client.get(url).send().await {
+            Ok(response) => response,
+            Err(_) => return Err(Box::new(ApiError::Network)),
+        };
+        let status = response.status();
+        let body = match response.text().await {
+            Ok(body) => body,
+            Err(_) => return Err(Box::new(ApiError::Deserialization)),
+        };
+        match serde_json::from_str::<Value>(&body) {
+            Ok(value) => Ok(value),
+            Err(_) => Err(Box::new(std::io::Error::other(format!(
+                "API returned non-JSON response (HTTP {status}): {}",
+                body.chars().take(512).collect::<String>()
+            )))),
+        }
+    }
+
     async fn put<T: de::DeserializeOwned, Body: Serialize>(
         &self,
         url: String,
@@ -214,6 +239,10 @@ impl ApiClient for V9ApiClient {
     async fn get_user(&self) -> ResultWithDefaultError<User> {
         let url = format!("{}/me", self.base_url);
         return self.get::<User>(url).await;
+    }
+
+    async fn get_raw(&self, path: &str) -> ResultWithDefaultError<Value> {
+        self.get_raw_request(path).await
     }
 
     async fn create_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<i64> {
