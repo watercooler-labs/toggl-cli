@@ -197,8 +197,7 @@ OPTIONS:
         --proxy <proxy>        Use custom proxy
 
 SUBCOMMANDS:
-    api               Issue a raw GET request against the Toggl v9 API and
-                      print the JSON response
+    api               Issue a raw request against the Toggl API and print the JSON response
     auth              Authenticate with the Toggl API. Find your API token at https://track.toggl.com/profile#api-
                       token
     completions       Create tab-completion scripts
