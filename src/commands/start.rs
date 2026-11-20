@@ -168,25 +168,24 @@ impl StartCommand {
             }
         };
 
-        // Determine final task: use CLI flag if provided, otherwise fallback to config
-        let task_obj = task_obj.or(default_time_entry.task.clone());
-
-        // Determine final project: use task's project if only task provided, otherwise use flag/default
-        let project = if project_from_flag.is_none() {
-            task_obj.as_ref().map(|t| t.project.clone())
-        } else {
-            project_from_flag
-        }
-        .or(default_time_entry.project.clone());
-
-        if let (Some(ref proj), Some(ref tsk)) = (&project, &task_obj) {
-            if tsk.project.id != proj.id {
-                return Err(Box::new(std::io::Error::other(format!(
-                    "Task \"{}\" belongs to project \"{}\", but project \"{}\" was selected",
-                    tsk.name, tsk.project.name, proj.name
-                ))));
+        // The config's project and task form a pair. A project from the
+        // command line replaces it, keeping the config task only if it
+        // belongs to that project.
+        let (project, task_obj) = match project_from_flag {
+            Some(project) => {
+                let task = task_obj.or_else(|| {
+                    default_time_entry
+                        .task
+                        .clone()
+                        .filter(|t| t.project.id == project.id)
+                });
+                (Some(project), task)
             }
-        }
+            None => (
+                default_time_entry.project.clone(),
+                default_time_entry.task.clone(),
+            ),
+        };
 
         let tags = tags.unwrap_or(default_time_entry.tags.clone());
 
