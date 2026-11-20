@@ -65,6 +65,22 @@ The API token is stored securely in your Operating System's keychain using the [
 > set. You don't need to run the `auth` command if you have the environment
 > variable set.
 
+### Shell completions
+
+The `completions` command prints a completion script for `bash`, `zsh`,
+`fish`, `powershell` or `elvish` to stdout.
+
+```shell
+# bash
+toggl completions --shell bash > ~/.local/share/bash-completion/completions/toggl
+
+# zsh, any directory in your $fpath
+toggl completions --shell zsh > ~/.zfunc/_toggl
+
+# fish
+toggl completions --shell fish > ~/.config/fish/completions/toggl.fish
+```
+
 ### Commands
 
 Run the `help` command to see a list of available commands.
@@ -89,6 +105,7 @@ OPTIONS:
 SUBCOMMANDS:
     auth              Authenticate with the Toggl API. Find your API token at https://track.toggl.com/profile#api-
                       token
+    completions       Create tab-completion scripts
     config            Manage auto-tracking configuration
     continue
     create-project    Create a new project in your workspace

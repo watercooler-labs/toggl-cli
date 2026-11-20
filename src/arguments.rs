@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use structopt::clap::Shell;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -178,6 +179,18 @@ pub enum Command {
 
         #[structopt(subcommand)]
         cmd: Option<ConfigSubCommand>,
+    },
+    #[structopt(about = "Create tab-completion scripts")]
+    Completions {
+        #[structopt(
+            short,
+            long,
+            help = "Shell to generate completions for",
+            default_value = "bash",
+            possible_values = &Shell::variants(),
+            case_insensitive = true
+        )]
+        shell: Shell,
     },
 }
 #[derive(Debug, StructOpt)]
