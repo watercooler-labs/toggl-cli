@@ -26,6 +26,7 @@ description = "🔨 {{current_dir}}"
 project = "{{current_dir}}"
 
 # Task (optional, default=No task)
+# Looked up within the project above, ignored if no project is set
 # task = "Some task"
 
 # Tags (optional, default=None)

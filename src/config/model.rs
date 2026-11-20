@@ -15,6 +15,8 @@ use crate::utilities;
 /// used. The string fields support templating, which will be replaced with live
 /// values on deserialization.
 ///
+/// `task` is looked up within `project` and is ignored if `project` is not set.
+///
 /// The templating syntax is `{{<field>}}`. The following fields are supported:
 /// - `branch` -- the name of the current branch
 /// - `base_dir` -- the directory registered with the config file
@@ -556,13 +558,15 @@ impl TrackConfig {
                 .find(|p| p.name == name)
         });
 
-        let project_id = project.clone().map(|p| p.id);
-
+        // Task names are only unique within a project, so a task is only
+        // resolved inside the configured project and ignored without one.
         let task = config.task.clone().and_then(|name| {
-            entities.tasks.clone().into_values().find(|t| {
-                // Match task name and ensure it belongs to the configured project (if any)
-                t.name == name && project_id.is_none_or(|pid| t.project.id == pid)
-            })
+            let project_id = project.as_ref()?.id;
+            entities
+                .tasks
+                .clone()
+                .into_values()
+                .find(|t| t.name == name && t.project.id == project_id)
         });
 
         let workspace_id = config.workspace.as_ref().map_or(
