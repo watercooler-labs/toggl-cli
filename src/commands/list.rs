@@ -166,6 +166,9 @@ impl ListCommand {
 
                     // Already handled above, but needed for exhaustive match
                     Entity::Tag { .. } => unreachable!(),
+
+                    // Handled separately in main.rs before reaching ListCommand
+                    Entity::Profile { .. } => unreachable!(),
                 };
             }
         }
