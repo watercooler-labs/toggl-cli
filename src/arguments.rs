@@ -184,8 +184,10 @@ pub enum Command {
         #[structopt(
             short,
             long,
-            help = "shell to generate completions for",
-            default_value = "bash"
+            help = "Shell to generate completions for",
+            default_value = "bash",
+            possible_values = &Shell::variants(),
+            case_insensitive = true
         )]
         shell: Shell,
     },
