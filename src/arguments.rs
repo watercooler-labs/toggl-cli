@@ -46,6 +46,39 @@ pub enum Command {
     },
     Running,
     Stop,
+    #[structopt(about = "Issue a raw request against the Toggl API and print the JSON response")]
+    Api {
+        #[structopt(
+            help = "API path, e.g. /me/time_entries/current, or an absolute URL on api.track.toggl.com"
+        )]
+        path: String,
+        #[structopt(
+            short = "X",
+            long,
+            default_value = "GET",
+            help = "HTTP method (GET, POST, PUT, PATCH, DELETE)"
+        )]
+        method: String,
+        #[structopt(
+            short = "f",
+            long = "raw-field",
+            help = "Add a string parameter in key=value format"
+        )]
+        raw_field: Vec<String>,
+        #[structopt(
+            short = "F",
+            long = "field",
+            help = "Add a typed parameter in key=value format (numbers, booleans, null; \
+                    use '@<path>' or '@-' to read the value from file or stdin)"
+        )]
+        field: Vec<String>,
+        #[structopt(
+            short = "i",
+            long,
+            help = "Raw JSON request body from a file, or '-' for stdin"
+        )]
+        input: Option<String>,
+    },
     #[structopt(
         about = "Authenticate with the Toggl API. Find your API token at https://track.toggl.com/profile#api-token"
     )]

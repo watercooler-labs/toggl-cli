@@ -197,6 +197,7 @@ OPTIONS:
         --proxy <proxy>        Use custom proxy
 
 SUBCOMMANDS:
+    api               Issue a raw request against the Toggl API and print the JSON response
     auth              Authenticate with the Toggl API. Find your API token at https://track.toggl.com/profile#api-
                       token
     completions       Create tab-completion scripts
@@ -244,6 +245,86 @@ OPTIONS:
 ARGS:
     <description>    Description of the time entry
 
+```
+
+### Raw API access
+
+For debugging and exploration, the `api` command issues a raw request
+against the Toggl API using your stored credentials and prints the JSON
+response. The response is printed untouched, so you can inspect fields that
+the CLI's model layer does not surface (for example `duronly` or `at` on a
+time entry), or check the live schema before adding a new endpoint to the
+client.
+
+```shell
+# The currently running time entry, exactly as the API returns it
+$ toggl api /me/time_entries/current
+
+# Compose with jq for ad-hoc queries
+$ toggl api /me/projects | jq '.[].name'
+
+# Error responses include the HTTP status and the response body
+$ toggl api /nonexistent/endpoint
+HTTP 404 Not Found: 404 page not found
+```
+
+The `api` command follows Unix conventions: exit code 0 on success and 1
+on failure, JSON data on stdout, and errors on stderr. Any non-2xx HTTP
+status is a failure, so stdout never mixes success data with error
+bodies.
+
+By default the request is a GET against the
+[v9 API](https://engineering.toggl.com/docs/api/time_entries). Pass an
+absolute URL to reach other APIs on `api.track.toggl.com`, such as the
+[reports API](https://engineering.toggl.com/docs/reports/):
+
+```shell
+# A detailed report via the v3 reports API
+toggl api \
+  https://api.track.toggl.com/reports/api/v3/workspace/{wid}/search/time_entries \
+  -X POST -f start_date=2026-11-19 -f end_date=2026-11-20
+```
+
+Write requests are supported with `-X`, `-i` (raw JSON body from a file,
+or `-` for stdin) and two repeatable `key=value` flags:
+
+- `-f` / `--raw-field` sends the value as a string, always
+- `-F` / `--field` parses the value as a typed parameter: booleans,
+  integers and floats are sent as such, anything else as a string. Use
+  `@<path>` or `@-` to read the value from a file or stdin
+
+Empty responses (e.g. HTTP 204 from a `DELETE`) print nothing:
+
+```shell
+# Create a tag
+$ toggl api /workspaces/{wid}/tags -X POST -f name=inbox
+
+# Numeric and boolean fields
+$ toggl api /workspaces/{wid}/projects -X POST \
+  -F name="new project" -F billable=true -F rate=5500
+
+# Send a body from stdin
+$ echo '{"start_date": "2026-11-19"}' \
+  | toggl api \
+    https://api.track.toggl.com/reports/api/v3/workspace/{wid}/search/time_entries \
+    -X POST -i -
+```
+
+Replace `{wid}` with your workspace ID (see `toggl api /me/workspaces`).
+
+> **Note**: because the response is printed untouched, it can contain
+> secrets. For example `toggl api /me` includes your API token. Pipe
+> carefully, e.g. `toggl api /me | jq 'del(.api_token)'` when sharing
+> output.
+
+Some useful paths:
+
+```shell
+toggl api /me                         # your user profile
+toggl api /me/time_entries            # time entries
+toggl api /me/time_entries/current    # the running entry
+toggl api /me/projects                # your projects
+toggl api /me/workspaces              # your workspaces
 ```
 
 ## Testing

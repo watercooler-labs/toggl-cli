@@ -18,6 +18,7 @@ use models::{ResultWithDefaultError, User};
 use reqwest::Client;
 use reqwest::{header, RequestBuilder};
 use serde::{de, Serialize};
+use serde_json::Value;
 
 use super::models::NetworkClient;
 use super::models::NetworkCreateProject;
@@ -34,6 +35,16 @@ use super::models::NetworkWorkspace;
 #[async_trait]
 pub trait ApiClient {
     async fn get_user(&self) -> ResultWithDefaultError<User>;
+
+    /// Issues a raw request against the API and returns the JSON response,
+    /// without mapping it into domain models. Used for debugging.
+    /// Returns `None` when the response has an empty body (e.g. HTTP 204).
+    async fn send_raw(
+        &self,
+        path: &str,
+        method: &str,
+        body: Option<Value>,
+    ) -> ResultWithDefaultError<Option<Value>>;
     async fn get_entities(&self) -> ResultWithDefaultError<Entities>;
 
     async fn create_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<i64>;
@@ -169,6 +180,69 @@ impl V9ApiClient {
         V9ApiClient::send::<T>(self.http_client.get(url)).await
     }
 
+    async fn send_raw_request(
+        &self,
+        path: &str,
+        method: &str,
+        body: Option<Value>,
+    ) -> ResultWithDefaultError<Option<Value>> {
+        let url = resolve_url(&self.base_url, path)?;
+        let method = method.to_uppercase().parse::<reqwest::Method>().map_err(
+            |_| -> Box<dyn std::error::Error + Send> {
+                Box::new(std::io::Error::other(format!(
+                    "invalid HTTP method: {method}"
+                )))
+            },
+        )?;
+        let request = self.http_client.request(method, url);
+        let request = match body {
+            Some(body) => request.json(&body),
+            None => request,
+        };
+        let response = match request
+            .timeout(std::time::Duration::from_secs(RAW_REQUEST_TIMEOUT_SECS))
+            .send()
+            .await
+        {
+            Ok(response) => response,
+            Err(error) => {
+                return Err(Box::new(std::io::Error::other(format!(
+                    "request failed: {error}"
+                ))))
+            }
+        };
+        let status = response.status();
+        let text = match response.text().await {
+            Ok(text) => text,
+            Err(error) => {
+                return Err(Box::new(std::io::Error::other(format!(
+                    "failed to read response body (HTTP {status}): {error}"
+                ))))
+            }
+        };
+        if text.trim().is_empty() {
+            if status.is_success() {
+                return Ok(None);
+            }
+            return Err(Box::new(std::io::Error::other(format!(
+                "HTTP {status} with an empty response body"
+            ))));
+        }
+        if !status.is_success() {
+            return Err(Box::new(std::io::Error::other(format!(
+                "HTTP {status}: {}",
+                text.chars().take(512).collect::<String>()
+            ))));
+        }
+        match serde_json::from_str::<Value>(&text) {
+            Ok(value) => Ok(Some(value)),
+            Err(_) => Err(Box::new(std::io::Error::other(format!(
+                "API returned non-JSON response (HTTP {status}): {}",
+                text.chars().take(512).collect::<String>()
+            )))),
+        }
+    }
+
     async fn put<T: de::DeserializeOwned, Body: Serialize>(
         &self,
         url: String,
@@ -214,6 +288,15 @@ impl ApiClient for V9ApiClient {
     async fn get_user(&self) -> ResultWithDefaultError<User> {
         let url = format!("{}/me", self.base_url);
         return self.get::<User>(url).await;
+    }
+
+    async fn send_raw(
+        &self,
+        path: &str,
+        method: &str,
+        body: Option<Value>,
+    ) -> ResultWithDefaultError<Option<Value>> {
+        self.send_raw_request(path, method, body).await
     }
 
     async fn create_time_entry(&self, time_entry: TimeEntry) -> ResultWithDefaultError<i64> {
@@ -562,5 +645,107 @@ impl ApiClient for V9ApiClient {
             workspaces,
             tags: Vec::new(),
         })
+    }
+}
+
+const ALLOWED_RAW_HOSTS: &[&str] = &["api.track.toggl.com"];
+const RAW_REQUEST_TIMEOUT_SECS: u64 = 30;
+
+/// Resolves the path argument of the raw API command into a full URL.
+/// Relative paths are joined onto the client's base URL and validated;
+/// absolute URLs are allowed only over https and when their host is on the
+/// allowlist (e.g. the reports API at `https://api.track.toggl.com/reports/api/v3`).
+fn resolve_url(base_url: &str, path: &str) -> ResultWithDefaultError<String> {
+    if path.starts_with("http://") || path.starts_with("https://") {
+        let url = reqwest::Url::parse(path).map_err(|_| -> Box<dyn std::error::Error + Send> {
+            Box::new(std::io::Error::other(format!("invalid URL: {path}")))
+        })?;
+        // The request carries the API token, so never send it in the clear.
+        if url.scheme() != "https" {
+            return Err(Box::new(std::io::Error::other(format!(
+                "URL scheme {:?} is not allowed; use https://",
+                url.scheme()
+            ))));
+        }
+        if !ALLOWED_RAW_HOSTS.contains(&url.host_str().unwrap_or("")) {
+            return Err(Box::new(std::io::Error::other(format!(
+                "URL host {:?} is not allowed; only {} URLs are supported",
+                url.host_str().unwrap_or(""),
+                ALLOWED_RAW_HOSTS.join(", ")
+            ))));
+        }
+        return Ok(path.to_string());
+    }
+    if !path.starts_with('/') || path.starts_with("//") {
+        return Err(Box::new(std::io::Error::other(format!(
+            "invalid API path \"{path}\": expected a path starting with a single '/', \
+             e.g. \"/me/time_entries/current\""
+        ))));
+    }
+    let joined = format!("{base_url}{path}");
+    reqwest::Url::parse(&joined).map_err(|_| -> Box<dyn std::error::Error + Send> {
+        Box::new(std::io::Error::other(format!(
+            "invalid API path \"{path}\": not a valid URL"
+        )))
+    })?;
+    Ok(joined)
+}
+
+#[cfg(test)]
+mod raw_url_tests {
+    use super::resolve_url;
+    use tokio_test::assert_err;
+
+    const BASE_URL: &str = "https://track.toggl.com/api/v9";
+
+    #[test]
+    fn joins_relative_path() {
+        assert_eq!(
+            resolve_url(BASE_URL, "/me/time_entries/current").unwrap(),
+            format!("{BASE_URL}/me/time_entries/current")
+        );
+    }
+
+    #[test]
+    fn rejects_path_without_leading_slash() {
+        assert_err!(resolve_url(BASE_URL, "me/time_entries"));
+    }
+
+    #[test]
+    fn rejects_double_slash_path() {
+        assert_err!(resolve_url(BASE_URL, "//evil.com/me"));
+    }
+
+    #[test]
+    fn allows_allowed_host_url() {
+        assert_eq!(
+            resolve_url(
+                BASE_URL,
+                "https://api.track.toggl.com/reports/api/v3/search/time_entries"
+            )
+            .unwrap(),
+            "https://api.track.toggl.com/reports/api/v3/search/time_entries"
+        );
+    }
+
+    #[test]
+    fn rejects_plain_http_url() {
+        assert_err!(resolve_url(
+            BASE_URL,
+            "http://api.track.toggl.com/reports/api/v3/search/time_entries"
+        ));
+    }
+
+    #[test]
+    fn rejects_other_host_url() {
+        assert_err!(resolve_url(BASE_URL, "https://example.com/me"));
+    }
+
+    #[test]
+    fn percent_encodes_odd_characters_in_relative_paths() {
+        // The url crate percent-encodes instead of rejecting; reqwest applies
+        // the same encoding when the path is joined for the request.
+        let url = resolve_url(BASE_URL, "/me/time entries").unwrap();
+        assert!(url.ends_with("/me/time entries"));
     }
 }
