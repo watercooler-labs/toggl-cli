@@ -653,13 +653,20 @@ const RAW_REQUEST_TIMEOUT_SECS: u64 = 30;
 
 /// Resolves the path argument of the raw API command into a full URL.
 /// Relative paths are joined onto the client's base URL and validated;
-/// absolute URLs are allowed only when their host is on the allowlist
-/// (e.g. the reports API at `https://api.track.toggl.com/reports/api/v3`).
+/// absolute URLs are allowed only over https and when their host is on the
+/// allowlist (e.g. the reports API at `https://api.track.toggl.com/reports/api/v3`).
 fn resolve_url(base_url: &str, path: &str) -> ResultWithDefaultError<String> {
     if path.starts_with("http://") || path.starts_with("https://") {
         let url = reqwest::Url::parse(path).map_err(|_| -> Box<dyn std::error::Error + Send> {
             Box::new(std::io::Error::other(format!("invalid URL: {path}")))
         })?;
+        // The request carries the API token, so never send it in the clear.
+        if url.scheme() != "https" {
+            return Err(Box::new(std::io::Error::other(format!(
+                "URL scheme {:?} is not allowed; use https://",
+                url.scheme()
+            ))));
+        }
         if !ALLOWED_RAW_HOSTS.contains(&url.host_str().unwrap_or("")) {
             return Err(Box::new(std::io::Error::other(format!(
                 "URL host {:?} is not allowed; only {} URLs are supported",
@@ -719,6 +726,14 @@ mod raw_url_tests {
             .unwrap(),
             "https://api.track.toggl.com/reports/api/v3/search/time_entries"
         );
+    }
+
+    #[test]
+    fn rejects_plain_http_url() {
+        assert_err!(resolve_url(
+            BASE_URL,
+            "http://api.track.toggl.com/reports/api/v3/search/time_entries"
+        ));
     }
 
     #[test]
