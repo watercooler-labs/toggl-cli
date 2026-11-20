@@ -156,8 +156,7 @@ $ toggl list profile --json
 ```
 
 Note: `toggl list profile` ignores the date filters (`--since`,
-`--until`) and the `-n` limit, which apply only to projects, tags, and
-time entries.
+`--until`) and the `-n` limit, which apply only to the other entities.
 
 ### Shell completions
 
