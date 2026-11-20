@@ -131,66 +131,42 @@ impl StartCommand {
             }
         }
 
-        // Look up task by name if provided
-        let task_obj = task.as_ref().and_then(|task_name| {
-            let mut matches = entities
-                .tasks
-                .clone()
-                .into_values()
-                .filter(|t| t.name == *task_name);
-            match &project_from_flag {
-                // Task names are only unique within a project, so scope the
-                // lookup to the requested project when we have one.
-                Some(project) => matches.find(|t| t.project.id == project.id),
-                None => matches.next(),
+        // Task names are only unique within a project, so a task is always
+        // looked up in the project given alongside it.
+        let task_obj = match (&task, &project_from_flag) {
+            (None, _) => None,
+            (Some(_), None) => {
+                return Err(Box::new(std::io::Error::other("--task requires --project")));
             }
-        });
-
-        // Error if task name was provided but not found. A misspelt task is the common
-        // case, so name the candidates instead of leaving the caller to go looking.
-        if let Some(name) = &task {
-            if task_obj.is_none() {
-                let mut available = entities
+            (Some(task_name), Some(project)) => {
+                let tasks_in_project = entities
                     .tasks
                     .values()
-                    .filter(|t| match &project_from_flag {
-                        Some(project) => t.project.id == project.id,
-                        None => true,
-                    })
-                    .map(|t| match &project_from_flag {
-                        Some(_) => t.name.clone(),
-                        None => format!("{} @{}", t.name, t.project.name),
-                    })
-                    .collect::<Vec<_>>();
-                available.sort();
+                    .filter(|t| t.project.id == project.id);
 
-                let hint = match (available.is_empty(), &project_from_flag) {
-                    (true, Some(project)) => {
-                        format!("\nProject \"{}\" has no tasks", project.name)
+                match tasks_in_project.clone().find(|t| t.name == *task_name) {
+                    Some(task) => Some(task.clone()),
+                    // A misspelt task is the common case, so name the
+                    // candidates instead of leaving the caller to go looking.
+                    None => {
+                        let mut available =
+                            tasks_in_project.map(|t| t.name.clone()).collect::<Vec<_>>();
+                        available.sort();
+
+                        let hint = if available.is_empty() {
+                            format!("Project \"{}\" has no tasks", project.name)
+                        } else {
+                            format!("Tasks in \"{}\": {}", project.name, available.join(", "))
+                        };
+
+                        return Err(Box::new(std::io::Error::other(format!(
+                            "Task \"{}\" not found\n{}",
+                            task_name, hint
+                        ))));
                     }
-                    (true, None) => String::new(),
-                    (false, Some(project)) => {
-                        format!("\nTasks in \"{}\": {}", project.name, available.join(", "))
-                    }
-                    (false, None) => format!("\nAvailable tasks: {}", available.join(", ")),
-                };
-
-                return Err(Box::new(std::io::Error::other(format!(
-                    "Task \"{}\" not found{}",
-                    name, hint
-                ))));
+                }
             }
-        }
-
-        // Validate: if both project and task are specified, ensure task belongs to project
-        if let (Some(ref proj), Some(ref tsk)) = (&project_from_flag, &task_obj) {
-            if tsk.project.id != proj.id {
-                return Err(Box::new(std::io::Error::other(format!(
-                    "Task \"{}\" belongs to project \"{}\", but you specified project \"{}\"",
-                    tsk.name, tsk.project.name, proj.name
-                ))));
-            }
-        }
+        };
 
         // Determine final task: use CLI flag if provided, otherwise fallback to config
         let task_obj = task_obj.or(default_time_entry.task.clone());

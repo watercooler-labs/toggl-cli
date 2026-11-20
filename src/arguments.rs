@@ -73,7 +73,8 @@ pub enum Command {
         tags: Option<Vec<String>>,
         #[structopt(
             long,
-            help = "Exact name of the task you want the time entry to be associated with"
+            requires = "project",
+            help = "Exact name of the task you want the time entry to be associated with, requires --project"
         )]
         task: Option<String>,
         #[structopt(short, long)]
