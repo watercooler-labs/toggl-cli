@@ -14,6 +14,7 @@ use api::client::ApiClient;
 use api::client::V9ApiClient;
 use arguments::Command::Api;
 use arguments::Command::Auth;
+use arguments::Command::Completions;
 use arguments::Command::Config;
 use arguments::Command::Continue;
 use arguments::Command::CreateProject;
@@ -42,6 +43,7 @@ use commands::delete_project::DeleteProjectCommand;
 use commands::delete_tag::DeleteTagCommand;
 use commands::edit::EditCommand;
 use commands::list::ListCommand;
+use commands::profiles::ProfilesListCommand;
 use commands::rename_project::RenameProjectCommand;
 use commands::rename_tag::RenameTagCommand;
 use commands::running::RunningTimeEntryCommand;
@@ -69,7 +71,6 @@ async fn main() -> ResultWithDefaultError<()> {
 
 async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultError<()> {
     let command = args.cmd;
-    let get_default_api_client = || get_api_client(args.proxy.clone());
     let picker = picker::get_picker(args.fzf);
     if let Some(directory) = args.directory {
         if !directory.exists() {
@@ -80,6 +81,8 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
         }
         std::env::set_current_dir(directory).expect("Couldn't set current directory");
     }
+    let resolved_profile = resolve_profile(args.profile.as_deref());
+    let get_default_api_client = || get_api_client(args.proxy.clone(), resolved_profile.as_deref());
     match command {
         None => RunningTimeEntryCommand::execute(get_default_api_client()?).await?,
         Some(subcommand) => match subcommand {
@@ -118,15 +121,24 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 until,
                 entity,
             } => {
-                ListCommand::execute(
-                    get_default_api_client()?,
-                    number,
-                    json,
-                    since,
-                    until,
-                    entity,
-                )
-                .await?
+                if let Some(arguments::Entity::Profile { json: entity_json }) = &entity {
+                    ProfilesListCommand::execute(
+                        resolved_profile.as_deref(),
+                        json || *entity_json,
+                        args.proxy.clone(),
+                    )
+                    .await?;
+                } else {
+                    ListCommand::execute(
+                        get_default_api_client()?,
+                        number,
+                        json,
+                        since,
+                        until,
+                        entity,
+                    )
+                    .await?
+                }
             }
 
             Current | Running => {
@@ -210,13 +222,29 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 };
                 let credentials = Credentials { api_token };
                 let api_client = V9ApiClient::from_credentials(credentials, args.proxy)?;
-                AuthenticationCommand::execute(io::stdout(), api_client, get_storage()).await?
+                AuthenticationCommand::execute(
+                    io::stdout(),
+                    api_client,
+                    get_storage(resolved_profile.as_deref()),
+                )
+                .await?;
+                credentials::add_profile(
+                    resolved_profile
+                        .as_deref()
+                        .unwrap_or(credentials::DEFAULT_PROFILE),
+                )?
             }
 
             Logout => {
-                let storage = get_storage();
-                storage.clear()?;
-                println!("Successfully logged out.");
+                let profile_name = resolved_profile
+                    .as_deref()
+                    .unwrap_or(credentials::DEFAULT_PROFILE);
+                let cleared = get_storage(resolved_profile.as_deref()).clear();
+                // Unregister even when the keyring had nothing to clear, or a
+                // profile whose token is already gone could never be removed.
+                credentials::remove_profile(profile_name)?;
+                cleared?;
+                println!("Successfully logged out from profile: {}", profile_name);
             }
 
             Config {
@@ -235,16 +263,77 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 },
                 None => config::manage::ConfigManageCommand::execute(delete, edit, path).await?,
             },
+            Completions { shell } => {
+                CommandLineArguments::clap().gen_completions_to(
+                    env!("CARGO_PKG_NAME"),
+                    shell,
+                    &mut io::stdout(),
+                );
+            }
         },
     }
 
     Ok(())
 }
 
-fn get_api_client(proxy: Option<String>) -> ResultWithDefaultError<impl ApiClient> {
-    let credentials_storage = get_storage();
+fn resolve_profile(cli_profile: Option<&str>) -> Option<String> {
+    let env_profile = std::env::var("TOGGL_PROFILE").ok();
+    let config_profile = config::locate::locate_config_path()
+        .ok()
+        .and_then(|path| config::parser::get_config_from_file(path).ok())
+        .and_then(|track_config| track_config.get_active_config().ok().cloned())
+        .and_then(|branch_config| branch_config.profile);
+    resolve_profile_from(cli_profile.map(str::to_string), env_profile, config_profile)
+}
+
+fn resolve_profile_from(
+    cli_profile: Option<String>,
+    env_profile: Option<String>,
+    config_profile: Option<String>,
+) -> Option<String> {
+    [cli_profile, env_profile, config_profile]
+        .into_iter()
+        .flatten()
+        .find(|profile| !profile.trim().is_empty())
+        .map(|profile| profile.trim().to_string())
+}
+
+fn get_api_client(
+    proxy: Option<String>,
+    profile: Option<&str>,
+) -> ResultWithDefaultError<impl ApiClient> {
+    let credentials_storage = get_storage(profile);
     match credentials_storage.read() {
         Ok(credentials) => V9ApiClient::from_credentials(credentials, proxy),
         Err(err) => Err(err),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cli_profile_takes_priority_over_environment_and_config() {
+        assert_eq!(
+            resolve_profile_from(
+                Some("cli".to_string()),
+                Some("env".to_string()),
+                Some("config".to_string())
+            ),
+            Some("cli".to_string())
+        );
+    }
+
+    #[test]
+    fn empty_profile_values_are_ignored() {
+        assert_eq!(
+            resolve_profile_from(None, Some(String::new()), Some("   ".to_string())),
+            None
+        );
+        assert_eq!(
+            resolve_profile_from(None, Some(" work ".to_string()), None),
+            Some("work".to_string())
+        );
     }
 }

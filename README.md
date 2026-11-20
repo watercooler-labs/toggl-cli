@@ -65,6 +65,115 @@ The API token is stored securely in your Operating System's keychain using the [
 > set. You don't need to run the `auth` command if you have the environment
 > variable set.
 
+### Profiles
+
+If you have multiple Toggl accounts (e.g. work and personal), you can
+store separate tokens under named profiles.
+
+```shell
+toggl auth --profile work
+toggl auth --profile personal
+```
+
+Select a profile in three ways (listed in priority order):
+
+1. **CLI flag**: applies to a single command:
+   ```shell
+   toggl --profile work start
+   toggl --profile personal list
+   ```
+
+2. **Environment variable**: applies to all commands in the session:
+   ```shell
+   export TOGGL_PROFILE=work
+   toggl start
+   ```
+
+3. **TOML config**: applies per-directory/branch via your auto-tracking
+   config:
+   ```toml
+   ['*']
+   profile = "work"
+   project = "{{current_dir}}"
+   ```
+
+If no profile is specified, the CLI uses the `default` profile, which is
+fully backwards compatible with existing setups.
+
+**Priority order:**
+1. Explicit `--profile` flag → always uses keyring (ignores `TOGGL_API_TOKEN`)
+2. `TOGGL_PROFILE` environment variable → uses keyring for that profile
+3. `profile` field in TOML config → uses keyring for that profile
+4. `TOGGL_API_TOKEN` environment variable → uses the token directly (no keyring)
+5. Keyring `default` profile → fallback
+
+This means if you set `TOGGL_API_TOKEN`, it will be used for all commands
+**unless** you explicitly specify `--profile`. This allows you to
+override the env var when needed:
+
+```shell
+export TOGGL_API_TOKEN=xxx  # Used by default
+toggl start                  # Uses TOGGL_API_TOKEN
+toggl --profile work start   # Uses keyring "work" profile (ignores env var)
+```
+
+To clear a specific profile's stored token:
+
+```shell
+toggl logout --profile work
+```
+
+To list all stored profiles and their associated email addresses:
+
+```shell
+$ toggl list profile
+  default    user@example.com
+* work       user@company.com  (active)
+  personal   user@personal.com
+```
+
+The `*` marker indicates the currently active profile based on your
+`--profile` flag, `TOGGL_PROFILE` environment variable, or TOML config.
+The `default` profile is always listed, even if it was never registered
+with `toggl auth --profile`.
+
+For scripting, pass `--json` to get machine-readable output:
+
+```shell
+$ toggl list profile --json
+[
+  {
+    "name": "default",
+    "email": "user@example.com",
+    "active": false
+  },
+  {
+    "name": "work",
+    "email": "user@company.com",
+    "active": true
+  }
+]
+```
+
+Note: `toggl list profile` ignores the date filters (`--since`,
+`--until`) and the `-n` limit, which apply only to the other entities.
+
+### Shell completions
+
+The `completions` command prints a completion script for `bash`, `zsh`,
+`fish`, `powershell` or `elvish` to stdout.
+
+```shell
+# bash
+toggl completions --shell bash > ~/.local/share/bash-completion/completions/toggl
+
+# zsh, any directory in your $fpath
+toggl completions --shell zsh > ~/.zfunc/_toggl
+
+# fish
+toggl completions --shell fish > ~/.config/fish/completions/toggl.fish
+```
+
 ### Commands
 
 Run the `help` command to see a list of available commands.
@@ -83,14 +192,16 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-    -C <directory>         Change directory before running the command
-        --proxy <proxy>    Use custom proxy
+    -C <directory>             Change directory before running the command
+        --profile <profile>    Profile name for API token (e.g. 'work', 'personal')
+        --proxy <proxy>        Use custom proxy
 
 SUBCOMMANDS:
     api               Issue a raw GET request against the Toggl v9 API and
                       print the JSON response
     auth              Authenticate with the Toggl API. Find your API token at https://track.toggl.com/profile#api-
                       token
+    completions       Create tab-completion scripts
     config            Manage auto-tracking configuration
     continue
     create-project    Create a new project in your workspace
@@ -130,7 +241,7 @@ FLAGS:
 OPTIONS:
     -p, --project <project>    Exact name of the project you want the time entry to be associated with
     -t, --tags <tags>...       Space separated list of tags to associate with the time entry, e.g. 'tag1 tag2 tag3'
-        --task <task>          Exact name of the task you want the time entry to be associated with
+        --task <task>          Exact name of the task you want the time entry to be associated with, requires --project
 
 ARGS:
     <description>    Description of the time entry

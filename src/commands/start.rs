@@ -131,54 +131,61 @@ impl StartCommand {
             }
         }
 
-        // Look up task by name if provided
-        let task_obj = task.as_ref().and_then(|task_name| {
-            entities
-                .tasks
-                .clone()
-                .into_values()
-                .find(|t| t.name == *task_name)
-        });
-
-        // Error if task name was provided but not found
-        if let Some(name) = &task {
-            if task_obj.is_none() {
-                return Err(Box::new(std::io::Error::other(format!(
-                    "Task \"{}\" not found",
-                    name
-                ))));
+        // Task names are only unique within a project, so a task is always
+        // looked up in the project given alongside it.
+        let task_obj = match (&task, &project_from_flag) {
+            (None, _) => None,
+            (Some(_), None) => {
+                return Err(Box::new(std::io::Error::other("--task requires --project")));
             }
-        }
+            (Some(task_name), Some(project)) => {
+                let tasks_in_project = entities
+                    .tasks
+                    .values()
+                    .filter(|t| t.project.id == project.id);
 
-        // Validate: if both project and task are specified, ensure task belongs to project
-        if let (Some(ref proj), Some(ref tsk)) = (&project_from_flag, &task_obj) {
-            if tsk.project.id != proj.id {
-                return Err(Box::new(std::io::Error::other(format!(
-                    "Task \"{}\" belongs to project \"{}\", but you specified project \"{}\"",
-                    tsk.name, tsk.project.name, proj.name
-                ))));
+                match tasks_in_project.clone().find(|t| t.name == *task_name) {
+                    Some(task) => Some(task.clone()),
+                    // A misspelt task is the common case, so name the
+                    // candidates instead of leaving the caller to go looking.
+                    None => {
+                        let mut available =
+                            tasks_in_project.map(|t| t.name.clone()).collect::<Vec<_>>();
+                        available.sort();
+
+                        let hint = if available.is_empty() {
+                            format!("Project \"{}\" has no tasks", project.name)
+                        } else {
+                            format!("Tasks in \"{}\": {}", project.name, available.join(", "))
+                        };
+
+                        return Err(Box::new(std::io::Error::other(format!(
+                            "Task \"{}\" not found\n{}",
+                            task_name, hint
+                        ))));
+                    }
+                }
             }
-        }
+        };
 
-        // Determine final task: use CLI flag if provided, otherwise fallback to config
-        let task_obj = task_obj.or(default_time_entry.task.clone());
-
-        // Determine final project: use task's project if only task provided, otherwise use flag/default
-        let project = if project_from_flag.is_none() {
-            task_obj.as_ref().map(|t| t.project.clone())
-        } else {
-            project_from_flag
-        }
-        .or(default_time_entry.project.clone());
-
-        if let (Some(ref proj), Some(ref tsk)) = (&project, &task_obj) {
-            if tsk.project.id != proj.id {
-                return Err(Box::new(std::io::Error::other(format!(
-                    "Task \"{}\" belongs to project \"{}\", but project \"{}\" was selected",
-                    tsk.name, tsk.project.name, proj.name
-                ))));
+        // The config's project and task form a pair. A project from the
+        // command line replaces it, keeping the config task only if it
+        // belongs to that project.
+        let (project, task_obj) = match project_from_flag {
+            Some(project) => {
+                let task = task_obj.or_else(|| {
+                    default_time_entry
+                        .task
+                        .clone()
+                        .filter(|t| t.project.id == project.id)
+                });
+                (Some(project), task)
             }
-        }
+            None => (
+                default_time_entry.project.clone(),
+                default_time_entry.task.clone(),
+            ),
+        };
 
         let tags = tags.unwrap_or(default_time_entry.tags.clone());
 

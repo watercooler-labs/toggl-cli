@@ -1,5 +1,6 @@
 use std::path::PathBuf;
 
+use structopt::clap::Shell;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -16,6 +17,9 @@ pub struct CommandLineArguments {
 
     #[structopt(long, help = "Use fzf instead of the default picker")]
     pub fzf: bool,
+
+    #[structopt(long, help = "Profile name for API token (e.g. 'work', 'personal')")]
+    pub profile: Option<String>,
 }
 
 #[derive(Debug, StructOpt)]
@@ -106,7 +110,8 @@ pub enum Command {
         tags: Option<Vec<String>>,
         #[structopt(
             long,
-            help = "Exact name of the task you want the time entry to be associated with"
+            requires = "project",
+            help = "Exact name of the task you want the time entry to be associated with, requires --project"
         )]
         task: Option<String>,
         #[structopt(short, long)]
@@ -211,6 +216,18 @@ pub enum Command {
         #[structopt(subcommand)]
         cmd: Option<ConfigSubCommand>,
     },
+    #[structopt(about = "Create tab-completion scripts")]
+    Completions {
+        #[structopt(
+            short,
+            long,
+            help = "Shell to generate completions for",
+            default_value = "bash",
+            possible_values = &Shell::variants(),
+            case_insensitive = true
+        )]
+        shell: Shell,
+    },
 }
 #[derive(Debug, StructOpt)]
 pub enum Entity {
@@ -223,6 +240,17 @@ pub enum Entity {
         json: bool,
     },
     Tag {
+        #[structopt(short, long, help = "Output in JSON format")]
+        json: bool,
+    },
+    Task {
+        #[structopt(short, long, help = "Output in JSON format")]
+        json: bool,
+        #[structopt(short, long, help = "Only list tasks belonging to this project")]
+        project: Option<String>,
+    },
+    #[structopt(about = "List all stored profiles")]
+    Profile {
         #[structopt(short, long, help = "Output in JSON format")]
         json: bool,
     },
