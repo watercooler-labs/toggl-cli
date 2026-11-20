@@ -62,8 +62,9 @@ async fn main() -> ResultWithDefaultError<()> {
         Ok(()) => Ok(()),
         Err(error) => {
             // Errors go to stderr and the process exits nonzero so callers
-            // can rely on the exit code and pipe stdout safely.
-            eprint!("{error}");
+            // can rely on the exit code and pipe stdout safely. Only some
+            // errors end in a newline, so normalise to exactly one.
+            eprintln!("{}", error.to_string().trim_end());
             std::process::exit(1);
         }
     }
