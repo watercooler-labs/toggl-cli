@@ -33,24 +33,26 @@ impl ProfilesListCommand {
         // Without an explicit profile the CLI falls back to `default`,
         // as resolved in main.rs.
         let active = active_profile.unwrap_or(DEFAULT_PROFILE);
-        let mut handles: Vec<(String, JoinHandle<Option<String>>)> = vec![];
+        // Profiles without a stored token still get an entry, so they show
+        // up as not authenticated instead of disappearing from the list.
+        let mut handles: Vec<(String, Option<JoinHandle<Option<String>>>)> = vec![];
         for profile_name in profiles {
             let client = credentials::get_storage(Some(&profile_name))
                 .read()
                 .ok()
                 .and_then(|creds| V9ApiClient::from_credentials(creds, proxy.clone()).ok());
-            if let Some(client) = client {
-                let handle =
-                    tokio::spawn(
-                        async move { client.get_user().await.ok().map(|user| user.email) },
-                    );
-                handles.push((profile_name, handle));
-            }
+            let handle = client.map(|client| {
+                tokio::spawn(async move { client.get_user().await.ok().map(|user| user.email) })
+            });
+            handles.push((profile_name, handle));
         }
 
         let mut entries: Vec<ProfileInfo> = vec![];
         for (profile_name, handle) in handles {
-            let email = handle.await.unwrap_or(None);
+            let email = match handle {
+                Some(handle) => handle.await.unwrap_or(None),
+                None => None,
+            };
             entries.push(ProfileInfo {
                 active: profile_name == active,
                 email,
