@@ -217,12 +217,14 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
             }
 
             Logout => {
-                let storage = get_storage(resolved_profile.as_deref());
-                storage.clear()?;
                 let profile_name = resolved_profile
                     .as_deref()
                     .unwrap_or(credentials::DEFAULT_PROFILE);
+                let cleared = get_storage(resolved_profile.as_deref()).clear();
+                // Unregister even when the keyring had nothing to clear, or a
+                // profile whose token is already gone could never be removed.
                 credentials::remove_profile(profile_name)?;
+                cleared?;
                 println!("Successfully logged out from profile: {}", profile_name);
             }
 
