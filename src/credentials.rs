@@ -57,6 +57,7 @@ impl CredentialsStorage for KeyringStorage {
 
     fn clear(&self) -> ResultWithDefaultError<()> {
         match self.keyring.delete_password() {
+            Err(keyring::Error::NoEntry) => Ok(()),
             Err(keyring_err) => {
                 eprintln!("Error deleting from keyring: {keyring_err}");
                 Err(Box::new(StorageError::Delete))
@@ -90,17 +91,26 @@ impl CredentialsStorage for EnvironmentStorage {
     }
 }
 
-pub fn get_storage(profile: Option<&str>) -> Box<dyn CredentialsStorage> {
+pub fn get_storage(profile: Option<&str>) -> ResultWithDefaultError<Box<dyn CredentialsStorage>> {
+    storage_with(profile, std::env::var("TOGGL_API_TOKEN").ok(), Entry::new)
+}
+
+fn storage_with(
+    profile: Option<&str>,
+    token: Option<String>,
+    entry: impl FnOnce(&str, &str) -> keyring::Result<Entry>,
+) -> ResultWithDefaultError<Box<dyn CredentialsStorage>> {
     if profile.is_none() {
-        if let Ok(api_token) = std::env::var("TOGGL_API_TOKEN") {
-            return Box::new(EnvironmentStorage::new(api_token));
+        if let Some(api_token) = token {
+            return Ok(Box::new(EnvironmentStorage::new(api_token)));
         }
     }
 
+    // Keep the legacy service/user pair so upgrading does not lose credentials.
     let username = profile.unwrap_or(DEFAULT_PROFILE);
-    let keyring = Entry::new("togglcli", username)
-        .unwrap_or_else(|err| panic!("Couldn't create credentials_storage: {err}"));
-    Box::new(KeyringStorage::new(keyring))
+    let keyring = entry("togglcli", username)
+        .map_err(|err| Box::new(err) as Box<dyn std::error::Error + Send>)?;
+    Ok(Box::new(KeyringStorage::new(keyring)))
 }
 
 fn get_profiles_path() -> PathBuf {
@@ -177,6 +187,38 @@ mod tests {
         let dir = tempfile::tempdir().expect("failed to create temp dir");
         let path = dir.path().join("profiles.json");
         (dir, path)
+    }
+
+    #[test]
+    fn environment_token_does_not_open_the_keyring() {
+        let storage = storage_with(None, Some("env-token".into()), |_, _| {
+            panic!("environment authentication must not open the keyring")
+        })
+        .unwrap();
+        assert_eq!(storage.read().unwrap().api_token, "env-token");
+        assert!(storage.persist("new-token".into()).is_err());
+        assert!(storage.clear().is_err());
+    }
+
+    #[test]
+    fn profiles_override_tokens_and_preserve_legacy_keyring_identity() {
+        for profile in [None, Some("default"), Some("work")] {
+            let token = profile.map(|_| "ignored-env-token".into());
+            let storage = storage_with(profile, token, |service, user| {
+                assert_eq!(service, "togglcli");
+                assert_eq!(user, profile.unwrap_or("default"));
+                Ok(Entry::new_with_credential(Box::<
+                    keyring::mock::MockCredential,
+                >::default()))
+            })
+            .unwrap();
+            assert!(storage.read().is_err());
+            storage.persist("saved-token".into()).unwrap();
+            assert_eq!(storage.read().unwrap().api_token, "saved-token");
+            storage.clear().unwrap();
+            storage.clear().unwrap();
+            assert!(storage.read().is_err());
+        }
     }
 
     #[test]

@@ -2,7 +2,7 @@ use std::fs;
 
 use colored::Colorize;
 
-use crate::{error::ConfigError, models::ResultWithDefaultError, utilities};
+use crate::{models::ResultWithDefaultError, utilities};
 
 pub struct ConfigManageCommand;
 
@@ -37,10 +37,7 @@ impl ConfigManageCommand {
                 println!("{config}");
                 Ok(())
             }
-            Err(e) => {
-                println!("In config parse {e}");
-                Err(Box::new(ConfigError::Parse))
-            }
+            Err(e) => Err(e),
         }
     }
 }

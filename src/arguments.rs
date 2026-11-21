@@ -18,7 +18,11 @@ pub struct CommandLineArguments {
     #[structopt(long, help = "Use fzf instead of the default picker")]
     pub fzf: bool,
 
-    #[structopt(long, help = "Profile name for API token (e.g. 'work', 'personal')")]
+    #[structopt(
+        long,
+        global = true,
+        help = "Profile name for API token (e.g. 'work', 'personal')"
+    )]
     pub profile: Option<String>,
 }
 
@@ -255,6 +259,38 @@ pub enum Entity {
         json: bool,
     },
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn profile_is_global_for_auth_logout_and_nested_commands() {
+        for args in [
+            vec!["toggl", "--profile", "work", "auth"],
+            vec!["toggl", "auth", "--profile", "work"],
+            vec!["toggl", "logout", "--profile", "work"],
+            vec!["toggl", "list", "profile", "--profile", "work", "--json"],
+        ] {
+            let parsed = CommandLineArguments::from_iter_safe(args).unwrap();
+            assert_eq!(parsed.profile.as_deref(), Some("work"));
+        }
+    }
+
+    #[test]
+    fn task_requires_a_project() {
+        assert!(CommandLineArguments::from_iter_safe(["toggl", "start", "--task", "dev"]).is_err());
+        assert!(CommandLineArguments::from_iter_safe([
+            "toggl",
+            "start",
+            "--task",
+            "dev",
+            "--project",
+            "app"
+        ])
+        .is_ok());
+    }
+}
+
 #[derive(Debug, StructOpt)]
 pub enum ConfigSubCommand {
     #[structopt(about = "Initialize a configuration file.")]

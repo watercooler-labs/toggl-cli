@@ -82,7 +82,12 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
         }
         std::env::set_current_dir(directory).expect("Couldn't set current directory");
     }
-    let resolved_profile = resolve_profile(args.profile.as_deref());
+    // Local utility commands must remain usable even when configuration is broken.
+    let resolved_profile = if matches!(&command, Some(Config { .. } | Completions { .. })) {
+        None
+    } else {
+        resolve_profile(args.profile.as_deref())?
+    };
     let get_default_api_client = || get_api_client(args.proxy.clone(), resolved_profile.as_deref());
     match command {
         None => RunningTimeEntryCommand::execute(get_default_api_client()?).await?,
@@ -226,7 +231,7 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 AuthenticationCommand::execute(
                     io::stdout(),
                     api_client,
-                    get_storage(resolved_profile.as_deref()),
+                    get_storage(resolved_profile.as_deref())?,
                 )
                 .await?;
                 credentials::add_profile(
@@ -240,11 +245,10 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
                 let profile_name = resolved_profile
                     .as_deref()
                     .unwrap_or(credentials::DEFAULT_PROFILE);
-                let cleared = get_storage(resolved_profile.as_deref()).clear();
-                // Unregister even when the keyring had nothing to clear, or a
-                // profile whose token is already gone could never be removed.
+                // Clearing a missing token is idempotent, but a real keyring
+                // error must not silently unregister a still-stored credential.
+                get_storage(resolved_profile.as_deref())?.clear()?;
                 credentials::remove_profile(profile_name)?;
-                cleared?;
                 println!("Successfully logged out from profile: {}", profile_name);
             }
 
@@ -277,33 +281,42 @@ async fn execute_subcommand(args: CommandLineArguments) -> ResultWithDefaultErro
     Ok(())
 }
 
-fn resolve_profile(cli_profile: Option<&str>) -> Option<String> {
-    let env_profile = std::env::var("TOGGL_PROFILE").ok();
-    let config_profile = config::locate::locate_config_path()
-        .ok()
-        .and_then(|path| config::parser::get_config_from_file(path).ok())
-        .and_then(|track_config| track_config.get_active_config().ok().cloned())
-        .and_then(|branch_config| branch_config.profile);
-    resolve_profile_from(cli_profile.map(str::to_string), env_profile, config_profile)
+fn resolve_profile(cli_profile: Option<&str>) -> ResultWithDefaultError<Option<String>> {
+    resolve_profile_from(
+        cli_profile.map(str::to_string),
+        std::env::var("TOGGL_PROFILE").ok(),
+        || match config::locate::locate_config_path() {
+            Ok(path) => config::parser::get_profile_from_file(path),
+            Err(err) if matches!(err.downcast_ref(), Some(error::ConfigError::FileNotFound)) => {
+                Ok(None)
+            }
+            Err(err) => Err(err),
+        },
+    )
 }
 
 fn resolve_profile_from(
     cli_profile: Option<String>,
     env_profile: Option<String>,
-    config_profile: Option<String>,
-) -> Option<String> {
-    [cli_profile, env_profile, config_profile]
-        .into_iter()
-        .flatten()
-        .find(|profile| !profile.trim().is_empty())
-        .map(|profile| profile.trim().to_string())
+    config_profile: impl FnOnce() -> ResultWithDefaultError<Option<String>>,
+) -> ResultWithDefaultError<Option<String>> {
+    fn normalize(profile: Option<String>) -> Option<String> {
+        profile
+            .map(|p| p.trim().to_string())
+            .filter(|p| !p.is_empty())
+    }
+    // Do not read configuration (or execute templates) when already overridden.
+    if let Some(profile) = normalize(cli_profile).or_else(|| normalize(env_profile)) {
+        return Ok(Some(profile));
+    }
+    Ok(normalize(config_profile()?))
 }
 
 fn get_api_client(
     proxy: Option<String>,
     profile: Option<&str>,
 ) -> ResultWithDefaultError<impl ApiClient> {
-    let credentials_storage = get_storage(profile);
+    let credentials_storage = get_storage(profile)?;
     match credentials_storage.read() {
         Ok(credentials) => V9ApiClient::from_credentials(credentials, proxy),
         Err(err) => Err(err),
@@ -317,23 +330,41 @@ mod tests {
     #[test]
     fn cli_profile_takes_priority_over_environment_and_config() {
         assert_eq!(
-            resolve_profile_from(
-                Some("cli".to_string()),
-                Some("env".to_string()),
-                Some("config".to_string())
-            ),
+            resolve_profile_from(Some("cli".to_string()), Some("env".to_string()), || panic!(
+                "explicit profiles must not read configuration"
+            ))
+            .unwrap(),
             Some("cli".to_string())
+        );
+    }
+
+    #[test]
+    fn config_profile_is_used_only_without_an_override() {
+        assert_eq!(
+            resolve_profile_from(None, None, || Ok(Some(" config ".into()))).unwrap(),
+            Some("config".into())
+        );
+        assert_eq!(resolve_profile_from(None, None, || Ok(None)).unwrap(), None);
+        assert!(
+            resolve_profile_from(None, None, || Err(Box::new(std::io::Error::other(
+                "bad config"
+            ))))
+            .is_err()
         );
     }
 
     #[test]
     fn empty_profile_values_are_ignored() {
         assert_eq!(
-            resolve_profile_from(None, Some(String::new()), Some("   ".to_string())),
+            resolve_profile_from(None, Some(String::new()), || Ok(Some("   ".to_string())))
+                .unwrap(),
             None
         );
         assert_eq!(
-            resolve_profile_from(None, Some(" work ".to_string()), None),
+            resolve_profile_from(None, Some(" work ".to_string()), || panic!(
+                "environment overrides config"
+            ))
+            .unwrap(),
             Some("work".to_string())
         );
     }

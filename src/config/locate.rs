@@ -1,13 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use base64::{engine::general_purpose, Engine as _};
-use lazy_static::lazy_static;
-
 use crate::{error::ConfigError, models::ResultWithDefaultError};
-
-lazy_static! {
-    pub static ref TRACKED_PATH: Option<PathBuf> = locate_tracked_path().ok();
-}
+use base64::{engine::general_purpose, Engine as _};
 
 pub fn locate_config_path() -> ResultWithDefaultError<PathBuf> {
     let config_root = get_config_root();
@@ -24,7 +18,7 @@ pub fn locate_config_path() -> ResultWithDefaultError<PathBuf> {
     Ok(config_filename)
 }
 
-fn locate_tracked_path() -> ResultWithDefaultError<PathBuf> {
+pub fn locate_tracked_path() -> ResultWithDefaultError<PathBuf> {
     let config_root = get_config_root();
 
     let mut config_path = std::env::current_dir().expect("failed to get current directory");
@@ -32,7 +26,7 @@ fn locate_tracked_path() -> ResultWithDefaultError<PathBuf> {
 
     while !config_filename.exists() {
         if !config_path.pop() {
-            panic!("No config file found");
+            return Err(Box::new(ConfigError::FileNotFound));
         }
         config_filename = get_encoded_config_path(&config_root, &config_path);
     }

@@ -38,8 +38,8 @@ impl ProfilesListCommand {
         let mut handles: Vec<(String, Option<JoinHandle<Option<String>>>)> = vec![];
         for profile_name in profiles {
             let client = credentials::get_storage(Some(&profile_name))
-                .read()
                 .ok()
+                .and_then(|storage| storage.read().ok())
                 .and_then(|creds| V9ApiClient::from_credentials(creds, proxy.clone()).ok());
             let handle = client.map(|client| {
                 tokio::spawn(async move { client.get_user().await.ok().map(|user| user.email) })

@@ -138,21 +138,34 @@ impl<'de> Deserialize<'de> for BranchConfig {
                 while let Some(key) = map.next_key::<String>()? {
                     match key.as_str() {
                         WORKSPACE => {
-                            workspace = map.next_value().map(process_template)?;
+                            workspace = Some(
+                                process_template(map.next_value()?).map_err(de::Error::custom)?,
+                            );
                         }
                         DESCRIPTION => {
-                            description = map.next_value().map(process_template)?;
+                            description = Some(
+                                process_template(map.next_value()?).map_err(de::Error::custom)?,
+                            );
                         }
                         PROJECT => {
-                            project = map.next_value().map(process_template)?;
+                            project = Some(
+                                process_template(map.next_value()?).map_err(de::Error::custom)?,
+                            );
                         }
                         TASK => {
-                            task = map.next_value().map(process_template)?;
+                            task = Some(
+                                process_template(map.next_value()?).map_err(de::Error::custom)?,
+                            );
                         }
                         TAGS => {
-                            tags = Some(map.next_value()?).map(|tags: Vec<String>| {
-                                tags.into_iter().filter_map(process_template).collect()
-                            });
+                            let values: Vec<String> = map.next_value()?;
+                            tags = Some(
+                                values
+                                    .into_iter()
+                                    .map(process_template)
+                                    .collect::<ResultWithDefaultError<Vec<_>>>()
+                                    .map_err(de::Error::custom)?,
+                            );
                         }
                         BILLABLE => {
                             billable = Some(map.next_value()?);
@@ -181,9 +194,9 @@ impl<'de> Deserialize<'de> for BranchConfig {
             "BranchConfig",
             FIELDS,
             BranchConfigVisitor {
-                base_dir: super::locate::TRACKED_PATH
-                    .to_owned()
-                    .expect("Could not locate tracked path while deserializing config"),
+                base_dir: super::locate::locate_tracked_path()
+                    .or_else(|_| std::env::current_dir())
+                    .map_err(de::Error::custom)?,
             },
         )
     }
@@ -493,7 +506,7 @@ fn resolve_token(base_dir: &Path, token: &str) -> ResultWithDefaultError<String>
     }
 }
 
-fn process_config_value(base_dir: &Path, input: String) -> Option<String> {
+fn process_config_value(base_dir: &Path, input: String) -> ResultWithDefaultError<String> {
     let mut result = String::new();
     let mut chars = input.chars().peekable();
 
@@ -508,44 +521,33 @@ fn process_config_value(base_dir: &Path, input: String) -> Option<String> {
                 }
                 token.push(c);
             }
-            let resolved = resolve_token(base_dir, &token).map_err(|e| {
-                println!("Failed to resolve token: {e}");
-            });
-            if let Ok(resolved_token) = resolved {
-                result.push_str(&resolved_token);
-            } else {
-                return None;
-            }
+            result.push_str(&resolve_token(base_dir, &token)?);
         } else {
             result.push(c);
         }
     }
 
-    Some(result)
+    Ok(result)
 }
 
 impl TrackConfig {
-    fn get_branch_config(&self, branch: Option<&str>) -> &BranchConfig {
-        match branch {
-            Some(branch) => self
-                .configs
-                .iter()
-                .find(|(b, _)| {
-                    let re = regex::Regex::new(b).expect("Invalid branch regex");
-                    re.is_match(branch)
-                })
-                .map(|(_, c)| c)
-                .unwrap_or(&self.default),
-            None => &self.default,
+    fn get_branch_config(&self, branch: Option<&str>) -> ResultWithDefaultError<&BranchConfig> {
+        if let Some(branch) = branch {
+            for (pattern, config) in &self.configs {
+                let re = regex::Regex::new(pattern)
+                    .map_err(|err| Box::new(err) as Box<dyn std::error::Error + Send>)?;
+                if re.is_match(branch) {
+                    return Ok(config);
+                }
+            }
         }
-    }
-    pub fn get_branch_config_for_dir(&self, dir: &PathBuf) -> &BranchConfig {
-        let branch = utilities::get_git_branch_for_dir(dir);
-        self.get_branch_config(branch.as_deref())
+        Ok(&self.default)
     }
     pub fn get_active_config(&self) -> ResultWithDefaultError<&BranchConfig> {
-        let current_dir = std::env::current_dir().expect("Failed to get current directory");
-        Ok(self.get_branch_config_for_dir(&current_dir))
+        let current_dir = std::env::current_dir()
+            .map_err(|err| Box::new(err) as Box<dyn std::error::Error + Send>)?;
+        let branch = utilities::get_git_branch_for_dir(&current_dir);
+        self.get_branch_config(branch.as_deref())
     }
     pub fn get_default_entry(&self, entities: Entities) -> ResultWithDefaultError<TimeEntry> {
         let config = self.get_active_config()?;
