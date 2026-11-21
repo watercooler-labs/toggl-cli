@@ -6,6 +6,10 @@ use tokio::{
     task::JoinHandle,
 };
 
+// These tests assert response semantics, not latency. Emulated/native VM CI can
+// be much slower than loopback on the developer's host, especially in parallel.
+const TEST_TIMEOUT: Duration = Duration::from_secs(60);
+
 struct Server {
     url: String,
     requests: JoinHandle<Vec<String>>,
@@ -56,7 +60,7 @@ impl Server {
         V9ApiClient {
             http_client: Client::builder()
                 .no_proxy()
-                .timeout(Duration::from_secs(5))
+                .timeout(TEST_TIMEOUT)
                 .build()
                 .unwrap(),
             base_url: self.url.clone(),
@@ -64,7 +68,7 @@ impl Server {
     }
 
     async fn finish(&mut self) -> Vec<String> {
-        tokio::time::timeout(Duration::from_secs(5), &mut self.requests)
+        tokio::time::timeout(TEST_TIMEOUT, &mut self.requests)
             .await
             .unwrap()
             .unwrap()

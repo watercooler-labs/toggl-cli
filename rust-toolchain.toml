@@ -1,5 +1,5 @@
 [toolchain]
-# The default profile includes rustc, rust-std, cargo, rust-docs, rustfmt and clippy.
-# https://rust-lang.github.io/rustup/concepts/profiles.html
-profile = "default"
+# Keep CI and local builds on the same compiler and explicitly required tools.
+profile = "minimal"
 channel = "1.100.0"
+components = ["rustfmt", "clippy"]
