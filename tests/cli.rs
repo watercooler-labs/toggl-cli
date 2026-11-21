@@ -131,6 +131,33 @@ mod isolated_config {
     }
 
     #[test]
+    fn network_errors_exit_nonzero_without_emitting_json() {
+        let sandbox = Sandbox::new("");
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let proxy = format!("http://{}", listener.local_addr().unwrap());
+        drop(listener);
+        for args in [
+            vec!["list", "--json"],
+            vec!["list", "--json", "--since", "2026-11-20"],
+            vec!["api", "/me"],
+        ] {
+            let output = sandbox
+                .command()
+                .args(["--proxy", &proxy])
+                .args(args)
+                .output()
+                .unwrap();
+            assert_eq!(output.status.code(), Some(1));
+            assert!(
+                output.stdout.is_empty(),
+                "{}",
+                String::from_utf8_lossy(&output.stdout)
+            );
+            assert!(!output.stderr.is_empty());
+        }
+    }
+
+    #[test]
     fn invalid_templates_do_not_pollute_stdout() {
         let sandbox = Sandbox::new("['*']\ndescription = '{{unknown_macro}}'\n");
         let output = sandbox.command().args(["config"]).output().unwrap();

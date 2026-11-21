@@ -21,7 +21,7 @@ impl RenameTagCommand {
                 format!("No tag found with name '{old_name}'").yellow()
             ),
             Some(tag) => match api_client.rename_tag(workspace_id, tag.id, new_name).await {
-                Err(error) => println!("{}\n{}", "Couldn't rename tag".red(), error),
+                Err(error) => return Err(error),
                 Ok(tag) => println!("{}\n{}", "Tag renamed successfully".green(), tag),
             },
         }

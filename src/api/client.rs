@@ -105,18 +105,15 @@ impl V9ApiClient {
         since: Option<&str>,
         until: Option<&str>,
     ) -> ResultWithDefaultError<Vec<NetworkTimeEntry>> {
-        let mut url = format!("{}/me/time_entries", self.base_url);
-        let mut params: Vec<String> = Vec::new();
+        let url = format!("{}/me/time_entries", self.base_url);
+        let mut params = Vec::new();
         if let Some(since) = since {
-            params.push(format!("start_date={since}"));
+            params.push(("start_date", since));
         }
         if let Some(until) = until {
-            params.push(format!("end_date={until}"));
+            params.push(("end_date", until));
         }
-        if !params.is_empty() {
-            url = format!("{}?{}", url, params.join("&"));
-        }
-        self.get::<Vec<NetworkTimeEntry>>(url).await
+        Self::send(self.http_client.get(url).query(&params)).await
     }
 
     async fn get_projects(&self) -> ResultWithDefaultError<Vec<NetworkProject>> {
@@ -155,20 +152,27 @@ impl V9ApiClient {
         let header_content =
             "Basic ".to_string() + general_purpose::STANDARD.encode(auth_string).as_str();
         let mut headers = header::HeaderMap::new();
-        let auth_header =
-            header::HeaderValue::from_str(header_content.as_str()).expect("Invalid header value");
+        let mut auth_header = header::HeaderValue::from_str(header_content.as_str())
+            .map_err(|err| Box::new(err) as Box<dyn std::error::Error + Send>)?;
+        auth_header.set_sensitive(true);
         headers.insert(header::AUTHORIZATION, auth_header);
 
-        let base_client = Client::builder().default_headers(headers);
+        let base_client = Client::builder()
+            .default_headers(headers)
+            .connect_timeout(std::time::Duration::from_secs(10))
+            .timeout(std::time::Duration::from_secs(RAW_REQUEST_TIMEOUT_SECS));
         let http_client = {
             if let Some(proxy) = proxy {
-                base_client.proxy(reqwest::Proxy::all(proxy).expect("Invalid proxy"))
+                base_client.proxy(
+                    reqwest::Proxy::all(proxy)
+                        .map_err(|err| Box::new(err) as Box<dyn std::error::Error + Send>)?,
+                )
             } else {
                 base_client
             }
         }
         .build()
-        .expect("Couldn't build a http client");
+        .map_err(|err| Box::new(err) as Box<dyn std::error::Error + Send>)?;
         let api_client = Self {
             http_client,
             base_url: "https://track.toggl.com/api/v9".to_string(),
@@ -259,27 +263,38 @@ impl V9ApiClient {
         V9ApiClient::send::<T>(self.http_client.post(url).json(body)).await
     }
 
-    async fn send<T: de::DeserializeOwned>(request: RequestBuilder) -> ResultWithDefaultError<T> {
-        match request.send().await {
-            Err(_) => Err(Box::new(ApiError::Network)),
-            Ok(response) => match response.json::<T>().await {
-                Err(_) => Err(Box::new(ApiError::Deserialization)),
-                Ok(parsed_response) => Ok(parsed_response),
-            },
+    async fn checked_response(
+        request: RequestBuilder,
+    ) -> ResultWithDefaultError<reqwest::Response> {
+        let response = request
+            .send()
+            .await
+            .map_err(|_| Box::new(ApiError::Network) as Box<dyn std::error::Error + Send>)?;
+        let status = response.status();
+        if !status.is_success() {
+            let body = response
+                .text()
+                .await
+                .map_err(|err| Box::new(err) as Box<dyn std::error::Error + Send>)?;
+            return Err(Box::new(std::io::Error::other(format!(
+                "HTTP {status}: {}",
+                body.chars().take(512).collect::<String>()
+            ))));
         }
+        Ok(response)
+    }
+
+    async fn send<T: de::DeserializeOwned>(request: RequestBuilder) -> ResultWithDefaultError<T> {
+        Self::checked_response(request)
+            .await?
+            .json::<T>()
+            .await
+            .map_err(|_| Box::new(ApiError::Deserialization) as Box<dyn std::error::Error + Send>)
     }
 
     async fn delete(&self, url: String) -> ResultWithDefaultError<()> {
-        match self.http_client.delete(url).send().await {
-            Err(_) => Err(Box::new(ApiError::Network)),
-            Ok(response) => {
-                if response.status().is_success() {
-                    Ok(())
-                } else {
-                    Err(Box::new(ApiError::Deserialization))
-                }
-            }
-        }
+        Self::checked_response(self.http_client.delete(url)).await?;
+        Ok(())
     }
 }
 
@@ -465,8 +480,7 @@ impl ApiClient for V9ApiClient {
             self.get_clients(),
         );
 
-        let clients: HashMap<i64, crate::models::Client> = network_clients
-            .unwrap_or_default()
+        let clients: HashMap<i64, crate::models::Client> = network_clients?
             .into_iter()
             .map(|c| {
                 (
@@ -480,8 +494,7 @@ impl ApiClient for V9ApiClient {
             })
             .collect();
 
-        let projects: HashMap<i64, Project> = network_projects
-            .unwrap_or_default()
+        let projects: HashMap<i64, Project> = network_projects?
             .into_iter()
             .map(|p| {
                 (
@@ -502,8 +515,7 @@ impl ApiClient for V9ApiClient {
             })
             .collect();
 
-        let tasks: HashMap<i64, Task> = network_tasks
-            .unwrap_or_default()
+        let tasks: HashMap<i64, Task> = network_tasks?
             .into_iter()
             .filter_map(|t| {
                 projects.get(&t.project_id).map(|project| {
@@ -520,8 +532,7 @@ impl ApiClient for V9ApiClient {
             })
             .collect();
 
-        let entries = network_entries
-            .unwrap_or_default()
+        let entries = network_entries?
             .into_iter()
             .map(|te| TimeEntry {
                 id: te.id,
@@ -556,8 +567,7 @@ impl ApiClient for V9ApiClient {
             self.get_workspaces(),
         );
 
-        let clients: HashMap<i64, crate::models::Client> = network_clients
-            .unwrap_or_default()
+        let clients: HashMap<i64, crate::models::Client> = network_clients?
             .iter()
             .map(|c| {
                 (
@@ -571,8 +581,7 @@ impl ApiClient for V9ApiClient {
             })
             .collect();
 
-        let projects: HashMap<i64, Project> = network_projects
-            .unwrap_or_default()
+        let projects: HashMap<i64, Project> = network_projects?
             .iter()
             .map(|p| {
                 (
@@ -593,24 +602,24 @@ impl ApiClient for V9ApiClient {
             })
             .collect();
 
-        let tasks: HashMap<i64, Task> = network_tasks
-            .unwrap_or_default()
-            .iter()
-            .map(|t| {
-                (
-                    t.id,
-                    Task {
-                        id: t.id,
-                        name: t.name.clone(),
-                        project: projects.get(&t.project_id).unwrap().clone(),
-                        workspace_id: t.workspace_id,
-                    },
-                )
+        let tasks: HashMap<i64, Task> = network_tasks?
+            .into_iter()
+            .filter_map(|t| {
+                projects.get(&t.project_id).map(|project| {
+                    (
+                        t.id,
+                        Task {
+                            id: t.id,
+                            name: t.name,
+                            project: project.clone(),
+                            workspace_id: t.workspace_id,
+                        },
+                    )
+                })
             })
             .collect();
 
-        let time_entries = network_time_entries
-            .unwrap_or_default()
+        let time_entries = network_time_entries?
             .iter()
             .map(|te| TimeEntry {
                 id: te.id,
@@ -627,8 +636,7 @@ impl ApiClient for V9ApiClient {
             })
             .collect();
 
-        let workspaces = network_workspaces
-            .unwrap_or_default()
+        let workspaces = network_workspaces?
             .iter()
             .map(|w| Workspace {
                 id: w.id,
@@ -647,6 +655,9 @@ impl ApiClient for V9ApiClient {
         })
     }
 }
+
+#[cfg(test)]
+mod http_tests;
 
 const ALLOWED_RAW_HOSTS: &[&str] = &["api.track.toggl.com"];
 const RAW_REQUEST_TIMEOUT_SECS: u64 = 30;

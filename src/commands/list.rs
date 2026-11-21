@@ -1,12 +1,36 @@
-use crate::api;
+use crate::api::client::ApiClient;
 use crate::arguments::Entity;
-use crate::models;
-use api::client::ApiClient;
-use colored::Colorize;
-use models::ResultWithDefaultError;
+use crate::models::ResultWithDefaultError;
+use serde::Serialize;
 use std::io::{self, BufWriter, Write};
 
 pub struct ListCommand;
+
+fn write_items<T: Serialize + std::fmt::Display>(
+    writer: &mut impl Write,
+    items: &[T],
+    json: bool,
+) -> ResultWithDefaultError<()> {
+    if json {
+        write_json(writer, items)?;
+    } else {
+        for item in items {
+            writeln!(writer, "{item}")
+                .map_err(|err| Box::new(err) as Box<dyn std::error::Error + Send>)?;
+        }
+    }
+    Ok(())
+}
+
+fn write_json(
+    writer: &mut impl Write,
+    value: &(impl Serialize + ?Sized),
+) -> ResultWithDefaultError<()> {
+    serde_json::to_writer_pretty(&mut *writer, value)
+        .map_err(|err| Box::new(err) as Box<dyn std::error::Error + Send>)?;
+    writeln!(writer).map_err(|err| Box::new(err) as Box<dyn std::error::Error + Send>)?;
+    Ok(())
+}
 
 impl ListCommand {
     pub async fn execute(
@@ -17,161 +41,118 @@ impl ListCommand {
         until: Option<String>,
         entity: Option<Entity>,
     ) -> ResultWithDefaultError<()> {
-        if let Some(Entity::Tag { json: entity_json }) = entity {
-            let json = json_flag || entity_json;
-            let user = api_client.get_user().await?;
-            match api_client.get_tags(user.default_workspace_id).await {
-                Err(error) => println!("{}\n{}", "Couldn't fetch tags from API".red(), error),
-                Ok(tags) => {
-                    let stdout = io::stdout();
-                    let mut handle = BufWriter::new(stdout);
-                    let tags = tags
-                        .iter()
-                        .take(count.unwrap_or(usize::MAX))
-                        .collect::<Vec<_>>();
-                    if json {
-                        let json_string = serde_json::to_string_pretty(&tags)
-                            .expect("failed to serialize tags to JSON");
-                        writeln!(handle, "{json_string}").expect("failed to print");
-                    } else {
-                        tags.iter()
-                            .for_each(|tag| writeln!(handle, "{tag}").expect("failed to print"));
-                    }
-                }
-            }
-            return Ok(());
-        }
-
-        let is_time_entry = matches!(entity, None | Some(Entity::TimeEntry { .. }));
-        let has_date_filter = since.is_some() || until.is_some();
-
-        if is_time_entry && has_date_filter {
-            let stdout = io::stdout();
-            let mut handle = BufWriter::new(stdout);
-            let json = match &entity {
-                Some(Entity::TimeEntry { json }) => json_flag || *json,
-                _ => json_flag,
-            };
-            match api_client.get_time_entries_filtered(since, until).await {
-                Err(error) => println!(
-                    "{}\n{}",
-                    "Couldn't fetch time entries from API".red(),
-                    error
-                ),
-                Ok(entries) => {
-                    let entries = entries
-                        .iter()
-                        .take(count.unwrap_or(usize::MAX))
-                        .collect::<Vec<_>>();
-                    if json {
-                        let json_string = serde_json::to_string_pretty(&entries)
-                            .expect("failed to serialize time entries to JSON");
-                        writeln!(handle, "{json_string}").expect("failed to print");
-                    } else {
-                        entries
-                            .iter()
-                            .for_each(|te| writeln!(handle, "{te}").expect("failed to print"));
-                    }
-                }
-            }
-            return Ok(());
-        }
-
-        match api_client.get_entities().await {
-            Err(error) => println!(
-                "{}\n{}",
-                "Couldn't fetch time entries the from API".red(),
-                error
-            ),
-            Ok(entities) => {
-                // use this to avoid calling println! in a loop:
-                // <https://rust-cli.github.io/book/tutorial/output.html#a-note-on-printing-performance>
-                let stdout = io::stdout();
-                let mut handle = BufWriter::new(stdout);
-
-                // TODO: better error handling for writeln!
-                match entity.unwrap_or(Entity::TimeEntry { json: false }) {
-                    Entity::TimeEntry { json: entity_json } => {
-                        let json = json_flag || entity_json;
-                        let entries = entities
-                            .time_entries
-                            .iter()
-                            .take(count.unwrap_or(usize::MAX))
-                            .collect::<Vec<_>>();
-
-                        if json {
-                            let json_string = serde_json::to_string_pretty(&entries)
-                                .expect("failed to serialize time entries to JSON");
-                            writeln!(handle, "{json_string}").expect("failed to print");
-                        } else {
-                            entries.iter().for_each(|time_entry| {
-                                writeln!(handle, "{time_entry}").expect("failed to print")
-                            });
-                        }
-                    }
-
-                    Entity::Project { json: entity_json } => {
-                        let json = json_flag || entity_json;
-                        let projects = entities
-                            .projects
-                            .values()
-                            .take(count.unwrap_or(usize::MAX))
-                            .collect::<Vec<_>>();
-
-                        if json {
-                            let json_string = serde_json::to_string_pretty(&projects)
-                                .expect("failed to serialize projects to JSON");
-                            writeln!(handle, "{json_string}").expect("failed to print");
-                        } else {
-                            projects.iter().for_each(|project| {
-                                writeln!(handle, "{project}").expect("failed to print")
-                            });
-                        }
-                    }
-
-                    Entity::Task {
-                        json: entity_json,
-                        project: project_name,
-                    } => {
-                        let json = json_flag || entity_json;
-                        let mut tasks = entities
-                            .tasks
-                            .values()
-                            .filter(|task| match &project_name {
-                                Some(name) => task.project.name == *name,
-                                None => true,
-                            })
-                            .collect::<Vec<_>>();
-                        tasks.sort_by(|a, b| a.name.cmp(&b.name));
-                        let tasks = tasks
-                            .into_iter()
-                            .take(count.unwrap_or(usize::MAX))
-                            .collect::<Vec<_>>();
-
-                        if json {
-                            let json_string = serde_json::to_string_pretty(&tasks)
-                                .expect("failed to serialize tasks to JSON");
-                            writeln!(handle, "{json_string}").expect("failed to print");
-                        } else {
-                            // The project is redundant when the list is already scoped to one.
-                            tasks.iter().for_each(|task| match &project_name {
-                                Some(_) => {
-                                    writeln!(handle, "{}", task.name).expect("failed to print")
-                                }
-                                None => writeln!(handle, "{} @{}", task.name, task.project.name)
-                                    .expect("failed to print"),
-                            });
-                        }
-                    }
-
-                    // Already handled above, but needed for exhaustive match
-                    Entity::Tag { .. } => unreachable!(),
-
-                    // Handled separately in main.rs before reaching ListCommand
-                    Entity::Profile { .. } => unreachable!(),
-                };
-            }
-        }
+        let mut writer = BufWriter::new(io::stdout());
+        Self::execute_to(
+            api_client,
+            count,
+            json_flag,
+            since,
+            until,
+            entity,
+            &mut writer,
+        )
+        .await?;
+        writer
+            .flush()
+            .map_err(|err| Box::new(err) as Box<dyn std::error::Error + Send>)?;
         Ok(())
+    }
+
+    async fn execute_to(
+        api_client: impl ApiClient,
+        count: Option<usize>,
+        json_flag: bool,
+        since: Option<String>,
+        until: Option<String>,
+        entity: Option<Entity>,
+        writer: &mut impl Write,
+    ) -> ResultWithDefaultError<()> {
+        let limit = count.unwrap_or(usize::MAX);
+        if let Some(Entity::Tag { json }) = entity {
+            let user = api_client.get_user().await?;
+            let tags = api_client.get_tags(user.default_workspace_id).await?;
+            let tags = tags.iter().take(limit).collect::<Vec<_>>();
+            return write_items(writer, &tags, json_flag || json);
+        }
+
+        let entity = entity.unwrap_or(Entity::TimeEntry { json: false });
+        if let Entity::TimeEntry { json } = entity {
+            if since.is_some() || until.is_some() {
+                let entries = api_client.get_time_entries_filtered(since, until).await?;
+                let entries = entries.iter().take(limit).collect::<Vec<_>>();
+                return write_items(writer, &entries, json_flag || json);
+            }
+        }
+
+        // Fetch successfully before printing anything: an outage is not an empty list.
+        let entities = api_client.get_entities().await?;
+        match entity {
+            Entity::TimeEntry { json } => {
+                let entries = entities.time_entries.iter().take(limit).collect::<Vec<_>>();
+                write_items(writer, &entries, json_flag || json)
+            }
+            Entity::Project { json } => {
+                let projects = entities.projects.values().take(limit).collect::<Vec<_>>();
+                write_items(writer, &projects, json_flag || json)
+            }
+            Entity::Task { json, project } => {
+                let mut tasks = entities
+                    .tasks
+                    .values()
+                    .filter(|task| {
+                        project
+                            .as_ref()
+                            .is_none_or(|name| task.project.name == *name)
+                    })
+                    .collect::<Vec<_>>();
+                tasks.sort_by(|a, b| {
+                    (&a.name, &a.project.name, a.id).cmp(&(&b.name, &b.project.name, b.id))
+                });
+                tasks.truncate(limit);
+                if json_flag || json {
+                    write_json(writer, &tasks)
+                } else {
+                    for task in tasks {
+                        if project.is_some() {
+                            writeln!(writer, "{}", task.name)
+                        } else {
+                            writeln!(writer, "{} @{}", task.name, task.project.name)
+                        }
+                        .map_err(|err| Box::new(err) as Box<dyn std::error::Error + Send>)?;
+                    }
+                    Ok(())
+                }
+            }
+            Entity::Tag { .. } | Entity::Profile { .. } => unreachable!(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{api::client::MockApiClient, error::ApiError};
+
+    #[tokio::test]
+    async fn failed_fetches_never_emit_empty_json_or_errors_on_stdout() {
+        for since in [None, Some("2026-11-20".to_string())] {
+            let mut client = MockApiClient::new();
+            if since.is_some() {
+                client
+                    .expect_get_time_entries_filtered()
+                    .returning(|_, _| Err(Box::new(ApiError::Network)));
+            } else {
+                client
+                    .expect_get_entities()
+                    .returning(|| Err(Box::new(ApiError::Network)));
+            }
+            let mut output = Vec::new();
+            assert!(
+                ListCommand::execute_to(client, None, true, since, None, None, &mut output)
+                    .await
+                    .is_err()
+            );
+            assert!(output.is_empty());
+        }
     }
 }

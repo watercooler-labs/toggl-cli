@@ -20,7 +20,7 @@ impl DeleteProjectCommand {
                     .delete_project(project.workspace_id, project.id)
                     .await
                 {
-                    Err(error) => println!("{}\n{}", "Couldn't delete project".red(), error),
+                    Err(error) => return Err(error),
                     Ok(()) => println!("{}\n{}", "Project deleted successfully".green(), project),
                 }
             }

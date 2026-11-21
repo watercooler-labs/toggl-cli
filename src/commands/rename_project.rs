@@ -28,7 +28,7 @@ impl RenameProjectCommand {
                     .rename_project(project.workspace_id, project.id, new_name)
                     .await
                 {
-                    Err(error) => println!("{}\n{}", "Couldn't rename project".red(), error),
+                    Err(error) => return Err(error),
                     Ok(project) => {
                         println!("{}\n{}", "Project renamed successfully".green(), project)
                     }

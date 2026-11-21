@@ -14,7 +14,7 @@ impl DeleteTagCommand {
         match tag {
             None => println!("{}", format!("No tag found with name '{name}'").yellow()),
             Some(tag) => match api_client.delete_tag(workspace_id, tag.id).await {
-                Err(error) => println!("{}\n{}", "Couldn't delete tag".red(), error),
+                Err(error) => return Err(error),
                 Ok(()) => println!("{}", "Tag deleted successfully".green()),
             },
         }

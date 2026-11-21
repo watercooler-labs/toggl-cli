@@ -12,7 +12,7 @@ impl CreateProjectCommand {
     ) -> ResultWithDefaultError<()> {
         let workspace_id = api_client.get_user().await?.default_workspace_id;
         match api_client.create_project(workspace_id, name, color).await {
-            Err(error) => println!("{}\n{}", "Couldn't create project".red(), error),
+            Err(error) => return Err(error),
             Ok(project) => println!("{}\n{}", "Project created successfully".green(), project),
         }
         Ok(())
