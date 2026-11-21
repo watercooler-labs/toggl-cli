@@ -42,7 +42,7 @@ serde = { version = "1.0.159", features = ["derive"] }
 serde_json = "1.0.95"
 reqwest = { version = "0.12.28", features = ["json"] }
 tokio = { version = "1.27.0", features = ["full"] }
-base64 = "0.21.0"
+base64 = "0.23.1"
 async-trait = "0.1.68"
 
 # Models
