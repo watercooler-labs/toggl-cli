@@ -25,14 +25,14 @@ rust-version = "1.100"
 structopt = { version = "0.3" }
 
 # Terminal utilities
-colored = "2.0.0"
+colored = "3.1.1"
 colors-transform = "0.2.11"
 
 # Storage
 keyring = { version = "2", features = ["linux-default-keyutils"] }
 
 # Config
-directories = "5.0.0"
+directories = "6.0.0"
 lazy_static = "1.4.0"
 regex = "1.7.3"
 toml = "0.7.3"
@@ -42,7 +42,7 @@ serde = { version = "1.0.159", features = ["derive"] }
 serde_json = "1.0.95"
 reqwest = { version = "0.12.28", features = ["json"] }
 tokio = { version = "1.27.0", features = ["full"] }
-base64 = "0.21.0"
+base64 = "0.23.1"
 async-trait = "0.1.68"
 
 # Models
