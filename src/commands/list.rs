@@ -134,6 +134,40 @@ mod tests {
     use crate::{api::client::MockApiClient, error::ApiError};
 
     #[tokio::test]
+    async fn task_listing_scopes_duplicate_names_and_applies_limits() {
+        for (project, limit, expected_ids) in [
+            (Some("beta"), None, vec![22]),
+            (None, Some(1), vec![11]),
+            (None, None, vec![11, 22]),
+        ] {
+            let mut client = MockApiClient::new();
+            client
+                .expect_get_entities()
+                .returning(|| Ok(crate::test_support::entities()));
+            let mut output = Vec::new();
+            ListCommand::execute_to(
+                client,
+                limit,
+                false,
+                None,
+                None,
+                Some(Entity::Task {
+                    json: true,
+                    project: project.map(String::from),
+                }),
+                &mut output,
+            )
+            .await
+            .unwrap();
+            let tasks: Vec<crate::models::Task> = serde_json::from_slice(&output).unwrap();
+            assert_eq!(
+                tasks.into_iter().map(|task| task.id).collect::<Vec<_>>(),
+                expected_ids
+            );
+        }
+    }
+
+    #[tokio::test]
     async fn failed_fetches_never_emit_empty_json_or_errors_on_stdout() {
         for since in [None, Some("2026-11-20".to_string())] {
             let mut client = MockApiClient::new();

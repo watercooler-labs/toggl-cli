@@ -8,6 +8,8 @@ mod error;
 mod models;
 mod parcel;
 mod picker;
+#[cfg(test)]
+mod test_support;
 mod utilities;
 
 use api::client::ApiClient;

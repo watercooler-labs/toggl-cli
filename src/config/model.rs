@@ -530,6 +530,9 @@ fn process_config_value(base_dir: &Path, input: String) -> ResultWithDefaultErro
     Ok(result)
 }
 
+#[cfg(test)]
+mod tests;
+
 impl TrackConfig {
     fn get_branch_config(&self, branch: Option<&str>) -> ResultWithDefaultError<&BranchConfig> {
         if let Some(branch) = branch {

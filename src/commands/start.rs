@@ -14,11 +14,14 @@ use models::{ResultWithDefaultError, TimeEntry};
 
 pub struct StartCommand;
 
+#[cfg(test)]
+mod tests;
+
 fn interactively_create_time_entry(
     time_entry: TimeEntry,
     entities: Entities,
     picker: Box<dyn ItemPicker>,
-) -> TimeEntry {
+) -> ResultWithDefaultError<TimeEntry> {
     let yes_or_default_no = [
         "y".to_string(),
         "n".to_string(),
@@ -47,19 +50,20 @@ fn interactively_create_time_entry(
                         .map(PickableItem::from_task),
                 );
 
-                match picker.pick(pickable_items) {
-                    Ok(picked_key) => match picked_key.kind {
-                        PickableItemKind::TimeEntry => (None, None),
-                        PickableItemKind::Project => {
-                            (entities.projects.get(&picked_key.id).cloned(), None)
-                        }
-                        PickableItemKind::Task => {
-                            let task = entities.tasks.get(&picked_key.id).cloned().unwrap();
-                            (Some(task.clone().project), Some(task))
-                        }
-                    },
-
-                    Err(_) => (None, None),
+                let picked_key = picker.pick(pickable_items)?;
+                match picked_key.kind {
+                    PickableItemKind::TimeEntry => (None, None),
+                    PickableItemKind::Project => {
+                        (entities.projects.get(&picked_key.id).cloned(), None)
+                    }
+                    PickableItemKind::Task => {
+                        let task =
+                            entities.tasks.get(&picked_key.id).cloned().ok_or_else(|| {
+                                Box::new(std::io::Error::other("Selected task no longer exists"))
+                                    as Box<dyn std::error::Error + Send>
+                            })?;
+                        (Some(task.project.clone()), Some(task))
+                    }
                 }
             }
         }
@@ -67,21 +71,21 @@ fn interactively_create_time_entry(
 
     // Only ask for billable if the user didn't provide a value AND if the selected project doesn't have a default billable setting.
     let billable = time_entry.billable
-        || project.clone().and_then(|p| p.billable).unwrap_or(
+        || project.clone().and_then(|p| p.billable).unwrap_or_else(|| {
             utilities::read_from_stdin_with_constraints(
                 "Is your time entry billable? (y/N): ",
                 &yes_or_default_no,
-            ) == "y",
-        );
+            ) == "y"
+        });
 
     let task = task.or(time_entry.task.clone());
 
-    TimeEntry {
+    Ok(TimeEntry {
         billable,
         project,
         task,
         ..time_entry
-    }
+    })
 }
 
 impl StartCommand {
@@ -96,15 +100,46 @@ impl StartCommand {
         interactive: bool,
         task: Option<String>,
     ) -> ResultWithDefaultError<()> {
-        StopCommand::execute(&api_client, StopCommandOrigin::StartCommand).await?;
+        Self::execute_with_config(
+            api_client,
+            picker,
+            description,
+            project_name,
+            tags,
+            billable,
+            interactive,
+            task,
+            |entities| match config::locate::locate_config_path() {
+                Ok(path) => config::parser::get_config_from_file(path)?.get_default_entry(entities),
+                Err(err)
+                    if matches!(
+                        err.downcast_ref(),
+                        Some(crate::error::ConfigError::FileNotFound)
+                    ) =>
+                {
+                    Ok(TimeEntry::default())
+                }
+                Err(err) => Err(err),
+            },
+        )
+        .await
+    }
 
+    #[allow(clippy::too_many_arguments)]
+    async fn execute_with_config(
+        api_client: impl ApiClient,
+        picker: Box<dyn ItemPicker>,
+        description: Option<String>,
+        project_name: Option<String>,
+        tags: Option<Vec<String>>,
+        billable: bool,
+        interactive: bool,
+        task: Option<String>,
+        load_config: impl FnOnce(Entities) -> ResultWithDefaultError<TimeEntry>,
+    ) -> ResultWithDefaultError<()> {
         let workspace_id = (api_client.get_user().await?).default_workspace_id;
         let entities = api_client.get_entities().await?;
-
-        let default_time_entry = config::locate::locate_config_path()
-            .and_then(config::parser::get_config_from_file)
-            .and_then(|track_config| track_config.get_default_entry(entities.clone()))
-            .unwrap_or_else(|_| TimeEntry::default());
+        let default_time_entry = load_config(entities.clone())?;
 
         let workspace_id = if default_time_entry.workspace_id != -1 {
             default_time_entry.workspace_id
@@ -206,20 +241,19 @@ impl StartCommand {
                 ..TimeEntry::default()
             };
             if interactive {
-                interactively_create_time_entry(initial_entry, entities.clone(), picker)
+                interactively_create_time_entry(initial_entry, entities.clone(), picker)?
             } else {
                 initial_entry
             }
         };
 
-        let started_entry_id = api_client
+        // Validate configuration, flags and interactive selection before making
+        // any writes. A typo or cancelled picker must leave the old timer alone.
+        StopCommand::execute(&api_client, StopCommandOrigin::StartCommand).await?;
+        let time_entry_to_create = time_entry_to_create.as_running_time_entry(chrono::Utc::now());
+        api_client
             .create_time_entry(time_entry_to_create.clone())
-            .await;
-        if started_entry_id.is_err() {
-            println!("{}", "Failed to start time entry".red());
-            return Err(started_entry_id.err().unwrap());
-        }
-
+            .await?;
         println!("{}\n{}", "Time entry started".green(), time_entry_to_create);
 
         Ok(())
