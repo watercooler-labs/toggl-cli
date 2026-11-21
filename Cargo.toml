@@ -18,6 +18,7 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/watercooler-labs/toggl-cli"
 edition = "2021"
+rust-version = "1.100"
 
 [dependencies]
 # Argument parsing
@@ -39,7 +40,7 @@ toml = "0.7.3"
 # API
 serde = { version = "1.0.159", features = ["derive"] }
 serde_json = "1.0.95"
-reqwest = { version = "0.11", features = ["json"] }
+reqwest = { version = "0.12.28", features = ["json"] }
 tokio = { version = "1.27.0", features = ["full"] }
 base64 = "0.21.0"
 async-trait = "0.1.68"
