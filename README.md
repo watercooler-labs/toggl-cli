@@ -4,19 +4,39 @@ Unofficial CLI for [Toggl Track](https://toggl.com/track/) written in Rust, usin
 
 ## Usage
 
-Building the binary.
+Building from source requires **Rust 1.100.0 or newer**. The repository pins
+1.100.0 via `rust-toolchain.toml` so rustup selects the tested compiler.
 
 ```shell
-cargo build # or cargo build --release
+cargo build --locked # or cargo build --locked --release
 ```
+
+On Debian/Ubuntu, install `build-essential pkg-config libssl-dev libdbus-1-dev`
+first. FreeBSD source builds require `pkgconf openssl`; use `TOGGL_API_TOKEN`
+there rather than relying on a persistent native keyring.
 
 Installing the binary.
 
 ### From [crates.io](https://crates.io/crates/toggl)
 
 ```shell
-cargo install toggl
+cargo install --locked toggl
 ```
+
+### Prebuilt binaries and Windows Scoop
+
+Download the archive for your platform from [GitHub releases](https://github.com/watercooler-labs/toggl-cli/releases).
+Each archive includes the binary, license and completion scripts, with a
+matching `<target>.sha256` checksum file. Verify the checksum before installing.
+
+Starting with 0.6.0, Windows archives use the native **MSVC** target rather than
+GNU. A generated Scoop manifest is attached to each release:
+
+```powershell
+scoop install https://github.com/watercooler-labs/toggl-cli/releases/latest/download/toggl-cli.json
+```
+
+See the [release runbook](docs/releasing.md) for build-platform and runtime checks.
 
 ### From Arch Linux aur
 [![toggl-cli](https://img.shields.io/aur/version/toggl-cli?label=toggl-cli)](https://aur.archlinux.org/packages/toggl-cli/)
@@ -36,7 +56,7 @@ $ yay -Sy toggl-cli
 ### From source
 
 ```shell
-cargo install --path .
+cargo install --locked --path .
 ```
 
 > This places the release optimized binary at `~/.cargo/bin/toggl`. Make sure to add `~/.cargo/bin` to your `$PATH` so that you can run the binary from any directory.
@@ -107,9 +127,12 @@ fully backwards compatible with existing setups.
 4. `TOGGL_API_TOKEN` environment variable → uses the token directly (no keyring)
 5. Keyring `default` profile → fallback
 
-This means if you set `TOGGL_API_TOKEN`, it will be used for all commands
-**unless** you explicitly specify `--profile`. This allows you to
-override the env var when needed:
+`TOGGL_API_TOKEN` is used only when **none** of `--profile`, `TOGGL_PROFILE`,
+or a TOML `profile` selects a stored credential. An explicit CLI or environment
+profile skips config-based profile lookup. The `--profile` flag works before or
+after a subcommand, including `auth` and `logout`.
+
+For example, with no environment or config profile selected:
 
 ```shell
 export TOGGL_API_TOKEN=xxx  # Used by default
@@ -180,7 +203,7 @@ Run the `help` command to see a list of available commands.
 
 ```shell
 $ toggl help
-toggl 0.5.1
+toggl 0.6.0
 Toggl command line app.
 
 USAGE:
@@ -225,7 +248,7 @@ You can also run the `help` command on a specific subcommand.
 
 ```shell
 $ toggl help start
-toggl-start 0.5.1
+toggl-start 0.6.0
 Start a new time entry, call with no arguments to start in interactive mode
 
 USAGE:
@@ -333,8 +356,12 @@ toggl api /me/workspaces              # your workspaces
 To run the unit-tests
 
 ```shell
-cargo test
+cargo test --locked --all-targets
 ```
+
+Tests use mock credentials and local HTTP servers, never a live Toggl account.
+The isolated native-keyring round-trip is opt-in; see the
+[release checklist](docs/releasing.md#manual-smoke-checks).
 
 ## Linting
 
@@ -351,14 +378,21 @@ See [pull_request.yml](.github/workflows/pull_request.yml) for more details.
 
 ## Releasing
 
-To create a new release, first bump the package version.
-We have a handy script at [pkg/autodoc.rs](pkg/autodoc.rs).
-Running it with no arguments, bumps the current patch version, in `Cargo.toml`
-and `Cargo.lock` files.
-It also updates the help documentation in this README to match the current
-version of the command.
-Commit and push the updated changes and a new release will show up under the
-[releases](https://github.com/watercooler-labs/toggl-cli/releases) page.
+Follow [docs/releasing.md](docs/releasing.md) for the complete checklist,
+manual smoke tests, publishing steps and package-manager verification.
+
+From a clean checkout, `./pkg/autodoc minor` prepares a minor release (no
+argument means a patch release). It updates `Cargo.toml`, `Cargo.lock` and this
+README using the pinned stable compiler. Use `--commit` to commit those files,
+`--refresh` to regenerate help without bumping, or `--check` to check for drift.
+
+Releases are **not** published automatically on push. Dispatch **Draft Release**
+for the intended commit after merging the version and release notes. It gates
+the draft on CI and native artifact smoke checks. Publishing to GitHub and
+crates.io remains an explicit maintainer action.
+
+See [CHANGELOG.md](CHANGELOG.md) for user-facing changes and
+[SECURITY.md](SECURITY.md) for the dependency audit policy.
 
 ---
 
