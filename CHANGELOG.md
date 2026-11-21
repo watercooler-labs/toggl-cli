@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.6.0 — Unreleased
+## 0.6.0 — 2026-11-21
 
 ### Added
 
@@ -52,8 +52,7 @@
   warnings and the atty Windows allocator assessment are documented in
   [SECURITY.md](SECURITY.md).
 
-### Before publication
+### Release validation
 
-This entry remains unreleased until the native CI, manual smoke checklist and
-package-manager checks in [docs/releasing.md](docs/releasing.md) are completed.
-Do not interpret a prepared version or local artifact as a published release.
+Automated checks, manual smoke checks and package-manager verification are
+documented in [docs/releasing.md](docs/releasing.md).
