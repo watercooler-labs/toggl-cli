@@ -1,23 +1,43 @@
-name: Publish Release
+name: Publish Release Metadata
 
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Published release tag to verify (for example v0.6.0)'
+        required: true
+        type: string
 
-env:
-  CARGO_TERM_COLOR: always
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
-  meta:
-    name: Publish scoop package
-    runs-on: ubuntu-latest
+  scoop:
+    name: Verify release and publish Scoop manifest
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag }}
     steps:
-      - name: Create
-        id: version
-        shell: bash
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Download the published assets
         run: |
-          gh release download v0.3.0 -p '*windows*'
-          hash=$(cat x86_64_windows.sha256)
-          version=${{ github.event.release.tag_name }}
-          echo "Release version is ${version#v}"
-          curl -O https://raw.githubusercontent.com/watercooler-labs/toggl-cli/main/pkg/scoop/toggl-cli.json
+          set -euo pipefail
+          gh release view "$RELEASE_TAG" --json isDraft | jq -e '.isDraft == false'
+          gh release download "$RELEASE_TAG" --dir dist --pattern '*.zip' --pattern '*.sha256' --pattern VERSION
+      - run: python pkg/release.py verify --tag "$RELEASE_TAG"
+      - run: python pkg/release.py scoop --tag "$RELEASE_TAG"
+      - run: gh release upload "$RELEASE_TAG" dist/toggl-cli.json --clobber

@@ -1,85 +1,79 @@
-name: Pull Request
+name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  check:
-    name: Check
+  test:
+    name: Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          - macOS-latest
-          - windows-latest
+        os: [ubuntu-24.04, macos-15, macos-15-intel, windows-2025]
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
-      - name: Run cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-
-  test:
-    name: Test Suite
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
-      - name: Install build tools
-        run: sudo apt install -y libdbus-1-dev
-
-      - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+          persist-credentials: false
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev libssl-dev pkg-config
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - run: cargo test --locked --all-targets
 
   lints:
-    name: Lints
-    runs-on: ubuntu-latest
+    name: Lints and packaging
+    runs-on: ubuntu-24.04
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          components: rustfmt, clippy
-
-      - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
+          persist-credentials: false
+      - run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev libssl-dev pkg-config
+      - run: rustup show
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          command: fmt
-          args: --all -- --check
+          python-version: '3.13'
+      - run: cargo fmt --all -- --check
+      - run: rustfmt --edition 2021 --check pkg/autodoc.rs
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: rustc --edition=2021 --test pkg/autodoc.rs -o target/autodoc-tests && target/autodoc-tests
+      - run: python -m unittest discover -s pkg -p 'test_*.py'
+      - run: shellcheck pkg/autodoc
+      - run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+      - run: ./pkg/autodoc --check
+      - run: cargo publish --dry-run --locked
 
-      - name: Run cargo clippy
-        uses: actions-rs/cargo@v1
+  audit:
+    uses: ./.github/workflows/security.yml
+
+  freebsd:
+    name: FreeBSD build and tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          command: clippy
-          args: -- -D warnings
+          persist-credentials: false
+      - uses: vmactions/freebsd-vm@811efaaac0668df8bfb8308c3ec997b5ab50037b # v1.5.9
+        with:
+          release: '15.0'
+          prepare: pkg install -y curl git pkgconf openssl
+          run: |
+            set -eu
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o /tmp/rustup.sh
+            sh /tmp/rustup.sh -y --profile minimal --default-toolchain none
+            . "$HOME/.cargo/env"
+            rustup show
+            cargo test --locked --all-targets
