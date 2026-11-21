@@ -53,7 +53,7 @@ tempfile = "3"
 rpassword = "7.4.0"
 
 [target.'cfg(unix)'.dependencies]
-skim = "0.10.4"
+skim = "5.9.0"
 
 [dev-dependencies]
 # Testing
