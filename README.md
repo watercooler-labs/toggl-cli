@@ -11,7 +11,7 @@ Building from source requires **Rust 1.100.0 or newer**. The repository pins
 cargo build --locked # or cargo build --locked --release
 ```
 
-On Debian/Ubuntu, install `build-essential pkg-config libssl-dev libdbus-1-dev`
+On Debian/Ubuntu, install `build-essential pkg-config libssl-dev`
 first. FreeBSD source builds require `pkgconf openssl`; use `TOGGL_API_TOKEN`
 there rather than relying on a persistent native keyring.
 

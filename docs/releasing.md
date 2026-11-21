@@ -18,8 +18,7 @@ FreeBSD users should use `TOGGL_API_TOKEN`; persistent keyring behavior is not
 promised there. On Linux, the existing kernel-keyring backend may not survive a
 reboot. Do not silently switch backends during a dependency upgrade.
 
-Linux binaries dynamically link system libraries, including OpenSSL and D-Bus,
-and inherit the build runner's glibc requirements (Ubuntu 24.04 uses glibc 2.39).
+Linux binaries dynamically link system libraries, including OpenSSL, and inherit the build runner's glibc requirements (Ubuntu 24.04 uses glibc 2.39).
 Users of older distributions should build from source. macOS binaries are
 smoke-tested on macOS 15; compatibility with older macOS versions needs a
 separate check before being advertised. The Windows target changed from GNU to
