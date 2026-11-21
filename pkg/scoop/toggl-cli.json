@@ -5,7 +5,7 @@
   "license": "MIT",
   "architecture": {
     "64bit": {
-      "url": "https://github.com/watercooler-labs/toggl-cli/releases/download/v$APP_VERSION/toggl-x86_64-pc-windows-gnu-$APP_VERSION.zip",
+      "url": "https://github.com/watercooler-labs/toggl-cli/releases/download/v$APP_VERSION/toggl-x86_64-pc-windows-msvc-$APP_VERSION.zip",
       "hash": "sha256:$SHA256_HASH"
     }
   },

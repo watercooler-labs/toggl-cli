@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT HUP INT TERM
+rustc --edition=2021 pkg/autodoc.rs -o "$tmp/autodoc"
+"$tmp/autodoc" "$@"

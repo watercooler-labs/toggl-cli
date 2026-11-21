@@ -238,6 +238,7 @@ FLAGS:
     -V, --version        Prints version information
 
 OPTIONS:
+        --profile <profile>    Profile name for API token (e.g. 'work', 'personal')
     -p, --project <project>    Exact name of the project you want the time entry to be associated with
     -t, --tags <tags>...       Space separated list of tags to associate with the time entry, e.g. 'tag1 tag2 tag3'
         --task <task>          Exact name of the task you want the time entry to be associated with, requires --project
