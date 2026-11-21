@@ -32,7 +32,7 @@ colors-transform = "0.2.11"
 keyring = { version = "2", features = ["linux-default-keyutils"] }
 
 # Config
-directories = "5.0.0"
+directories = "6.0.0"
 lazy_static = "1.4.0"
 regex = "1.7.3"
 toml = "0.7.3"
