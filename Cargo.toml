@@ -35,7 +35,7 @@ keyring = { version = "2", features = ["linux-default-keyutils"] }
 directories = "6.0.0"
 lazy_static = "1.4.0"
 regex = "1.7.3"
-toml = "0.7.3"
+toml = "1.2.3"
 
 # API
 serde = { version = "1.0.159", features = ["derive"] }
